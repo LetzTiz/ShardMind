@@ -713,4 +713,116 @@ def main():
                 else:
                     for cluster_key, cluster_data in db['clusters'].items():
                         with st.expander(
-                            f
+                            preview_cols = st.columns(6)
+                        for i, p in enumerate(cluster_data['pieces'][:6]):
+                            with preview_cols[i]:
+                                st.image(p['thumbnail'])
+                        
+                        if cluster_data['piece_count'] > 6:
+                            st.caption(f"... +{cluster_data['piece_count'] - 6}")
+        
+        with db_tab3:
+            st.subheader("🗑️ Datenbank bearbeiten")
+            st.warning("⚠️ Änderungen sind permanent!")
+            
+            if not db['pieces'] and not db.get('clusters'):
+                st.info("Datenbank ist leer")
+            else:
+                # Einzelne Teile löschen
+                with st.expander("📋 Einzelne Teile löschen", expanded=False):
+                    st.markdown(f"**{len(db['pieces'])} Teile in Datenbank**")
+                    
+                    if 'db_delete_indices' not in st.session_state:
+                        st.session_state.db_delete_indices = []
+                    
+                    # Zeige Teile mit Checkbox
+                    for row_start in range(0, min(24, len(db['pieces'])), 6):
+                        cols = st.columns(6)
+                        for col_idx in range(6):
+                            idx = row_start + col_idx
+                            if idx >= len(db['pieces']):
+                                break
+                            
+                            with cols[col_idx]:
+                                p = db['pieces'][idx]
+                                st.image(p['thumbnail'])
+                                if st.checkbox(f"Löschen #{idx}", key=f"dbdel_{idx}"):
+                                    if idx not in st.session_state.db_delete_indices:
+                                        st.session_state.db_delete_indices.append(idx)
+                                else:
+                                    if idx in st.session_state.db_delete_indices:
+                                        st.session_state.db_delete_indices.remove(idx)
+                    
+                    if len(db['pieces']) > 24:
+                        st.caption(f"... und {len(db['pieces']) - 24} weitere (scrollen für mehr)")
+                    
+                    if st.session_state.db_delete_indices:
+                        st.warning(f"⚠️ {len(st.session_state.db_delete_indices)} Teile markiert")
+                        if st.button("🗑️ Markierte Teile endgültig löschen", type="primary"):
+                            # Lösche von hinten nach vorne um Indizes nicht zu verschieben
+                            for idx in sorted(st.session_state.db_delete_indices, reverse=True):
+                                if idx < len(db['pieces']):
+                                    del db['pieces'][idx]
+                            
+                            save_database(db)
+                            st.session_state.db_delete_indices = []
+                            st.success("✓ Teile gelöscht!")
+                            st.rerun()
+                
+                # Cluster löschen
+                with st.expander("📦 Cluster löschen", expanded=False):
+                    if not db.get('clusters'):
+                        st.info("Keine Cluster vorhanden")
+                    else:
+                        st.markdown(f"**{len(db['clusters'])} Cluster in Datenbank**")
+                        
+                        for cluster_key in list(db['clusters'].keys()):
+                            cluster_data = db['clusters'][cluster_key]
+                            col1, col2 = st.columns([3, 1])
+                            
+                            with col1:
+                                st.markdown(f"📦 **{cluster_data['name']}** ({cluster_data['piece_count']} Teile)")
+                                st.caption(f"Erstellt: {cluster_data['created'][:10]}")
+                            
+                            with col2:
+                                if st.button("🗑️ Löschen", key=f"del_cluster_{cluster_key}"):
+                                    del db['clusters'][cluster_key]
+                                    save_database(db)
+                                    st.success("✓ Cluster gelöscht!")
+                                    st.rerun()
+                
+                # Komplette DB löschen
+                st.markdown("---")
+                st.markdown("### ⚠️ Gesamte Datenbank löschen")
+                if st.button("🔥 ALLES LÖSCHEN (nicht rückgängig!)", type="secondary"):
+                    if st.checkbox("Ja, wirklich alles löschen"):
+                        save_database({'pieces': [], 'clusters': {}, 'version': FEATURE_VERSION})
+                        st.success("✓ Datenbank geleert!")
+                        st.rerun()
+
+    with tab5:
+        st.header("Teile verwalten")
+        st.caption("Lösche fehlerhafte Erkennungen. Nach dem Löschen: 'Clustering neu berechnen'!")
+        
+        m_cols = st.columns(6)
+        for i, p in enumerate(st.session_state.pieces):
+            with m_cols[i % 6]:
+                if p['deleted']:
+                    st.markdown(
+                        f'<div style="opacity: 0.3; border: 2px solid red; padding: 3px;">'
+                        f'<img src="data:image/png;base64,{image_to_base64(p["thumbnail"])}" style="width:100%;">'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+                    if st.button(f"↩️ #{p['id']}", key=f"rev_{p['id']}", use_container_width=True):
+                        p['deleted'] = False
+                        st.rerun()
+                else:
+                    st.image(p['thumbnail'])
+                    st.caption(f"ID: {p['id']}")
+                    if st.button(f"❌", key=f"del_{p['id']}", use_container_width=True):
+                        p['deleted'] = True
+                        st.rerun()
+
+else:
+    st.info("👈 Lade Bilder hoch und klicke auf 'Analyse starten'")
