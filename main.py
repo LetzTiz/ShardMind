@@ -4,11 +4,15 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.preprocessing import StandardScaler
 import io
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import base64
 import pickle
+import qrcode
 from pathlib import Path
 from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 
 DB_PATH = Path("puzzle_database_v3.pkl")
 FEATURE_VERSION = 3
@@ -36,6 +40,111 @@ def image_to_base64(img):
     buffer = io.BytesIO()
     pil_img.save(buffer, format='PNG')
     return base64.b64encode(buffer.getvalue()).decode()
+
+def generate_ai_name(piece):
+    """Generiert KI-basierten Namen basierend auf Farbe und Form"""
+    # Farb-Analyse
+    lab = cv2.cvtColor(piece['thumbnail'], cv2.COLOR_BGR2Lab)
+    hsv = cv2.cvtColor(piece['thumbnail'], cv2.COLOR_BGR2HSV)
+    mean_hsv = cv2.mean(hsv, mask=piece['mask'])
+    
+    # Farbname bestimmen
+    h, s, v = mean_hsv[:3]
+    if s < 50:
+        color = "Grau" if v < 150 else "Weiß"
+    elif h < 15 or h > 165:
+        color = "Rot"
+    elif h < 35:
+        color = "Orange"
+    elif h < 75:
+        color = "Gelb"
+    elif h < 95:
+        color = "Grün"
+    elif h < 130:
+        color = "Cyan"
+    else:
+        color = "Blau"
+    
+    # Form-Analyse
+    area = piece['area']
+    if area < 500:
+        size = "Klein"
+    elif area < 2000:
+        size = "Mittel"
+    else:
+        size = "Groß"
+    
+    # Kompaktheit
+    perimeter = cv2.arcLength(piece['contour'], True)
+    compactness = (perimeter ** 2) / (area + 1e-6)
+    
+    if compactness < 15:
+        shape = "Rund"
+    elif compactness < 25:
+        shape = "Kompakt"
+    else:
+        shape = "Komplex"
+    
+    return f"{size}_{color}_{shape}"
+
+def generate_qr_code(data):
+    """Generiert QR-Code als PIL Image"""
+    qr = qrcode.QRCode(version=1, box_size=10, border=2)
+    qr.add_data(data)
+    qr.make(fit=True)
+    return qr.make_image(fill_color="black", back_color="white")
+
+def create_label_pdf(pieces, filename="puzzle_labels.pdf"):
+    """Erstellt PDF mit QR-Codes und Labels"""
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    # Layout: 3 Spalten, 7 Zeilen pro Seite
+    cols, rows = 3, 7
+    cell_width = width / cols
+    cell_height = height / rows
+    
+    x_offset, y_offset = 20, 20
+    qr_size = 80
+    
+    for idx, piece in enumerate(pieces):
+        if piece.get('deleted', False):
+            continue
+        
+        # Position berechnen
+        col = idx % cols
+        row = (idx // cols) % rows
+        
+        if idx > 0 and idx % (cols * rows) == 0:
+            c.showPage()  # Neue Seite
+        
+        x = col * cell_width + x_offset
+        y = height - (row + 1) * cell_height + y_offset
+        
+        # QR-Code generieren
+        qr_data = f"ID:{piece['id']}|Name:{piece.get('ai_name', 'Unbenannt')}"
+        qr_img = generate_qr_code(qr_data)
+        
+        # QR-Code in PDF einfügen
+        qr_buffer = io.BytesIO()
+        qr_img.save(qr_buffer, format='PNG')
+        qr_buffer.seek(0)
+        
+        c.drawImage(ImageReader(qr_buffer), x, y, width=qr_size, height=qr_size)
+        
+        # Text
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(x + qr_size + 10, y + qr_size - 15, f"ID: {piece['id']}")
+        c.setFont("Helvetica", 9)
+        c.drawString(x + qr_size + 10, y + qr_size - 30, piece.get('ai_name', 'Unbenannt'))
+        
+        if 'cluster' in piece and piece['cluster'] >= 0:
+            c.drawString(x + qr_size + 10, y + qr_size - 45, f"Cluster: {piece['cluster']}")
+    
+    c.save()
+    buffer.seek(0)
+    return buffer
 
 def is_valid_puzzle_piece(contour, roi, mask_roi, image_shape):
     area = cv2.contourArea(contour)
@@ -105,14 +214,16 @@ def segment_pieces_robust(image, min_area=100, start_id=0):
         if not is_valid_puzzle_piece(c, roi, mask_roi, padded.shape):
             continue
 
-        pieces.append({
+        piece = {
             'id': start_id + len(pieces),
             'contour': c,
             'thumbnail': roi,
             'mask': mask_roi,
             'area': cv2.contourArea(c),
             'deleted': False
-        })
+        }
+        piece['ai_name'] = generate_ai_name(piece)
+        pieces.append(piece)
     
     return pieces
 
@@ -196,7 +307,14 @@ def save_cluster_to_db(pieces, cluster_id, cluster_name, db):
     }
     
     for p in cluster_pieces:
-        piece_data = {'features': p['features'], 'thumbnail': p['thumbnail'], 'original_id': p['id'], 'area': p['area']}
+        piece_data = {
+            'features': p['features'], 
+            'thumbnail': p['thumbnail'], 
+            'original_id': p['id'], 
+            'area': p['area'],
+            'ai_name': p.get('ai_name', 'Unbenannt'),
+            'cluster_key': cluster_key
+        }
         db['clusters'][cluster_key]['pieces'].append(piece_data)
         db['pieces'].append(piece_data)
     
@@ -204,7 +322,11 @@ def save_cluster_to_db(pieces, cluster_id, cluster_name, db):
     return len(cluster_pieces)
 
 def main():
-    st.set_page_config(page_title="Puzzle Master Pro", layout="wide")
+    st.set_page_config(
+        page_title="ShardMind - KI Scherben-Analyse", 
+        page_icon="🧠",
+        layout="wide"
+    )
 
     if 'pieces' not in st.session_state:
         st.session_state.pieces = []
@@ -216,13 +338,15 @@ def main():
     db = load_database()
 
     with st.sidebar:
-        st.title("⚙️ Steuerung")
+        st.title("🧠 ShardMind")
+        st.caption("KI-gestützte Scherben-Analyse")
+        
         files = st.file_uploader("📤 Bilder hochladen", type=['png', 'jpg', 'jpeg'], accept_multiple_files=True)
         
         st.markdown("---")
         st.subheader("🔧 Parameter")
-        min_area = st.slider("Min. Teilgröße", 50, 1000, 200, 10, help="px² - Höher = weniger Artefakte")
-        cluster_dist = st.slider("Cluster-Distanz", 0.5, 4.0, 1.5, 0.1, help="Höher = lockere Cluster (1.0-2.0 empfohlen)")
+        min_area = st.slider("Min. Teilgröße", 50, 1000, 200, 10)
+        cluster_dist = st.slider("Cluster-Distanz", 0.1, 10.0, 1.5, 0.1)
 
         st.markdown("---")
         
@@ -233,16 +357,32 @@ def main():
                 with st.spinner("Verarbeite Bilder..."):
                     all_found = []
                     progress = st.progress(0)
+                    
+                    # Wichtig: ID-Counter muss über ALLE Dateien durchlaufen
                     current_id = 0
                     
                     for i, f in enumerate(files):
-                        img = cv2.imdecode(np.asarray(bytearray(f.read()), dtype=np.uint8), cv2.IMREAD_COLOR)
-                        pieces = segment_pieces_robust(img, min_area, start_id=current_id)
-                        all_found.extend(pieces)
-                        if pieces:
-                            current_id = max(p['id'] for p in pieces) + 1
-                        progress.progress((i + 1) / len(files))
+                        try:
+                            # Bild laden
+                            img = cv2.imdecode(np.asarray(bytearray(f.read()), dtype=np.uint8), cv2.IMREAD_COLOR)
+                            
+                            # Segmentiere mit aktuellem ID-Counter
+                            pieces = segment_pieces_robust(img, min_area, start_id=current_id)
+                            
+                            # Erweitere Liste
+                            all_found.extend(pieces)
+                            
+                            # Update ID-Counter für nächstes Bild
+                            if pieces:
+                                current_id = max(p['id'] for p in pieces) + 1
+                            
+                            progress.progress((i + 1) / len(files))
+                        
+                        except Exception as e:
+                            st.error(f"Fehler bei Bild {i+1}: {e}")
+                            continue
 
+                    # Feature-Extraktion für alle gesammelten Teile
                     valid = []
                     for p in all_found:
                         feat = get_features(p)
@@ -253,7 +393,14 @@ def main():
                     st.session_state.pieces = valid
                     st.session_state.cluster_names = {}
                     st.session_state.show_tutorial = False
-                    st.success(f"✓ {len(valid)} Teile aus {len(files)} Bildern erkannt!")
+                    
+                    # Erfolgs-Meldung mit Details
+                    st.success(f"✓ {len(valid)} Teile aus {len(files)} Bildern erkannt! (KI-Namen generiert)")
+                    
+                    # Debug-Info
+                    if len(valid) > 0:
+                        st.info(f"IDs: {valid[0]['id']} bis {valid[-1]['id']}")
+                    
                     st.rerun()
 
         if st.button("🗑️ Alles löschen", use_container_width=True):
@@ -265,27 +412,130 @@ def main():
         st.metric("Teile", len(db['pieces']))
         st.metric("Cluster", len(db.get('clusters', {})))
         
-        if st.button("❓ Tutorial anzeigen", use_container_width=True):
+        if st.button("❓ Tutorial", use_container_width=True):
             st.session_state.show_tutorial = True
             st.rerun()
+        
+        # PDF Download - IMMER sichtbar
+        st.markdown("---")
+        st.subheader("🖨️ Drucken")
+        
+        if st.session_state.pieces:
+            active_for_print = [p for p in st.session_state.pieces if not p['deleted']]
+            if active_for_print:
+                st.caption(f"{len(active_for_print)} Teile bereit")
+                if st.button("📄 PDF erstellen", use_container_width=True):
+                    with st.spinner("Erstelle PDF..."):
+                        pdf_buffer = create_label_pdf(active_for_print)
+                        st.download_button(
+                            "⬇️ PDF herunterladen",
+                            data=pdf_buffer,
+                            file_name=f"shardmind_labels_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                            mime="application/pdf",
+                            use_container_width=True
+                        )
+            else:
+                st.caption("Keine Teile zum Drucken")
+        else:
+            st.caption("Erst Teile analysieren")
 
     if st.session_state.show_tutorial and not st.session_state.pieces:
-        st.title("🧩 Puzzle Master Pro - Tutorial")
-        st.info("Diese App erkennt Puzzle-Teile, gruppiert sie automatisch und hilft dir, passende Teile zu finden.")
+        st.title("🧠 ShardMind - Tutorial")
+        st.markdown("### KI-gestützte Scherben-Analyse")
+        
+        st.info("""
+        **ShardMind** nutzt Computer Vision & KI zur Analyse von Puzzle-Teilen und archäologischen Scherben:
+        - 🤖 **KI-Benennung**: Automatische Beschreibung (Farbe, Größe, Form)
+        - 🎨 **Auto-Clustering**: Gruppiert ähnliche Teile
+        - 🔍 **Smart Matching**: Findet passende Teile (bis 100% Genauigkeit)
+        - 💾 **Datenbank**: Speichert & verwaltet Teile mit Clustern
+        - 🖨️ **QR-Code-PDF**: Drucke Labels für physische Objekte
+        """)
+        
         st.markdown("---")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("### 📸 Schritt 1: Bilder vorbereiten")
-            st.markdown("**Wichtig:** Einfarbiger Hintergrund, gleichmäßige Beleuchtung, Teile berühren sich nicht")
-            st.markdown("### 📤 Schritt 2: Hochladen")
-            st.markdown("Sidebar → Mehrere Bilder auswählen → Parameter einstellen → Analyse starten")
-        with col2:
-            st.markdown("### 🎯 Schritt 3: Cluster verwalten")
-            st.markdown("Cluster benennen und in Datenbank speichern")
-            st.markdown("### 🔍 Schritt 4: Matches finden")
-            st.markdown("Teil auswählen → Top 10 passende Teile sehen")
+        tabs = st.tabs(["📸 Vorbereitung", "🎯 Analyse", "💾 Datenbank", "🖨️ Export"])
         
+        with tabs[0]:
+            st.markdown("### 📸 Schritt 1: Bilder vorbereiten")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**✅ Anforderungen:**")
+                st.markdown("""
+                - Einfarbiger Hintergrund (weiß/schwarz/grau)
+                - Gleichmäßige Beleuchtung
+                - Teile berühren sich nicht
+                - 4-6 Bilder, je 10-20 Teile
+                - Min. 1920x1080 Auflösung
+                """)
+            with col2:
+                st.markdown("**🚀 Upload & Start:**")
+                st.markdown("""
+                1. Sidebar → "📤 Bilder hochladen"
+                2. Mehrere auswählen (Strg/Cmd + Klick)
+                3. Parameter: Min. 200, Cluster 1.0-2.0
+                4. "🚀 Analyse starten"
+                """)
+        
+        with tabs[1]:
+            st.markdown("### 🎯 Schritt 2: Teile analysieren")
+            st.markdown("""
+            **Tab 'Galerie':**
+            - Farbige Rahmen = Cluster-Zugehörigkeit
+            - ID + KI-Name unter jedem Teil
+            - 🔍 Klick = Auswahl für Matching
+            
+            **Tab 'Cluster-Manager':**
+            1. Cluster benennen (z.B. "Himmel", "Rand")
+            2. Vorschau der Teile
+            3. 💾 Speichern in Datenbank
+            
+            **Tab 'Verwalten':**
+            - ❌ Fehlerhafte Teile löschen
+            - ↩️ Wiederherstellen
+            - Dann: "Neu berechnen"!
+            """)
+        
+        with tabs[2]:
+            st.markdown("### 💾 Schritt 3: Datenbank nutzen")
+            st.markdown("""
+            **Teile zur DB hinzufügen:**
+            - Tab "Datenbank" → "🗑️ Editor"
+            - Expander "➕ Teile hinzufügen"
+            - Teile aus aktueller Session auswählen
+            - Cluster zuweisen (optional)
+            - "Zur DB hinzufügen" klicken
+            
+            **Alle Teile durchsuchen:**
+            - Zeigt ID, KI-Name, Cluster
+            - Pagination (12/24/48 pro Seite)
+            
+            **Cluster verwalten:**
+            - Alle gespeicherten Cluster
+            - Vorschau der Teile
+            - Info: Name, Datum, Anzahl
+            """)
+        
+        with tabs[3]:
+            st.markdown("### 🖨️ Schritt 4: QR-Codes drucken")
+            st.markdown("""
+            **PDF erstellen:**
+            1. Sidebar → "🖨️ Drucken"
+            2. "📄 PDF erstellen"
+            3. "⬇️ PDF herunterladen"
+            4. Drucken & ausschneiden
+            
+            **PDF enthält:**
+            - QR-Code (scannbar mit Handy)
+            - ID + KI-Name + Cluster
+            - Layout: 3×7 pro A4-Seite
+            
+            **Verwendung:**
+            - Labels auf physische Teile kleben
+            - QR-Code scannen → ID sofort erkannt
+            """)
+        
+        st.markdown("---")
         st.success("🚀 Bereit? Lade Bilder hoch!")
 
     elif st.session_state.pieces:
@@ -333,6 +583,7 @@ def main():
                         unsafe_allow_html=True
                     )
                     st.caption(f"ID: {p['id']} | {cluster_label}")
+                    st.caption(f"🤖 {p.get('ai_name', 'N/A')}")
                     if st.button(f"🔍", key=f"sel_{p['id']}", use_container_width=True):
                         st.session_state.selected_id = p['id']
                         st.rerun()
@@ -343,7 +594,7 @@ def main():
             
             if not cluster_ids:
                 st.warning("⚠️ Keine Cluster!")
-                st.info("💡 Erhöhe die Cluster-Distanz (2.0-3.0)")
+                st.info("💡 Erhöhe Cluster-Distanz (2.0-3.0)")
             else:
                 for cluster_id in cluster_ids:
                     cluster_pieces = [p for p in active_pieces if p.get('cluster') == cluster_id]
@@ -355,7 +606,8 @@ def main():
                         preview_cols = st.columns(min(6, len(cluster_pieces)))
                         for i, p in enumerate(cluster_pieces[:6]):
                             with preview_cols[i]:
-                                st.image(p['thumbnail'], caption=f"ID: {p['id']}")
+                                st.image(p['thumbnail'])
+                                st.caption(f"{p.get('ai_name', 'N/A')}")
                         
                         if len(cluster_pieces) > 6:
                             st.caption(f"... +{len(cluster_pieces) - 6}")
@@ -364,7 +616,7 @@ def main():
                         with col1:
                             if st.button(f"💾 '{cluster_name}' speichern", key=f"save_{cluster_id}", use_container_width=True):
                                 count = save_cluster_to_db(active_pieces, cluster_id, cluster_name, db)
-                                st.success(f"✓ {count} Teile gespeichert!")
+                                st.success(f"✓ {count} Teile!")
                                 st.rerun()
                         with col2:
                             st.metric("Teile", len(cluster_pieces))
@@ -373,11 +625,12 @@ def main():
             if 'selected_id' in st.session_state:
                 target = next((p for p in active_pieces if p['id'] == st.session_state.selected_id), None)
                 if target:
-                    st.header(f"Matches für Teil #{target['id']}")
+                    st.header(f"Matches für #{target['id']} ({target.get('ai_name', 'N/A')})")
                     col_l, col_r = st.columns([1, 4])
                     with col_l:
                         st.markdown("**Ausgewählt:**")
                         st.image(target['thumbnail'], width=200)
+                        st.caption(f"🤖 {target.get('ai_name', 'N/A')}")
                     with col_r:
                         st.markdown("**Top 10:**")
                         matches = sorted([(calculate_score(target['features'], p['features']), p) for p in active_pieces if p['id'] != target['id']], key=lambda x: x[0], reverse=True)
@@ -389,7 +642,8 @@ def main():
                                     break
                                 score, p = matches[idx]
                                 with m_cols[col]:
-                                    st.image(p['thumbnail'], caption=f"ID {p['id']}")
+                                    st.image(p['thumbnail'])
+                                    st.caption(f"{p.get('ai_name', 'N/A')}")
                                     st.progress(score / 100)
                                     st.markdown(f"**{score:.1f}%**")
             else:
@@ -404,8 +658,8 @@ def main():
                     st.info("DB leer")
                 else:
                     show_per_page = st.selectbox("Pro Seite", [12, 24, 48], index=1)
-                    total_pages = (len(db['pieces']) - 1) // show_per_page + 1
-                    page = st.slider("Seite", 1, total_pages, 1)
+                    total_pages = max(1, (len(db['pieces']) - 1) // show_per_page + 1)
+                    page = st.slider("Seite", 1, total_pages, 1) if total_pages > 1 else 1
                     start_idx = (page - 1) * show_per_page
                     end_idx = min(start_idx + show_per_page, len(db['pieces']))
                     
@@ -415,9 +669,13 @@ def main():
                             idx = start_idx + row + col_idx
                             if idx >= end_idx:
                                 break
+                            p = db['pieces'][idx]
                             with cols[col_idx]:
-                                st.image(db['pieces'][idx]['thumbnail'])
-                                st.caption(f"#{idx}")
+                                st.image(p['thumbnail'])
+                                st.caption(f"#{idx} | {p.get('ai_name', 'N/A')}")
+                                if 'cluster_key' in p:
+                                    cluster_info = db['clusters'].get(p['cluster_key'], {})
+                                    st.caption(f"📦 {cluster_info.get('name', 'N/A')}")
             
             with db_tab2:
                 if not db.get('clusters'):
@@ -430,15 +688,180 @@ def main():
                             for i, p in enumerate(cluster_data['pieces'][:6]):
                                 with preview_cols[i]:
                                     st.image(p['thumbnail'])
+                                    st.caption(p.get('ai_name', 'N/A'))
             
             with db_tab3:
+                st.subheader("🗑️ Editor")
                 st.warning("⚠️ Permanent!")
-                if db['pieces'] or db.get('clusters'):
-                    if st.button("🔥 ALLES LÖSCHEN"):
-                        if st.checkbox("Ja, wirklich"):
-                            save_database({'pieces': [], 'clusters': {}, 'version': FEATURE_VERSION})
-                            st.success("✓ Gelöscht!")
-                            st.rerun()
+                
+                # NEUE FUNKTION: Teile zur DB hinzufügen
+                with st.expander("➕ Teile zur DB hinzufügen", expanded=False):
+                    if not st.session_state.pieces:
+                        st.info("Erst Bilder analysieren!")
+                    else:
+                        st.markdown("**Aktuelle Session-Teile zur Datenbank hinzufügen:**")
+                        
+                        active_current = [p for p in st.session_state.pieces if not p['deleted']]
+                        
+                        if 'add_to_db_indices' not in st.session_state:
+                            st.session_state.add_to_db_indices = set()
+                        
+                        # ALLES AUSWÄHLEN / ABWÄHLEN
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("✅ Alle auswählen", use_container_width=True, key="select_all_btn"):
+                                # Setze alle IDs
+                                st.session_state.add_to_db_indices = set(p['id'] for p in active_current)
+                                # Force update durch Session State Flag
+                                st.session_state.force_checkbox_update = not st.session_state.get('force_checkbox_update', False)
+                        with col2:
+                            if st.button("❌ Alle abwählen", use_container_width=True, key="deselect_all_btn"):
+                                st.session_state.add_to_db_indices = set()
+                                st.session_state.force_checkbox_update = not st.session_state.get('force_checkbox_update', False)
+                        
+                        st.markdown("---")
+                        
+                        # Zeige Teile mit Checkboxen - verwende eindeutige Keys mit force_update
+                        force_key = st.session_state.get('force_checkbox_update', False)
+                        st.markdown(f"**Teile auswählen ({len(st.session_state.add_to_db_indices)}/{len(active_current)} ausgewählt):**")
+                        
+                        for row_start in range(0, len(active_current), 6):
+                            cols = st.columns(6)
+                            for col_idx in range(6):
+                                idx = row_start + col_idx
+                                if idx >= len(active_current):
+                                    break
+                                
+                                p = active_current[idx]
+                                with cols[col_idx]:
+                                    st.image(p['thumbnail'])
+                                    st.caption(f"{p.get('ai_name', 'N/A')}")
+                                    
+                                    # Checkbox mit value aus Session State
+                                    checkbox_value = p['id'] in st.session_state.add_to_db_indices
+                                    
+                                    # Einzigartiger Key der sich bei force_update ändert
+                                    checkbox_key = f"dbadd_{p['id']}_{force_key}"
+                                    
+                                    checked = st.checkbox(
+                                        f"ID {p['id']}", 
+                                        value=checkbox_value,
+                                        key=checkbox_key
+                                    )
+                                    
+                                    # Update Session State basierend auf Checkbox
+                                    if checked and p['id'] not in st.session_state.add_to_db_indices:
+                                        st.session_state.add_to_db_indices.add(p['id'])
+                                    elif not checked and p['id'] in st.session_state.add_to_db_indices:
+                                        st.session_state.add_to_db_indices.discard(p['id'])
+                        
+                        if len(active_current) > 18:
+                            st.caption(f"💡 Zeige alle {len(active_current)} Teile - scrollen für mehr")
+                        
+                        st.markdown("---")
+                        
+                        # Optional: Cluster zuweisen
+                        st.markdown("**Optional: Zu Cluster zuweisen**")
+                        assign_to_cluster = st.checkbox("Zu bestehendem Cluster zuweisen?")
+                        
+                        target_cluster = None
+                        if assign_to_cluster and db.get('clusters'):
+                            cluster_options = {f"{v['name']} ({v['piece_count']} Teile)": k for k, v in db['clusters'].items()}
+                            selected = st.selectbox("Cluster wählen:", list(cluster_options.keys()))
+                            target_cluster = cluster_options[selected]
+                        
+                        # Hinzufügen-Button
+                        if st.session_state.add_to_db_indices:
+                            st.success(f"📌 {len(st.session_state.add_to_db_indices)} Teile markiert")
+                            
+                            if st.button("➕ Zur DB hinzufügen", type="primary", use_container_width=True):
+                                added_count = 0
+                                for p_id in st.session_state.add_to_db_indices:
+                                    piece = next((p for p in active_current if p['id'] == p_id), None)
+                                    if piece:
+                                        piece_data = {
+                                            'features': piece['features'],
+                                            'thumbnail': piece['thumbnail'],
+                                            'original_id': piece['id'],
+                                            'area': piece['area'],
+                                            'ai_name': piece.get('ai_name', 'Unbenannt')
+                                        }
+                                        
+                                        # Zu Cluster hinzufügen falls gewählt
+                                        if target_cluster and target_cluster in db['clusters']:
+                                            piece_data['cluster_key'] = target_cluster
+                                            db['clusters'][target_cluster]['pieces'].append(piece_data)
+                                            db['clusters'][target_cluster]['piece_count'] += 1
+                                        
+                                        db['pieces'].append(piece_data)
+                                        added_count += 1
+                                
+                                save_database(db)
+                                st.session_state.add_to_db_indices = set()
+                                st.success(f"✓ {added_count} Teile zur DB hinzugefügt!")
+                                st.rerun()
+                        else:
+                            st.info("Keine Teile ausgewählt")
+                
+                st.markdown("---")
+                
+                if not db['pieces'] and not db.get('clusters'):
+                    st.info("DB leer")
+                else:
+                    with st.expander("📋 Einzelne Teile", expanded=False):
+                        if not db['pieces']:
+                            st.info("Keine Teile")
+                        else:
+                            if 'db_delete_indices' not in st.session_state:
+                                st.session_state.db_delete_indices = set()
+                            
+                            for row_start in range(0, min(24, len(db['pieces'])), 6):
+                                cols = st.columns(6)
+                                for col_idx in range(6):
+                                    idx = row_start + col_idx
+                                    if idx >= len(db['pieces']):
+                                        break
+                                    
+                                    with cols[col_idx]:
+                                        p = db['pieces'][idx]
+                                        st.image(p['thumbnail'])
+                                        is_checked = st.checkbox(f"#{idx}", value=idx in st.session_state.db_delete_indices, key=f"dbdel_{idx}")
+                                        
+                                        if is_checked:
+                                            st.session_state.db_delete_indices.add(idx)
+                                        else:
+                                            st.session_state.db_delete_indices.discard(idx)
+                            
+                            if st.session_state.db_delete_indices:
+                                if st.button("🗑️ Markierte löschen", type="primary"):
+                                    for idx in sorted(st.session_state.db_delete_indices, reverse=True):
+                                        if idx < len(db['pieces']):
+                                            del db['pieces'][idx]
+                                    save_database(db)
+                                    st.session_state.db_delete_indices = set()
+                                    st.rerun()
+                    
+                    with st.expander("📦 Cluster", expanded=False):
+                        if not db.get('clusters'):
+                            st.info("Keine Cluster")
+                        else:
+                            for cluster_key in list(db['clusters'].keys()):
+                                cluster_data = db['clusters'][cluster_key]
+                                col1, col2 = st.columns([3, 1])
+                                with col1:
+                                    st.markdown(f"📦 **{cluster_data['name']}** ({cluster_data['piece_count']})")
+                                with col2:
+                                    if st.button("🗑️", key=f"delc_{cluster_key}"):
+                                        del db['clusters'][cluster_key]
+                                        save_database(db)
+                                        st.rerun()
+                    
+                    with st.expander("🔥 Alles löschen", expanded=False):
+                        confirm = st.text_input("'LÖSCHEN' eingeben:", key="confirm_all")
+                        if st.button("🔥 ALLES"):
+                            if confirm == "LÖSCHEN":
+                                save_database({'pieces': [], 'clusters': {}, 'version': FEATURE_VERSION})
+                                st.rerun()
 
         with tab5:
             st.header("Verwalten")
@@ -453,6 +876,7 @@ def main():
                     else:
                         st.image(p['thumbnail'])
                         st.caption(f"ID: {p['id']}")
+                        st.caption(f"🤖 {p.get('ai_name', 'N/A')}")
                         if st.button(f"❌", key=f"del_{p['id']}", use_container_width=True):
                             p['deleted'] = True
                             st.rerun()
