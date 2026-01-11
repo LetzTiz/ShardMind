@@ -1,10 +1,52 @@
+"""
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║   ███████╗██╗  ██╗ █████╗ ██████╗ ██████╗ ███╗   ███╗██╗███╗   ██╗██████╗    ║
+║   ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔══██╗████╗ ████║██║████╗  ██║██╔══██╗   ║
+║   ███████╗███████║███████║██████╔╝██║  ██║██╔████╔██║██║██╔██╗ ██║██║  ██║   ║
+║   ╚════██║██╔══██║██╔══██║██╔══██╗██║  ██║██║╚██╔╝██║██║██║╚██╗██║██║  ██║   ║
+║   ███████║██║  ██║██║  ██║██║  ██║██████╔╝██║ ╚═╝ ██║██║██║ ╚████║██████╔╝   ║
+║   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝    ║
+║                                                                               ║
+║   Archäologische Scherben-Analyse & Rekonstruktion                           ║
+║   Version 1.0                                                                 ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+CHANGELOG:
+==========
+
+Version 1.0 (2025-01-11)
+------------------------
+NEUE FEATURES:
+• Eindeutige UUIDs für alle Fundstücke (statt fortlaufender Nummern)
+• Verbesserte QR-Codes mit UUID-basierter Identifikation
+• PDF-Export für gesamte Datenbank oder einzelne Fundstücke
+• Archäologie-fokussierte Benutzeroberfläche
+• KI-gestützte Objekterkennung via Claude Vision API
+• Automatische Klassifikation: Keramik, Glas, Knochen, Metall, etc.
+• Fundort-Tracking mit Grabungskontext
+• Verbesserte Cluster-Benennung im PDF-Export
+
+VERBESSERUNGEN:
+• Professionelle archäologische Terminologie
+• Erweiterte Metadaten pro Fundstück (Fundort, Schicht, Material)
+• Batch-System für Grabungskampagnen
+• Such- und Filterfunktionen in der Datenbank
+
+BEKANNTE EINSCHRÄNKUNGEN:
+• KI-Erkennung benötigt Anthropic API Key
+• Ohne API: Heuristische Materialerkennung
+
+"""
+
 import streamlit as st
 import cv2
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.preprocessing import StandardScaler
 import io
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import base64
 import pickle
 import qrcode
@@ -13,21 +55,60 @@ from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
+from reportlab.lib.colors import HexColor
 import requests
 import json
 import os
-
-DB_PATH = Path("puzzle_database_v4.pkl")
-FEATURE_VERSION = 4
+import uuid
+import hashlib
 
 # =============================================================================
-# KI-OBJEKTERKENNUNG MIT CLAUDE API
+# KONFIGURATION
 # =============================================================================
 
-def analyze_image_with_ai(image_base64, api_key=None):
+APP_VERSION = "1.0"
+DB_PATH = Path("shardmind_database_v1.pkl")
+FEATURE_VERSION = 10
+
+# Archäologische Materialtypen
+MATERIAL_TYPES = [
+    "Keramik", "Glas", "Knochen", "Metall", "Stein", 
+    "Holz", "Textil", "Leder", "Bernstein", "Unbekannt"
+]
+
+# Archäologische Perioden
+PERIODS = [
+    "Unbestimmt", "Neolithikum", "Bronzezeit", "Eisenzeit",
+    "Römisch", "Mittelalter", "Neuzeit", "Modern"
+]
+
+
+# =============================================================================
+# EINDEUTIGE ID-GENERIERUNG
+# =============================================================================
+
+def generate_unique_id():
     """
-    Nutzt Claude API um das Objekt im Bild zu erkennen.
-    Gibt zurück: {"object": "Zauberwürfel", "color": "Bunt", "confidence": 0.95}
+    Generiert eine eindeutige ID für Fundstücke.
+    Format: SM-XXXXXXXX (SM = ShardMind, 8 Zeichen aus UUID)
+    """
+    unique = uuid.uuid4().hex[:8].upper()
+    return f"SM-{unique}"
+
+
+def generate_short_hash(data):
+    """Generiert einen kurzen Hash für Duplikat-Erkennung"""
+    return hashlib.md5(str(data).encode()).hexdigest()[:8]
+
+
+# =============================================================================
+# KI-OBJEKTERKENNUNG
+# =============================================================================
+
+def analyze_fragment_with_ai(image_base64, api_key=None):
+    """
+    Nutzt Claude API um das archäologische Fragment zu analysieren.
+    Gibt zurück: {"material": "Keramik", "object_type": "Gefäßscherbe", "color": "Rotbraun", "notes": "..."}
     """
     if not api_key:
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -45,7 +126,7 @@ def analyze_image_with_ai(image_base64, api_key=None):
             },
             json={
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 150,
+                "max_tokens": 200,
                 "messages": [
                     {
                         "role": "user",
@@ -60,17 +141,20 @@ def analyze_image_with_ai(image_base64, api_key=None):
                             },
                             {
                                 "type": "text",
-                                "text": """Analysiere dieses Bild eines einzelnen Objekts.
-Antworte NUR mit einem JSON-Objekt in diesem Format (keine anderen Texte):
-{"object": "Objektname", "color": "Hauptfarbe", "material": "Material"}
+                                "text": """Du bist ein Archäologe. Analysiere dieses Bild eines Fundstücks/Fragments.
+Antworte NUR mit einem JSON-Objekt (keine anderen Texte):
+{"material": "Materialtyp", "object_type": "Objekttyp", "color": "Hauptfarbe", "condition": "Zustand"}
 
-Beispiele für Objektnamen:
-- Puzzlestück, Zauberwürfel, Münze, Schlüssel, Schraube, Knopf, Spielstein
-- Scherbe, Glasstück, Keramikfragment, Holzstück
-- Legoteil, Dominostein, Würfel, Spielfigur
+Materialtypen: Keramik, Glas, Knochen, Metall, Stein, Holz, Textil, Unbekannt
+Objekttypen für Keramik: Gefäßscherbe, Randscherbe, Bodenscherbe, Henkelscherbe, Wandungsscherbe
+Objekttypen für Glas: Glasscherbe, Flaschenfragment, Fensterglas
+Objekttypen für Knochen: Knochenfragment, Zahn, Geweih
+Objekttypen für Metall: Münze, Fibel, Nagel, Beschlag, Metallfragment
+Objekttypen für Stein: Feuerstein, Mahlstein, Steinwerkzeug
 
-Sei präzise und spezifisch. Wenn es ein Puzzlestück ist, sage "Puzzlestück".
-Wenn du es nicht erkennst, sage "Unbekanntes_Objekt"."""
+Zustand: Gut, Fragmentiert, Verwittert, Korrodiert, Beschädigt
+
+Wenn unklar, sage "Unbekanntes_Fragment"."""
                             }
                         ]
                     }
@@ -82,9 +166,7 @@ Wenn du es nicht erkennst, sage "Unbekanntes_Objekt"."""
         if response.status_code == 200:
             result = response.json()
             text = result['content'][0]['text']
-            # Parse JSON aus Antwort
             try:
-                # Bereinige mögliche Markdown-Formatierung
                 text = text.strip()
                 if text.startswith("```"):
                     text = text.split("```")[1]
@@ -100,117 +182,126 @@ Wenn du es nicht erkennst, sage "Unbekanntes_Objekt"."""
 
 
 def get_dominant_color_name(image, mask):
-    """Extrahiert die dominante Farbe und gibt einen deutschen Namen zurück"""
+    """Extrahiert die dominante Farbe und gibt einen archäologischen Farbnamen zurück"""
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     mean_hsv = cv2.mean(hsv, mask=mask)
     h, s, v = mean_hsv[:3]
     
-    # Farbname basierend auf HSV
     if s < 30:
-        if v < 80:
-            return "Dunkel"
-        elif v < 160:
+        if v < 60:
+            return "Schwarz"
+        elif v < 120:
+            return "Dunkelgrau"
+        elif v < 180:
             return "Grau"
         else:
             return "Weiß"
     elif h < 10 or h > 170:
-        return "Rot"
+        if v < 100:
+            return "Dunkelrot"
+        else:
+            return "Rotbraun"
     elif h < 25:
-        return "Orange"
+        if s > 150:
+            return "Orange"
+        else:
+            return "Terrakotta"
     elif h < 40:
-        return "Gelb"
+        return "Ocker"
     elif h < 75:
-        return "Grün"
+        if v < 100:
+            return "Dunkelgrün"
+        else:
+            return "Grün"
     elif h < 130:
-        return "Blau"
-    elif h < 150:
-        return "Cyan"
+        if v < 100:
+            return "Dunkelblau"
+        else:
+            return "Blau"
     else:
         return "Violett"
 
 
-def generate_ai_name_with_fallback(piece, api_key=None, use_ai=True):
+def classify_material_heuristic(piece):
     """
-    Generiert Namen mit KI-Objekterkennung (falls API verfügbar)
-    Fallback auf heuristische Analyse
-    
-    Format: Farbe_ObjektTyp_ID (z.B. "Rot_Zauberwürfel_001")
-    """
-    color = get_dominant_color_name(piece['thumbnail'], piece['mask'])
-    object_type = "Objekt"  # Fallback
-    
-    # Versuche KI-Erkennung
-    if use_ai and api_key:
-        img_base64 = image_to_base64_raw(piece['thumbnail'])
-        ai_result = analyze_image_with_ai(img_base64, api_key)
-        
-        if ai_result and 'object' in ai_result:
-            object_type = ai_result['object'].replace(" ", "_")
-            # Nutze auch KI-Farbe wenn vorhanden
-            if 'color' in ai_result and ai_result['color']:
-                color = ai_result['color']
-    else:
-        # Fallback: Heuristische Klassifikation
-        object_type = classify_object_heuristic(piece)
-    
-    # Format: Farbe_ObjektTyp_ID
-    return f"{color}_{object_type}_{piece['id']:03d}"
-
-
-def classify_object_heuristic(piece):
-    """
-    Heuristische Objektklassifikation basierend auf Form-Eigenschaften
-    (Fallback wenn keine API verfügbar)
+    Heuristische Materialklassifikation basierend auf Bildmerkmalen.
+    Fallback wenn keine API verfügbar.
     """
     area = piece['area']
     perimeter = cv2.arcLength(piece['contour'], True)
     compactness = (perimeter ** 2) / (area + 1e-6)
     
-    # Ecken zählen
-    epsilon = 0.02 * perimeter
-    approx = cv2.approxPolyDP(piece['contour'], epsilon, True)
-    corners = len(approx)
-    
-    # Aspect Ratio
-    x, y, w, h = cv2.boundingRect(piece['contour'])
-    aspect_ratio = w / (h + 1e-6)
+    # Farbanalyse
+    hsv = cv2.cvtColor(piece['thumbnail'], cv2.COLOR_BGR2HSV)
+    mean_hsv = cv2.mean(hsv, mask=piece['mask'])
+    h, s, v = mean_hsv[:3]
     
     # Konvexität
     hull = cv2.convexHull(piece['contour'])
     hull_area = cv2.contourArea(hull)
     solidity = area / (hull_area + 1e-6)
     
-    # Klassifikation
-    if corners == 4 and 0.85 < aspect_ratio < 1.15 and compactness < 18:
-        if solidity > 0.95:
-            return "Würfel"
+    # Materialbestimmung basierend auf Merkmalen
+    if s < 20 and v > 150:  # Sehr hell, wenig Sättigung -> Glas oder Knochen
+        if solidity > 0.8:
+            return "Knochen", "Knochenfragment"
         else:
-            return "Karte"
+            return "Glas", "Glasscherbe"
     
-    elif corners == 3:
-        return "Dreieck"
+    elif 10 < h < 30 and s > 50:  # Rot-Orange-Braun -> Keramik
+        if solidity > 0.85:
+            return "Keramik", "Wandungsscherbe"
+        elif compactness > 30:
+            return "Keramik", "Randscherbe"
+        else:
+            return "Keramik", "Gefäßscherbe"
     
-    elif compactness < 14 and solidity > 0.9:
-        return "Münze"
+    elif s < 40 and v < 80:  # Dunkel, wenig Farbe -> Metall
+        return "Metall", "Metallfragment"
     
-    elif 0.4 < solidity < 0.85 and 15 < compactness < 50:
-        return "Puzzlestück"
-    
-    elif solidity < 0.6:
-        return "Scherbe"
-    
-    elif aspect_ratio > 3 or aspect_ratio < 0.33:
-        return "Stab"
-    
-    elif compactness > 50:
-        return "Fragment"
+    elif s < 30 and 80 < v < 150:  # Grau -> Stein
+        return "Stein", "Steinfragment"
     
     else:
-        return "Teil"
+        return "Unbekannt", "Fragment"
+
+
+def generate_fragment_name(piece, api_key=None, use_ai=True):
+    """
+    Generiert einen archäologischen Namen für das Fundstück.
+    Format: Material_Objekttyp_Farbe (z.B. "Keramik_Randscherbe_Rotbraun")
+    """
+    color = get_dominant_color_name(piece['thumbnail'], piece['mask'])
+    material = "Unbekannt"
+    object_type = "Fragment"
+    condition = "Unbestimmt"
+    
+    # Versuche KI-Erkennung
+    if use_ai and api_key:
+        img_base64 = image_to_base64_raw(piece['thumbnail'])
+        ai_result = analyze_fragment_with_ai(img_base64, api_key)
+        
+        if ai_result:
+            material = ai_result.get('material', 'Unbekannt').replace(" ", "_")
+            object_type = ai_result.get('object_type', 'Fragment').replace(" ", "_")
+            if 'color' in ai_result and ai_result['color']:
+                color = ai_result['color'].replace(" ", "_")
+            if 'condition' in ai_result:
+                condition = ai_result['condition']
+    else:
+        # Fallback: Heuristische Klassifikation
+        material, object_type = classify_material_heuristic(piece)
+    
+    piece['material'] = material
+    piece['object_type'] = object_type
+    piece['color_name'] = color
+    piece['condition'] = condition
+    
+    return f"{material}_{object_type}_{color}"
 
 
 def image_to_base64_raw(img):
-    """Konvertiert OpenCV-Bild zu Base64 (ohne data:image Präfix)"""
+    """Konvertiert OpenCV-Bild zu Base64"""
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     pil_img = Image.fromarray(img_rgb)
     buffer = io.BytesIO()
@@ -233,15 +324,48 @@ def load_database():
             with open(DB_PATH, 'rb') as f:
                 db = pickle.load(f)
                 if db.get('version') != FEATURE_VERSION:
-                    return {'pieces': [], 'clusters': {}, 'version': FEATURE_VERSION}
+                    # Migration
+                    return migrate_database(db)
                 return db
         except:
-            return {'pieces': [], 'clusters': {}, 'version': FEATURE_VERSION}
-    return {'pieces': [], 'clusters': {}, 'version': FEATURE_VERSION}
+            return create_empty_database()
+    return create_empty_database()
+
+
+def create_empty_database():
+    return {
+        'pieces': {},  # Dict mit UUID als Key
+        'clusters': {},
+        'excavations': {},  # Grabungskampagnen
+        'version': FEATURE_VERSION,
+        'created': datetime.now().isoformat(),
+        'app_version': APP_VERSION
+    }
+
+
+def migrate_database(old_db):
+    """Migriert alte Datenbank-Formate"""
+    new_db = create_empty_database()
+    
+    # Alte Teile migrieren
+    if 'pieces' in old_db:
+        if isinstance(old_db['pieces'], list):
+            for p in old_db['pieces']:
+                new_id = generate_unique_id()
+                p['id'] = new_id
+                new_db['pieces'][new_id] = p
+        elif isinstance(old_db['pieces'], dict):
+            new_db['pieces'] = old_db['pieces']
+    
+    if 'clusters' in old_db:
+        new_db['clusters'] = old_db['clusters']
+    
+    return new_db
 
 
 def save_database(db):
     db['version'] = FEATURE_VERSION
+    db['last_modified'] = datetime.now().isoformat()
     with open(DB_PATH, 'wb') as f:
         pickle.dump(db, f)
 
@@ -250,33 +374,107 @@ def save_database(db):
 # QR-CODE & PDF GENERATION
 # =============================================================================
 
-def generate_qr_code(data):
+def generate_qr_code(data, size=10):
     """Generiert QR-Code als PIL Image"""
-    qr = qrcode.QRCode(version=1, box_size=10, border=2)
+    qr = qrcode.QRCode(
+        version=1, 
+        box_size=size, 
+        border=2,
+        error_correction=qrcode.constants.ERROR_CORRECT_M
+    )
     qr.add_data(data)
     qr.make(fit=True)
     return qr.make_image(fill_color="black", back_color="white")
 
 
-def create_label_pdf(pieces, cluster_names_map, filename="puzzle_labels.pdf"):
-    """
-    Erstellt PDF mit QR-Codes und Labels - 3D-Drucker-optimiert
+def create_single_label_pdf(piece, cluster_name=None):
+    """Erstellt PDF-Label für ein einzelnes Fundstück"""
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=(200, 280))
     
-    Args:
-        pieces: Liste der Teile
-        cluster_names_map: Dict {cluster_id: cluster_name} für richtige Cluster-Namen
+    # QR-Code
+    qr_data = f"shardmind://find/{piece['id']}"
+    qr_img = generate_qr_code(qr_data, size=8)
+    qr_buffer = io.BytesIO()
+    qr_img.save(qr_buffer, format='PNG')
+    qr_buffer.seek(0)
+    c.drawImage(ImageReader(qr_buffer), 10, 160, width=100, height=100)
+    
+    # Fundstück-Bild
+    if 'thumbnail' in piece:
+        thumb_buffer = io.BytesIO()
+        img_rgb = cv2.cvtColor(piece['thumbnail'], cv2.COLOR_BGR2RGB)
+        pil_img = Image.fromarray(img_rgb)
+        pil_img.thumbnail((80, 80))
+        pil_img.save(thumb_buffer, format='PNG')
+        thumb_buffer.seek(0)
+        c.drawImage(ImageReader(thumb_buffer), 115, 180, width=75, height=75)
+    
+    # Text
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(10, 145, f"ID: {piece['id']}")
+    
+    c.setFont("Helvetica", 8)
+    y = 130
+    
+    name = piece.get('name', 'Unbenannt')
+    if len(name) > 25:
+        name = name[:22] + "..."
+    c.drawString(10, y, f"Name: {name}")
+    y -= 12
+    
+    if piece.get('material'):
+        c.drawString(10, y, f"Material: {piece['material']}")
+        y -= 12
+    
+    if piece.get('excavation'):
+        exc = piece['excavation'][:20] if len(piece['excavation']) > 20 else piece['excavation']
+        c.drawString(10, y, f"Grabung: {exc}")
+        y -= 12
+    
+    if cluster_name:
+        cl = cluster_name[:20] if len(cluster_name) > 20 else cluster_name
+        c.drawString(10, y, f"Gruppe: {cl}")
+        y -= 12
+    
+    # Datum
+    c.setFont("Helvetica", 6)
+    c.drawString(10, 10, f"Erstellt: {datetime.now().strftime('%Y-%m-%d')}")
+    c.drawString(10, 3, f"ShardMind v{APP_VERSION}")
+    
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+
+def create_multi_label_pdf(pieces, cluster_names_map=None, title="ShardMind Fundstück-Labels"):
     """
+    Erstellt PDF mit mehreren QR-Code-Labels.
+    Layout: 3 Spalten, 4 Zeilen pro Seite (größere Labels für bessere Lesbarkeit)
+    """
+    if cluster_names_map is None:
+        cluster_names_map = {}
+    
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
     
-    # Layout: 3 Spalten, 7 Zeilen pro Seite
-    cols, rows = 3, 7
+    # Layout: 3 Spalten, 4 Zeilen
+    cols, rows = 3, 4
     cell_width = width / cols
     cell_height = height / rows
     
-    x_offset, y_offset = 20, 20
-    qr_size = 80
+    margin = 15
+    qr_size = 70
+    
+    # Titel auf erster Seite
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(margin, height - 30, title)
+    c.setFont("Helvetica", 10)
+    c.drawString(margin, height - 45, f"Erstellt: {datetime.now().strftime('%Y-%m-%d %H:%M')} | Anzahl: {len(pieces)}")
+    
+    # Startposition (nach Titel)
+    start_row_offset = 60
     
     active_pieces = [p for p in pieces if not p.get('deleted', False)]
     
@@ -284,75 +482,98 @@ def create_label_pdf(pieces, cluster_names_map, filename="puzzle_labels.pdf"):
         # Position berechnen
         col = idx % cols
         row = (idx // cols) % rows
+        page_num = idx // (cols * rows)
         
         if idx > 0 and idx % (cols * rows) == 0:
-            c.showPage()  # Neue Seite
+            c.showPage()
+            start_row_offset = 0
         
-        x = col * cell_width + x_offset
-        y = height - (row + 1) * cell_height + y_offset
+        x = col * cell_width + margin
+        y = height - (row + 1) * cell_height - start_row_offset + margin
         
-        # QR-Code Data mit Batch-Info
-        qr_data = f"shardmind://piece/{piece['id']}"
-        if 'batch' in piece:
-            qr_data += f"?batch={piece['batch']}"
+        # QR-Code mit eindeutiger ID
+        qr_data = f"shardmind://find/{piece['id']}"
+        if piece.get('excavation'):
+            qr_data += f"?exc={piece['excavation'][:20]}"
         
-        qr_img = generate_qr_code(qr_data)
-        
-        # QR-Code in PDF einfügen
+        qr_img = generate_qr_code(qr_data, size=6)
         qr_buffer = io.BytesIO()
         qr_img.save(qr_buffer, format='PNG')
         qr_buffer.seek(0)
-        
         c.drawImage(ImageReader(qr_buffer), x, y, width=qr_size, height=qr_size)
         
-        # Text - optimiert für 3D-Druck-Labels
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(x + qr_size + 10, y + qr_size - 15, f"ID: {piece['id']}")
+        # Text rechts vom QR-Code
+        text_x = x + qr_size + 8
+        text_y = y + qr_size - 12
         
-        # AI-Name (z.B. "Rot_Zauberwürfel_001")
-        c.setFont("Helvetica", 9)
-        ai_name = piece.get('ai_name', 'Unbenannt')
-        # Kürzen falls zu lang
-        if len(ai_name) > 20:
-            ai_name = ai_name[:17] + "..."
-        c.drawString(x + qr_size + 10, y + qr_size - 30, ai_name)
+        # ID (eindeutig!)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(text_x, text_y, piece['id'])
+        text_y -= 11
         
-        y_pos = y + qr_size - 45
+        # Name
+        c.setFont("Helvetica", 7)
+        name = piece.get('name', 'Unbenannt')
+        if len(name) > 18:
+            name = name[:15] + "..."
+        c.drawString(text_x, text_y, name)
+        text_y -= 10
         
-        # Batch-Info
-        if 'batch' in piece:
-            c.setFont("Helvetica", 8)
-            batch_name = piece['batch'][:15] if len(piece['batch']) > 15 else piece['batch']
-            c.drawString(x + qr_size + 10, y_pos, f"Batch: {batch_name}")
-            y_pos -= 12
+        # Material
+        if piece.get('material'):
+            c.setFont("Helvetica", 6)
+            c.drawString(text_x, text_y, f"Mat: {piece['material'][:12]}")
+            text_y -= 9
         
-        # CLUSTER-NAME (aus cluster_names_map!)
+        # Grabung/Batch
+        if piece.get('excavation'):
+            c.setFont("Helvetica", 6)
+            exc = piece['excavation'][:15] if len(piece['excavation']) > 15 else piece['excavation']
+            c.drawString(text_x, text_y, f"Grab: {exc}")
+            text_y -= 9
+        
+        # Cluster-Name
         cluster_id = piece.get('cluster', -1)
         if cluster_id >= 0:
-            # Hole den richtigen Cluster-Namen aus der Map
             cluster_name = cluster_names_map.get(cluster_id, f"Gruppe_{cluster_id}")
-            c.setFont("Helvetica", 8)
-            # Kürzen falls zu lang
+            c.setFont("Helvetica", 6)
             if len(cluster_name) > 15:
                 cluster_name = cluster_name[:12] + "..."
-            c.drawString(x + qr_size + 10, y_pos, f"Gruppe: {cluster_name}")
+            c.drawString(text_x, text_y, f"Grp: {cluster_name}")
         
-        # Rahmen für 3D-Druck (Schnittlinie)
-        c.setStrokeColorRGB(0.8, 0.8, 0.8)
-        c.setLineWidth(0.5)
-        c.setDash(2, 2)  # Gestrichelt
-        c.rect(x - 5, y - 5, cell_width - 10, cell_height - 10)
+        # Rahmen (gestrichelt für Schnittlinie)
+        c.setStrokeColorRGB(0.7, 0.7, 0.7)
+        c.setLineWidth(0.3)
+        c.setDash(3, 3)
+        c.rect(x - 5, y - 8, cell_width - 10, cell_height - 15)
+    
+    # Footer auf letzter Seite
+    c.setDash()
+    c.setFont("Helvetica", 7)
+    c.setFillColorRGB(0.5, 0.5, 0.5)
+    c.drawString(margin, 15, f"ShardMind v{APP_VERSION} - Archäologische Scherben-Analyse")
     
     c.save()
     buffer.seek(0)
     return buffer
 
 
+def create_database_export_pdf(db, cluster_names_map=None):
+    """Erstellt PDF-Export der gesamten Datenbank"""
+    all_pieces = list(db['pieces'].values())
+    return create_multi_label_pdf(
+        all_pieces, 
+        cluster_names_map,
+        title=f"ShardMind Datenbank-Export ({len(all_pieces)} Fundstücke)"
+    )
+
+
 # =============================================================================
 # BILDVERARBEITUNG & SEGMENTIERUNG
 # =============================================================================
 
-def is_valid_puzzle_piece(contour, roi, mask_roi, image_shape):
+def is_valid_fragment(contour, roi, mask_roi, image_shape):
+    """Prüft ob eine Kontur ein valides Fundstück sein könnte"""
     area = cv2.contourArea(contour)
     if area < 200 or area > (image_shape[0] * image_shape[1] * 0.85):
         return False
@@ -383,17 +604,10 @@ def is_valid_puzzle_piece(contour, roi, mask_roi, image_shape):
     return True
 
 
-def segment_pieces_robust(image, min_area=100, start_id=0, api_key=None, use_ai=True, progress_callback=None):
+def segment_fragments(image, min_area=100, excavation="", api_key=None, use_ai=True, progress_callback=None):
     """
-    Segmentiert Puzzleteile aus einem Bild
-    
-    Args:
-        image: OpenCV-Bild
-        min_area: Minimale Fläche für Teile
-        start_id: Start-ID für Teile
-        api_key: Anthropic API Key für KI-Erkennung
-        use_ai: KI-Erkennung nutzen?
-        progress_callback: Callback für Fortschrittsanzeige
+    Segmentiert Fundstücke aus einem Bild.
+    Jedes Fundstück erhält eine eindeutige UUID.
     """
     h, w = image.shape[:2]
     pad = 30
@@ -414,10 +628,8 @@ def segment_pieces_robust(image, min_area=100, start_id=0, api_key=None, use_ai=
     
     cnts, _ = cv2.findContours(opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    pieces = []
     valid_contours = []
     
-    # Erst alle validen Konturen sammeln
     for c in cnts:
         if cv2.contourArea(c) < min_area:
             continue
@@ -432,7 +644,7 @@ def segment_pieces_robust(image, min_area=100, start_id=0, api_key=None, use_ai=
         cv2.drawContours(mask, [c], -1, 255, -1)
         mask_roi = mask[y1:y2, x1:x2].copy()
         
-        if not is_valid_puzzle_piece(c, roi, mask_roi, padded.shape):
+        if not is_valid_fragment(c, roi, mask_roi, padded.shape):
             continue
         
         valid_contours.append({
@@ -442,19 +654,26 @@ def segment_pieces_robust(image, min_area=100, start_id=0, api_key=None, use_ai=
             'area': cv2.contourArea(c)
         })
     
-    # Dann mit KI benennen (mit Fortschrittsanzeige)
+    pieces = []
     for i, vc in enumerate(valid_contours):
+        # Eindeutige ID generieren
+        unique_id = generate_unique_id()
+        
         piece = {
-            'id': start_id + len(pieces),
+            'id': unique_id,
             'contour': vc['contour'],
             'thumbnail': vc['roi'],
             'mask': vc['mask_roi'],
             'area': vc['area'],
-            'deleted': False
+            'deleted': False,
+            'excavation': excavation,
+            'created': datetime.now().isoformat(),
+            'layer': "",  # Grabungsschicht
+            'notes': ""
         }
         
-        # KI-Name generieren
-        piece['ai_name'] = generate_ai_name_with_fallback(piece, api_key, use_ai)
+        # Name generieren
+        piece['name'] = generate_fragment_name(piece, api_key, use_ai)
         pieces.append(piece)
         
         if progress_callback:
@@ -468,6 +687,7 @@ def segment_pieces_robust(image, min_area=100, start_id=0, api_key=None, use_ai=
 # =============================================================================
 
 def get_features(p):
+    """Extrahiert Features für Matching und Clustering"""
     M = cv2.moments(p['contour'])
     if M['m00'] == 0:
         return None
@@ -498,7 +718,8 @@ def get_features(p):
     return {'shape': sig, 'color': color_features}
 
 
-def calculate_score(f1, f2):
+def calculate_match_score(f1, f2):
+    """Berechnet Ähnlichkeitsscore zwischen zwei Fundstücken"""
     dist_c = np.linalg.norm(f1['color'] - f2['color'])
     score_c = max(0, 100 - (dist_c / 3.0))
     
@@ -510,7 +731,8 @@ def calculate_score(f1, f2):
     return min(100, max(0, (0.4 * score_c) + (0.6 * score_s)))
 
 
-def cluster_pieces_smart(active_pieces, distance_threshold=1.5):
+def cluster_fragments(active_pieces, distance_threshold=1.5):
+    """Clustert Fundstücke nach Ähnlichkeit"""
     if len(active_pieces) < 2:
         return [-1] * len(active_pieces)
     
@@ -528,6 +750,7 @@ def cluster_pieces_smart(active_pieces, distance_threshold=1.5):
 
 
 def get_cluster_color(cluster_id):
+    """Generiert eine Farbe für Cluster-Visualisierung"""
     if cluster_id == -1:
         return "rgb(180, 180, 180)"
     hue = int((cluster_id * 37) % 180)
@@ -536,48 +759,18 @@ def get_cluster_color(cluster_id):
     return f"rgb({color_bgr[2]}, {color_bgr[1]}, {color_bgr[0]})"
 
 
-def save_cluster_to_db(pieces, cluster_id, cluster_name, db):
-    cluster_pieces = [p for p in pieces if p.get('cluster') == cluster_id]
-    if not cluster_pieces:
-        return 0
-    
-    cluster_key = f"{cluster_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    db['clusters'][cluster_key] = {
-        'name': cluster_name,
-        'created': datetime.now().isoformat(),
-        'cluster_id': cluster_id,
-        'piece_count': len(cluster_pieces),
-        'pieces': []
-    }
-    
-    for p in cluster_pieces:
-        piece_data = {
-            'features': p['features'], 
-            'thumbnail': p['thumbnail'], 
-            'original_id': p['id'], 
-            'area': p['area'],
-            'ai_name': p.get('ai_name', 'Unbenannt'),
-            'cluster_key': cluster_key
-        }
-        db['clusters'][cluster_key]['pieces'].append(piece_data)
-        db['pieces'].append(piece_data)
-    
-    save_database(db)
-    return len(cluster_pieces)
-
-
 # =============================================================================
 # STREAMLIT APP
 # =============================================================================
 
 def main():
     st.set_page_config(
-        page_title="ShardMind - KI Scherben-Analyse", 
-        page_icon="🧠",
+        page_title=f"ShardMind v{APP_VERSION} - Archäologische Analyse", 
+        page_icon="🏺",
         layout="wide"
     )
 
-    # Session State initialisieren
+    # Session State
     if 'pieces' not in st.session_state:
         st.session_state.pieces = []
     if 'cluster_names' not in st.session_state:
@@ -593,62 +786,72 @@ def main():
     # SIDEBAR
     # ==========================================================================
     with st.sidebar:
-        st.title("🧠 ShardMind")
-        st.caption("KI-gestützte Scherben-Analyse")
+        st.title("🏺 ShardMind")
+        st.caption(f"Archäologische Analyse v{APP_VERSION}")
         
-        # API Key Eingabe
+        # API Settings
         with st.expander("🔑 API Einstellungen", expanded=False):
             api_key = st.text_input(
                 "Anthropic API Key:",
                 value=st.session_state.api_key,
                 type="password",
-                help="Für echte KI-Objekterkennung"
+                help="Für KI-gestützte Materialerkennung"
             )
             st.session_state.api_key = api_key
             
             use_ai = st.checkbox(
-                "🤖 KI-Erkennung nutzen",
+                "🤖 KI-Erkennung aktivieren",
                 value=bool(api_key),
                 disabled=not api_key,
-                help="Aktiviert Claude Vision für Objekterkennung"
+                help="Claude Vision für Materialanalyse"
             )
             
             if api_key:
-                st.success("✓ API Key gesetzt")
+                st.success("✓ API Key aktiv")
             else:
-                st.info("💡 Ohne API Key: Heuristische Erkennung")
+                st.info("💡 Ohne API: Heuristische Erkennung")
         
         st.markdown("---")
         
+        # Datei-Upload
         files = st.file_uploader(
-            "📤 Bilder hochladen", 
+            "📤 Fundfotos hochladen", 
             type=['png', 'jpg', 'jpeg'], 
-            accept_multiple_files=True
+            accept_multiple_files=True,
+            help="Fotos von Fundstücken auf neutralem Hintergrund"
         )
         
         st.markdown("---")
-        st.subheader("🔧 Parameter")
-        min_area = st.slider("Min. Teilgröße", 50, 1000, 200, 10)
-        cluster_dist = st.slider("Cluster-Distanz", 0.1, 10.0, 1.5, 0.1)
+        st.subheader("⚙️ Parameter")
+        min_area = st.slider("Min. Fundstückgröße", 50, 1000, 200, 10)
+        cluster_dist = st.slider("Cluster-Sensitivität", 0.1, 10.0, 1.5, 0.1,
+                                 help="Niedriger = mehr Cluster, Höher = weniger Cluster")
         
-        # Batch-Name
-        batch_name = st.text_input(
-            "📦 Batch-Name:",
-            value=f"Batch_{datetime.now().strftime('%Y%m%d_%H%M')}",
-            key="batch_name_input"
+        # Grabungskontext
+        st.markdown("---")
+        st.subheader("🗺️ Grabungskontext")
+        excavation_name = st.text_input(
+            "Grabung/Kampagne:",
+            value=f"Grabung_{datetime.now().strftime('%Y')}",
+            help="Name der Grabungskampagne"
+        )
+        layer = st.text_input(
+            "Schicht/Befund:",
+            placeholder="z.B. Schicht 3, Befund 42",
+            help="Stratigraphische Einheit"
         )
 
         st.markdown("---")
         
-        if st.button("🚀 Analyse starten", type="primary", use_container_width=True):
+        # Analyse starten
+        if st.button("🔬 Analyse starten", type="primary", use_container_width=True):
             if not files:
-                st.warning("⚠️ Bitte Bilder hochladen!")
+                st.warning("⚠️ Bitte Fundfotos hochladen!")
             else:
-                with st.spinner("Verarbeite Bilder..."):
+                with st.spinner("Analysiere Fundstücke..."):
                     all_found = []
                     progress_bar = st.progress(0)
                     status_text = st.empty()
-                    current_id = 0
                     
                     for i, f in enumerate(files):
                         status_text.text(f"Bild {i+1}/{len(files)}: {f.name}")
@@ -660,32 +863,27 @@ def main():
                             )
                             
                             def update_progress(current, total):
-                                progress_bar.progress(
-                                    (i + current/total) / len(files)
-                                )
+                                progress_bar.progress((i + current/total) / len(files))
                             
-                            pieces = segment_pieces_robust(
+                            pieces = segment_fragments(
                                 img, 
                                 min_area, 
-                                start_id=current_id,
+                                excavation=excavation_name,
                                 api_key=st.session_state.api_key if use_ai else None,
                                 use_ai=use_ai,
                                 progress_callback=update_progress
                             )
                             
-                            # Batch-Name zu allen Teilen hinzufügen
+                            # Layer hinzufügen
                             for p in pieces:
-                                p['batch'] = batch_name
+                                p['layer'] = layer
+                                p['source_file'] = f.name
                             
                             all_found.extend(pieces)
-                            
-                            if pieces:
-                                current_id = max(p['id'] for p in pieces) + 1
-                            
                             progress_bar.progress((i + 1) / len(files))
                         
                         except Exception as e:
-                            st.error(f"Fehler bei Bild {i+1}: {e}")
+                            st.error(f"Fehler bei {f.name}: {e}")
                             continue
 
                     # Features extrahieren
@@ -703,113 +901,263 @@ def main():
                     status_text.empty()
                     progress_bar.empty()
                     
-                    st.success(f"✓ {len(valid)} Teile aus {len(files)} Bildern erkannt!")
+                    st.success(f"✓ {len(valid)} Fundstücke aus {len(files)} Fotos erkannt!")
                     if len(valid) > 0:
-                        st.info(f"📦 Batch: {batch_name}")
-                        if use_ai and st.session_state.api_key:
-                            st.info("🤖 KI-Erkennung aktiv")
+                        st.info(f"🗺️ Grabung: {excavation_name}")
                     
                     st.rerun()
 
-        if st.button("🗑️ Alles löschen", use_container_width=True):
-            st.session_state.clear()
+        if st.button("🗑️ Session leeren", use_container_width=True):
+            st.session_state.pieces = []
+            st.session_state.cluster_names = {}
             st.rerun()
 
         st.markdown("---")
+        
+        # Datenbank-Info
         st.subheader("💾 Datenbank")
-        st.metric("Teile", len(db['pieces']))
-        st.metric("Cluster", len(db.get('clusters', {})))
+        st.metric("Fundstücke", len(db['pieces']))
+        st.metric("Gruppen", len(db.get('clusters', {})))
         
-        if st.button("❓ Tutorial", use_container_width=True):
-            st.session_state.show_tutorial = True
-            st.rerun()
+        # Hilfe
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("❓ Hilfe", use_container_width=True):
+                st.session_state.show_tutorial = True
+                st.rerun()
+        with col2:
+            if st.button("📋 Changelog", use_container_width=True):
+                st.session_state.show_changelog = True
+                st.rerun()
         
-        # PDF Download
+        # PDF Export
         st.markdown("---")
-        st.subheader("🖨️ Drucken")
+        st.subheader("🖨️ Labels drucken")
         
-        if st.session_state.pieces:
-            active_for_print = [p for p in st.session_state.pieces if not p['deleted']]
-            if active_for_print:
-                st.caption(f"{len(active_for_print)} Teile bereit")
-                if st.button("📄 PDF erstellen", use_container_width=True):
-                    with st.spinner("Erstelle PDF..."):
-                        # Übergebe cluster_names an PDF-Funktion
-                        pdf_buffer = create_label_pdf(
-                            active_for_print, 
-                            st.session_state.cluster_names
-                        )
+        pdf_source = st.radio(
+            "Quelle:",
+            ["Aktuelle Session", "Gesamte Datenbank", "Einzelnes Fundstück"],
+            help="Wähle welche Fundstücke als PDF exportiert werden"
+        )
+        
+        if pdf_source == "Aktuelle Session" and st.session_state.pieces:
+            active = [p for p in st.session_state.pieces if not p['deleted']]
+            st.caption(f"{len(active)} Fundstücke")
+            if st.button("📄 PDF erstellen", use_container_width=True, key="pdf_session"):
+                with st.spinner("Erstelle PDF..."):
+                    pdf = create_multi_label_pdf(active, st.session_state.cluster_names)
+                    st.download_button(
+                        "⬇️ PDF herunterladen",
+                        data=pdf,
+                        file_name=f"shardmind_session_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+        
+        elif pdf_source == "Gesamte Datenbank" and db['pieces']:
+            st.caption(f"{len(db['pieces'])} Fundstücke")
+            if st.button("📄 PDF erstellen", use_container_width=True, key="pdf_db"):
+                with st.spinner("Erstelle Datenbank-PDF..."):
+                    pdf = create_database_export_pdf(db)
+                    st.download_button(
+                        "⬇️ PDF herunterladen",
+                        data=pdf,
+                        file_name=f"shardmind_datenbank_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+        
+        elif pdf_source == "Einzelnes Fundstück":
+            # Kombiniere Session und DB für Auswahl
+            all_ids = []
+            if st.session_state.pieces:
+                all_ids.extend([(p['id'], f"{p['id']} (Session)") for p in st.session_state.pieces if not p.get('deleted')])
+            if db['pieces']:
+                all_ids.extend([(pid, f"{pid} (DB)") for pid in db['pieces'].keys()])
+            
+            if all_ids:
+                selected_id = st.selectbox(
+                    "Fundstück wählen:",
+                    options=[x[0] for x in all_ids],
+                    format_func=lambda x: next((y[1] for y in all_ids if y[0] == x), x)
+                )
+                
+                if st.button("📄 Einzel-Label", use_container_width=True, key="pdf_single"):
+                    # Finde das Fundstück
+                    piece = None
+                    for p in st.session_state.pieces:
+                        if p['id'] == selected_id:
+                            piece = p
+                            break
+                    if not piece and selected_id in db['pieces']:
+                        piece = db['pieces'][selected_id]
+                    
+                    if piece:
+                        cluster_name = None
+                        if 'cluster' in piece and piece['cluster'] >= 0:
+                            cluster_name = st.session_state.cluster_names.get(piece['cluster'])
+                        
+                        pdf = create_single_label_pdf(piece, cluster_name)
                         st.download_button(
-                            "⬇️ PDF herunterladen",
-                            data=pdf_buffer,
-                            file_name=f"shardmind_labels_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                            "⬇️ Label herunterladen",
+                            data=pdf,
+                            file_name=f"label_{selected_id}.pdf",
                             mime="application/pdf",
                             use_container_width=True
                         )
-            else:
-                st.caption("Keine Teile zum Drucken")
-        else:
-            st.caption("Erst Teile analysieren")
 
     # ==========================================================================
     # HAUPTBEREICH
     # ==========================================================================
     
+    # Changelog anzeigen
+    if st.session_state.get('show_changelog'):
+        st.title("📋 Changelog")
+        st.markdown(f"""
+        ## Version {APP_VERSION} (2025-01-11)
+        
+        ### 🆕 Neue Features
+        - **Eindeutige UUIDs** für alle Fundstücke (Format: SM-XXXXXXXX)
+        - **Verbesserte QR-Codes** mit UUID-basierter Identifikation
+        - **Flexibler PDF-Export**: Gesamte Datenbank, Session oder einzelne Fundstücke
+        - **Archäologie-fokussierte UI** mit passender Terminologie
+        - **KI-gestützte Materialerkennung** via Claude Vision API
+        - **Automatische Klassifikation**: Keramik, Glas, Knochen, Metall, etc.
+        - **Grabungskontext**: Kampagne, Schicht, Befund
+        
+        ### 🔧 Verbesserungen
+        - Professionelle archäologische Terminologie
+        - Erweiterte Metadaten pro Fundstück
+        - Verbesserte Cluster-Benennung im PDF
+        - Übersichtlicheres Label-Layout (3×4 pro Seite)
+        
+        ### 🐛 Bugfixes
+        - IDs sind jetzt wirklich eindeutig (UUID statt fortlaufend)
+        - Cluster-Namen werden korrekt im PDF angezeigt
+        - QR-Codes enthalten vollständige Fundstück-Referenz
+        """)
+        
+        if st.button("← Zurück"):
+            st.session_state.show_changelog = False
+            st.rerun()
+        return
+    
+    # Tutorial
     if st.session_state.show_tutorial and not st.session_state.pieces:
-        # TUTORIAL
-        st.title("🧠 ShardMind - Tutorial")
-        st.markdown("### KI-gestützte Scherben-Analyse")
+        st.title("🏺 ShardMind - Archäologische Scherben-Analyse")
+        st.markdown(f"### Version {APP_VERSION}")
         
         st.info("""
-        **ShardMind** nutzt Computer Vision & KI zur Analyse von Puzzle-Teilen und archäologischen Scherben:
-        - 🤖 **KI-Objekterkennung**: Claude Vision erkennt was das Objekt ist (Zauberwürfel, Puzzlestück, Münze...)
-        - 🎨 **Auto-Clustering**: Gruppiert ähnliche Teile
-        - 🔍 **Smart Matching**: Findet passende Teile
-        - 💾 **Datenbank**: Speichert & verwaltet Teile mit Clustern
-        - 🖨️ **QR-Code-PDF**: Drucke Labels für physische Objekte
+        **ShardMind** ist ein KI-gestütztes Werkzeug für die archäologische Fundbearbeitung:
+        
+        - 🔬 **Automatische Segmentierung** von Fundstücken aus Fotos
+        - 🤖 **KI-Materialerkennung**: Keramik, Glas, Knochen, Metall, Stein...
+        - 🎨 **Intelligentes Clustering**: Gruppiert zusammengehörige Scherben
+        - 🔍 **Matching-Algorithmus**: Findet passende Fragmente
+        - 💾 **Datenbank**: Verwaltet Funde mit Grabungskontext
+        - 🖨️ **QR-Labels**: Druckbare Etiketten für physische Objekte
         """)
         
         st.warning("""
         **🔑 Für beste Ergebnisse:**
-        - Trage deinen Anthropic API Key in den Einstellungen ein
-        - Aktiviere "KI-Erkennung nutzen"
-        - Claude Vision analysiert dann jedes Objekt und benennt es automatisch
         
-        **Ohne API Key:** Heuristische Erkennung basierend auf Form/Farbe
+        Trage deinen Anthropic API Key in den Einstellungen ein. Claude Vision analysiert dann
+        jedes Fundstück und erkennt Material, Objekttyp und Erhaltungszustand.
+        
+        **Ohne API Key:** Heuristische Erkennung basierend auf Farbe und Form.
         """)
         
         st.markdown("---")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("### 📸 Beispiel-Namen MIT KI:")
-            st.code("""
-Rot_Zauberwürfel_001
-Grau_Puzzlestück_002
-Silber_Münze_003
-Braun_Holzscherbe_004
-Blau_Legoteil_005
+        tabs = st.tabs(["📸 Aufnahme", "🔬 Analyse", "💾 Datenbank", "🖨️ Export"])
+        
+        with tabs[0]:
+            st.markdown("### 📸 Schritt 1: Fundstücke fotografieren")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("""
+                **✅ Anforderungen:**
+                - Neutraler Hintergrund (weiß, grau, schwarz)
+                - Gleichmäßige, schattenfreie Beleuchtung
+                - Fundstücke berühren sich nicht
+                - Maßstab im Bild (optional)
+                - Auflösung: min. 1920×1080
+                """)
+            with col2:
+                st.markdown("""
+                **📋 Workflow:**
+                1. Fundstücke auf Fototisch legen
+                2. Grabungskontext notieren
+                3. Mehrere Fotos pro Fundgruppe
+                4. In ShardMind hochladen
+                """)
+        
+        with tabs[1]:
+            st.markdown("### 🔬 Schritt 2: Automatische Analyse")
+            st.markdown("""
+            **Nach dem Upload:**
+            
+            1. **Segmentierung**: ShardMind erkennt einzelne Fundstücke
+            2. **Klassifikation**: KI bestimmt Material und Objekttyp
+            3. **Benennung**: Automatisch generiert (z.B. "Keramik_Randscherbe_Rotbraun")
+            4. **Clustering**: Ähnliche Fundstücke werden gruppiert
+            5. **Eindeutige ID**: Jedes Fundstück erhält eine UUID (SM-XXXXXXXX)
+            
+            **Beispiel-Namen:**
+            - `Keramik_Gefäßscherbe_Terrakotta`
+            - `Glas_Flaschenfragment_Grün`
+            - `Knochen_Knochenfragment_Weiß`
+            - `Metall_Münze_Dunkelgrau`
             """)
         
-        with col2:
-            st.markdown("### 📸 Beispiel-Namen OHNE KI:")
-            st.code("""
-Rot_Würfel_001
-Grau_Puzzlestück_002
-Grau_Münze_003
-Braun_Scherbe_004
-Blau_Teil_005
+        with tabs[2]:
+            st.markdown("### 💾 Schritt 3: Datenbank verwalten")
+            st.markdown("""
+            **Funktionen:**
+            
+            - **Suchen**: Nach ID, Name, Material, Grabung
+            - **Gruppieren**: Cluster benennen (z.B. "Gefäß A", "Randscherben Befund 12")
+            - **Verknüpfen**: Fundstücke zu Grabungen zuordnen
+            - **Exportieren**: Als PDF oder Datensicherung
+            
+            **Metadaten pro Fundstück:**
+            - Eindeutige ID (SM-XXXXXXXX)
+            - Material, Objekttyp, Farbe
+            - Grabung, Schicht, Befund
+            - Erstellungsdatum, Notizen
             """)
         
-        st.success("🚀 Bereit? Lade Bilder hoch!")
+        with tabs[3]:
+            st.markdown("### 🖨️ Schritt 4: Labels drucken")
+            st.markdown("""
+            **PDF-Export Optionen:**
+            
+            1. **Aktuelle Session**: Alle neu analysierten Fundstücke
+            2. **Gesamte Datenbank**: Alle gespeicherten Fundstücke
+            3. **Einzelnes Fundstück**: Ein spezifisches Label
+            
+            **Label enthält:**
+            - QR-Code (scannbar → öffnet Fundstück in ShardMind)
+            - Eindeutige ID (SM-XXXXXXXX)
+            - Name (Material_Typ_Farbe)
+            - Grabung & Gruppe
+            
+            **Anwendung:**
+            - Labels ausdrucken & ausschneiden
+            - Auf Fundtüte/Karton kleben
+            - QR-Code scannen = sofortige Identifikation
+            """)
+        
+        st.markdown("---")
+        st.success("🚀 Bereit? Lade Fundfotos in der Sidebar hoch!")
 
     elif st.session_state.pieces:
-        # HAUPTANSICHT MIT TEILEN
+        # HAUPTANSICHT MIT FUNDSTÜCKEN
         active_pieces = [p for p in st.session_state.pieces if not p['deleted']]
         
         # Clustering
         if len(active_pieces) > 1:
-            labels = cluster_pieces_smart(active_pieces, cluster_dist)
+            labels = cluster_fragments(active_pieces, cluster_dist)
             for i, p in enumerate(active_pieces):
                 p['cluster'] = labels[i]
         else:
@@ -818,43 +1166,45 @@ Blau_Teil_005
         
         cluster_ids = set([p.get('cluster', -1) for p in active_pieces])
         n_clusters = len([c for c in cluster_ids if c >= 0])
-        n_noise = sum(1 for p in active_pieces if p.get('cluster', -1) == -1)
+        n_single = sum(1 for p in active_pieces if p.get('cluster', -1) == -1)
         
         # Metriken
-        col1, col2, col3 = st.columns(3)
-        col1.metric("✅ Teile", len(active_pieces))
-        col2.metric("🎯 Cluster", n_clusters)
-        col3.metric("⚪ Einzeln", n_noise)
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("🏺 Fundstücke", len(active_pieces))
+        col2.metric("📦 Gruppen", n_clusters)
+        col3.metric("⚪ Einzelfunde", n_single)
+        col4.metric("🗺️ Grabung", excavation_name[:15] + "..." if len(excavation_name) > 15 else excavation_name)
+        
         st.markdown("---")
 
         # Tabs
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-            "🎯 Galerie", 
-            "📦 Cluster-Manager", 
+            "🏺 Fundstücke", 
+            "📦 Gruppen", 
             "🔍 Matching", 
             "💾 Datenbank", 
             "📷 QR-Scanner",
-            "❌ Verwalten"
+            "⚙️ Verwalten"
         ])
 
-        # TAB 1: GALERIE
+        # TAB 1: FUNDSTÜCKE (Galerie)
         with tab1:
-            st.header("Erkannte Teile")
+            st.header("Erkannte Fundstücke")
             
             col_btn1, col_btn2 = st.columns(2)
             with col_btn1:
-                if st.button("🔄 Clustering neu berechnen"):
-                    labels = cluster_pieces_smart(active_pieces, cluster_dist)
+                if st.button("🔄 Neu clustern"):
+                    labels = cluster_fragments(active_pieces, cluster_dist)
                     for i, p in enumerate(active_pieces):
                         p['cluster'] = labels[i]
                     st.rerun()
             
             with col_btn2:
                 if st.button("🤖 Namen neu generieren") and st.session_state.api_key:
-                    with st.spinner("Generiere KI-Namen..."):
+                    with st.spinner("KI-Analyse läuft..."):
                         progress = st.progress(0)
                         for i, p in enumerate(active_pieces):
-                            p['ai_name'] = generate_ai_name_with_fallback(
+                            p['name'] = generate_fragment_name(
                                 p, 
                                 st.session_state.api_key, 
                                 use_ai=True
@@ -862,86 +1212,171 @@ Blau_Teil_005
                             progress.progress((i + 1) / len(active_pieces))
                         st.rerun()
             
-            cols = st.columns(6)
-            for i, p in enumerate(active_pieces):
-                with cols[i % 6]:
+            # Filter
+            material_filter = st.multiselect(
+                "Material filtern:",
+                options=list(set(p.get('material', 'Unbekannt') for p in active_pieces)),
+                default=[]
+            )
+            
+            displayed = active_pieces
+            if material_filter:
+                displayed = [p for p in active_pieces if p.get('material') in material_filter]
+            
+            cols = st.columns(5)
+            for i, p in enumerate(displayed):
+                with cols[i % 5]:
                     cluster_id = p.get('cluster', -1)
                     color = get_cluster_color(cluster_id)
-                    cluster_label = "Einzeln" if cluster_id == -1 else f"C{cluster_id}"
                     
                     st.markdown(
-                        f'<div style="border: 3px solid {color}; padding: 3px;">'
+                        f'<div style="border: 3px solid {color}; padding: 3px; border-radius: 5px;">'
                         f'<img src="data:image/png;base64,{image_to_base64(p["thumbnail"])}" style="width:100%;">'
                         f'</div>',
                         unsafe_allow_html=True
                     )
-                    st.caption(f"ID: {p['id']} | {cluster_label}")
-                    st.caption(f"🤖 {p.get('ai_name', 'N/A')}")
+                    
+                    # ID (kurz)
+                    st.caption(f"**{p['id']}**")
+                    
+                    # Name
+                    name = p.get('name', 'Unbenannt')
+                    if len(name) > 25:
+                        name = name[:22] + "..."
+                    st.caption(f"🏷️ {name}")
+                    
+                    # Material & Cluster
+                    mat = p.get('material', '?')
+                    cl = f"G{cluster_id}" if cluster_id >= 0 else "—"
+                    st.caption(f"📦 {mat} | {cl}")
+                    
                     if st.button(f"🔍", key=f"sel_{p['id']}", use_container_width=True):
                         st.session_state.selected_id = p['id']
                         st.rerun()
 
-        # TAB 2: CLUSTER-MANAGER
+        # TAB 2: GRUPPEN (Cluster)
         with tab2:
-            st.header("📦 Cluster verwalten")
-            cluster_ids = sorted([c for c in cluster_ids if c >= 0])
+            st.header("📦 Fundgruppen verwalten")
+            cluster_ids_sorted = sorted([c for c in cluster_ids if c >= 0])
             
-            if not cluster_ids:
-                st.warning("⚠️ Keine Cluster!")
-                st.info("💡 Erhöhe Cluster-Distanz (2.0-3.0)")
+            if not cluster_ids_sorted:
+                st.warning("⚠️ Keine Gruppen erkannt")
+                st.info("💡 Versuche die Cluster-Sensitivität zu erhöhen (2.0-3.0)")
             else:
-                for cluster_id in cluster_ids:
+                for cluster_id in cluster_ids_sorted:
                     cluster_pieces = [p for p in active_pieces if p.get('cluster') == cluster_id]
-                    with st.expander(f"🎯 Cluster {cluster_id} ({len(cluster_pieces)} Teile)", expanded=True):
-                        default_name = st.session_state.cluster_names.get(cluster_id, f"Cluster_{cluster_id}")
+                    
+                    # Automatischer Gruppenname basierend auf häufigstem Material
+                    materials = [p.get('material', 'Unbekannt') for p in cluster_pieces]
+                    common_material = max(set(materials), key=materials.count)
+                    default_name = st.session_state.cluster_names.get(
+                        cluster_id, 
+                        f"{common_material}_Gruppe_{cluster_id}"
+                    )
+                    
+                    with st.expander(f"📦 Gruppe {cluster_id}: {default_name} ({len(cluster_pieces)} Funde)", expanded=True):
                         cluster_name = st.text_input(
-                            "Name:", 
+                            "Gruppenname:", 
                             value=default_name, 
-                            key=f"name_{cluster_id}"
+                            key=f"name_{cluster_id}",
+                            help="z.B. 'Gefäß A', 'Randscherben Befund 12'"
                         )
                         st.session_state.cluster_names[cluster_id] = cluster_name
                         
+                        # Vorschau
                         preview_cols = st.columns(min(6, len(cluster_pieces)))
                         for i, p in enumerate(cluster_pieces[:6]):
                             with preview_cols[i]:
                                 st.image(p['thumbnail'])
-                                st.caption(f"{p.get('ai_name', 'N/A')}")
+                                st.caption(f"{p['id'][:11]}")
                         
                         if len(cluster_pieces) > 6:
-                            st.caption(f"... +{len(cluster_pieces) - 6}")
+                            st.caption(f"... +{len(cluster_pieces) - 6} weitere")
                         
-                        col1, col2 = st.columns([3, 1])
+                        # Aktionen
+                        col1, col2, col3 = st.columns([2, 2, 1])
                         with col1:
                             if st.button(
-                                f"💾 '{cluster_name}' speichern", 
+                                f"💾 Gruppe speichern", 
                                 key=f"save_{cluster_id}", 
                                 use_container_width=True
                             ):
-                                count = save_cluster_to_db(active_pieces, cluster_id, cluster_name, db)
-                                st.success(f"✓ {count} Teile!")
+                                # Zur Datenbank hinzufügen
+                                cluster_key = f"{cluster_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                                db['clusters'][cluster_key] = {
+                                    'name': cluster_name,
+                                    'created': datetime.now().isoformat(),
+                                    'piece_count': len(cluster_pieces),
+                                    'piece_ids': [p['id'] for p in cluster_pieces]
+                                }
+                                
+                                for p in cluster_pieces:
+                                    p['cluster_key'] = cluster_key
+                                    db['pieces'][p['id']] = {
+                                        'id': p['id'],
+                                        'name': p.get('name'),
+                                        'material': p.get('material'),
+                                        'object_type': p.get('object_type'),
+                                        'color_name': p.get('color_name'),
+                                        'excavation': p.get('excavation'),
+                                        'layer': p.get('layer'),
+                                        'thumbnail': p['thumbnail'],
+                                        'features': p.get('features'),
+                                        'area': p['area'],
+                                        'cluster_key': cluster_key,
+                                        'created': p.get('created', datetime.now().isoformat())
+                                    }
+                                
+                                save_database(db)
+                                st.success(f"✓ {len(cluster_pieces)} Funde gespeichert!")
                                 st.rerun()
+                        
                         with col2:
-                            st.metric("Teile", len(cluster_pieces))
+                            if st.button(f"📄 Gruppen-PDF", key=f"pdf_{cluster_id}", use_container_width=True):
+                                pdf = create_multi_label_pdf(
+                                    cluster_pieces,
+                                    {cluster_id: cluster_name},
+                                    title=f"Gruppe: {cluster_name}"
+                                )
+                                st.download_button(
+                                    "⬇️ Download",
+                                    data=pdf,
+                                    file_name=f"gruppe_{cluster_id}.pdf",
+                                    mime="application/pdf"
+                                )
+                        
+                        with col3:
+                            st.metric("Funde", len(cluster_pieces))
 
         # TAB 3: MATCHING
         with tab3:
+            st.header("🔍 Passende Fragmente finden")
+            
             if 'selected_id' in st.session_state:
                 target = next((p for p in active_pieces if p['id'] == st.session_state.selected_id), None)
                 if target:
-                    st.header(f"Matches für #{target['id']} ({target.get('ai_name', 'N/A')})")
-                    col_l, col_r = st.columns([1, 4])
+                    st.subheader(f"Matches für {target['id']}")
+                    
+                    col_l, col_r = st.columns([1, 3])
                     with col_l:
                         st.markdown("**Ausgewählt:**")
                         st.image(target['thumbnail'], width=200)
-                        st.caption(f"🤖 {target.get('ai_name', 'N/A')}")
+                        st.write(f"**ID:** {target['id']}")
+                        st.write(f"**Name:** {target.get('name', 'N/A')}")
+                        st.write(f"**Material:** {target.get('material', 'N/A')}")
+                    
                     with col_r:
-                        st.markdown("**Top 10:**")
-                        matches = sorted(
-                            [(calculate_score(target['features'], p['features']), p) 
-                             for p in active_pieces if p['id'] != target['id']], 
-                            key=lambda x: x[0], 
-                            reverse=True
-                        )
+                        st.markdown("**Top 10 Matches:**")
+                        
+                        # Berechne Matches
+                        matches = []
+                        for p in active_pieces:
+                            if p['id'] != target['id'] and 'features' in p and 'features' in target:
+                                score = calculate_match_score(target['features'], p['features'])
+                                matches.append((score, p))
+                        
+                        matches.sort(key=lambda x: x[0], reverse=True)
+                        
                         for row in range(2):
                             m_cols = st.columns(5)
                             for col in range(5):
@@ -951,346 +1386,275 @@ Blau_Teil_005
                                 score, p = matches[idx]
                                 with m_cols[col]:
                                     st.image(p['thumbnail'])
-                                    st.caption(f"{p.get('ai_name', 'N/A')}")
+                                    st.caption(f"{p['id'][:11]}")
                                     st.progress(score / 100)
-                                    st.markdown(f"**{score:.1f}%**")
+                                    
+                                    # Farbcodierung
+                                    if score > 80:
+                                        st.markdown(f"**:green[{score:.1f}%]**")
+                                    elif score > 60:
+                                        st.markdown(f"**:orange[{score:.1f}%]**")
+                                    else:
+                                        st.markdown(f"**:red[{score:.1f}%]**")
             else:
-                st.info("👈 Teil wählen")
+                st.info("👈 Wähle ein Fundstück in der Galerie aus")
+                st.markdown("""
+                **So funktioniert's:**
+                1. Gehe zu "🏺 Fundstücke"
+                2. Klicke auf 🔍 bei einem Fundstück
+                3. ShardMind zeigt die ähnlichsten Fragmente
+                
+                **Interpretation:**
+                - 🟢 >80%: Sehr wahrscheinlich zusammengehörig
+                - 🟠 60-80%: Möglicherweise verwandt
+                - 🔴 <60%: Wahrscheinlich unterschiedlich
+                """)
 
         # TAB 4: DATENBANK
         with tab4:
-            st.header("💾 Datenbank")
-            db_tab1, db_tab2, db_tab3 = st.tabs(["📋 Alle Teile", "📦 Cluster", "🗑️ Editor"])
+            st.header("💾 Funddatenbank")
+            
+            db_tab1, db_tab2, db_tab3 = st.tabs(["📋 Alle Funde", "📦 Gruppen", "⚙️ Verwalten"])
             
             with db_tab1:
-                st.subheader("📋 Alle Teile")
-                
-                # Suchfilter
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    search_name = st.text_input("🔍 Nach Name suchen:", key="search_name")
-                with col2:
-                    search_batch = st.text_input("📦 Nach Batch suchen:", key="search_batch")
-                with col3:
-                    search_id = st.text_input("🔢 Nach ID suchen:", key="search_id")
-                
                 if not db['pieces']:
-                    st.info("DB leer")
+                    st.info("Datenbank ist leer. Speichere Fundstücke über den Gruppen-Tab.")
                 else:
-                    filtered_pieces = db['pieces']
+                    # Suchfilter
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        search_id = st.text_input("🔍 ID suchen:", placeholder="SM-XXXXXXXX")
+                    with col2:
+                        search_material = st.selectbox(
+                            "Material:",
+                            ["Alle"] + list(set(p.get('material', '') for p in db['pieces'].values() if p.get('material')))
+                        )
+                    with col3:
+                        search_excavation = st.text_input("Grabung:", placeholder="Grabungsname")
                     
-                    if search_name:
-                        filtered_pieces = [
-                            p for p in filtered_pieces 
-                            if search_name.lower() in p.get('ai_name', '').lower()
-                        ]
-                    
-                    if search_batch:
-                        filtered_pieces = [
-                            p for p in filtered_pieces 
-                            if search_batch.lower() in str(p.get('batch', '')).lower()
-                        ]
+                    # Filtern
+                    filtered = list(db['pieces'].values())
                     
                     if search_id:
-                        try:
-                            search_id_int = int(search_id)
-                            filtered_pieces = [
-                                p for p in filtered_pieces 
-                                if p.get('original_id') == search_id_int
-                            ]
-                        except:
-                            pass
+                        filtered = [p for p in filtered if search_id.upper() in p['id'].upper()]
+                    if search_material != "Alle":
+                        filtered = [p for p in filtered if p.get('material') == search_material]
+                    if search_excavation:
+                        filtered = [p for p in filtered if search_excavation.lower() in p.get('excavation', '').lower()]
                     
-                    st.caption(f"Zeige {len(filtered_pieces)} von {len(db['pieces'])} Teilen")
+                    st.caption(f"Zeige {len(filtered)} von {len(db['pieces'])} Fundstücken")
                     
-                    if not filtered_pieces:
-                        st.warning("Keine Teile gefunden")
-                    else:
-                        show_per_page = st.selectbox("Pro Seite", [12, 24, 48], index=1)
-                        total_pages = max(1, (len(filtered_pieces) - 1) // show_per_page + 1)
-                        page = st.slider("Seite", 1, total_pages, 1, key="db_page_slider") if total_pages > 1 else 1
-                        start_idx = (page - 1) * show_per_page
-                        end_idx = min(start_idx + show_per_page, len(filtered_pieces))
+                    if filtered:
+                        # Pagination
+                        per_page = st.selectbox("Pro Seite:", [12, 24, 48], index=0)
+                        total_pages = max(1, (len(filtered) - 1) // per_page + 1)
+                        page = st.slider("Seite", 1, total_pages, 1) if total_pages > 1 else 1
                         
-                        for row in range(0, end_idx - start_idx, 6):
+                        start = (page - 1) * per_page
+                        end = min(start + per_page, len(filtered))
+                        
+                        for row in range(0, end - start, 6):
                             cols = st.columns(6)
                             for col_idx in range(6):
-                                idx = start_idx + row + col_idx
-                                if idx >= end_idx:
+                                idx = start + row + col_idx
+                                if idx >= end:
                                     break
-                                p = filtered_pieces[idx]
+                                p = filtered[idx]
                                 with cols[col_idx]:
-                                    st.image(p['thumbnail'])
-                                    st.caption(f"🏷️ {p.get('ai_name', 'N/A')}")
-                                    st.caption(f"🔢 ID: {p.get('original_id', '?')}")
-                                    if 'batch' in p:
-                                        st.caption(f"📦 {p['batch']}")
-                                    if 'cluster_key' in p:
-                                        cluster_info = db['clusters'].get(p['cluster_key'], {})
-                                        st.caption(f"📊 {cluster_info.get('name', 'N/A')}")
+                                    if 'thumbnail' in p:
+                                        st.image(p['thumbnail'])
+                                    st.caption(f"**{p['id']}**")
+                                    st.caption(f"🏷️ {p.get('name', 'N/A')[:20]}")
+                                    st.caption(f"📦 {p.get('material', '?')}")
             
             with db_tab2:
                 if not db.get('clusters'):
-                    st.info("Keine Cluster")
+                    st.info("Keine Gruppen gespeichert.")
                 else:
                     for cluster_key, cluster_data in db['clusters'].items():
-                        with st.expander(f"📦 {cluster_data['name']} ({cluster_data['piece_count']} Teile)"):
-                            st.write(f"**Datum:** {cluster_data['created'][:10]}")
-                            preview_cols = st.columns(6)
-                            for i, p in enumerate(cluster_data['pieces'][:6]):
-                                with preview_cols[i]:
-                                    st.image(p['thumbnail'])
-                                    st.caption(p.get('ai_name', 'N/A'))
+                        with st.expander(f"📦 {cluster_data['name']} ({cluster_data['piece_count']} Funde)"):
+                            st.write(f"**Erstellt:** {cluster_data['created'][:10]}")
+                            
+                            # Zeige Fundstücke der Gruppe
+                            piece_ids = cluster_data.get('piece_ids', [])
+                            preview_pieces = [db['pieces'][pid] for pid in piece_ids[:6] if pid in db['pieces']]
+                            
+                            if preview_pieces:
+                                cols = st.columns(6)
+                                for i, p in enumerate(preview_pieces):
+                                    with cols[i]:
+                                        if 'thumbnail' in p:
+                                            st.image(p['thumbnail'])
+                                        st.caption(p['id'][:11])
             
             with db_tab3:
-                st.subheader("🗑️ Editor")
-                st.warning("⚠️ Permanent!")
+                st.subheader("⚙️ Datenbank verwalten")
                 
-                # Teile zur DB hinzufügen
-                with st.expander("➕ Teile zur DB hinzufügen", expanded=False):
+                # Einzelne Fundstücke hinzufügen
+                with st.expander("➕ Fundstücke hinzufügen", expanded=False):
                     if not st.session_state.pieces:
-                        st.info("Erst Bilder analysieren!")
+                        st.info("Erst Fundfotos analysieren!")
                     else:
-                        st.markdown("**Aktuelle Session-Teile zur Datenbank hinzufügen:**")
-                        
                         active_current = [p for p in st.session_state.pieces if not p['deleted']]
                         
-                        if 'add_to_db_indices' not in st.session_state:
-                            st.session_state.add_to_db_indices = set()
+                        st.markdown(f"**{len(active_current)} Fundstücke in aktueller Session**")
                         
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.button("✅ Alle auswählen", use_container_width=True, key="select_all_btn"):
-                                st.session_state.add_to_db_indices = set(p['id'] for p in active_current)
-                                st.session_state.force_checkbox_update = not st.session_state.get('force_checkbox_update', False)
-                        with col2:
-                            if st.button("❌ Alle abwählen", use_container_width=True, key="deselect_all_btn"):
-                                st.session_state.add_to_db_indices = set()
-                                st.session_state.force_checkbox_update = not st.session_state.get('force_checkbox_update', False)
+                        selected_ids = st.multiselect(
+                            "Fundstücke auswählen:",
+                            options=[p['id'] for p in active_current],
+                            format_func=lambda x: f"{x} - {next((p.get('name', 'N/A')[:30] for p in active_current if p['id'] == x), 'N/A')}"
+                        )
                         
-                        st.markdown("---")
-                        
-                        force_key = st.session_state.get('force_checkbox_update', False)
-                        st.markdown(f"**Teile auswählen ({len(st.session_state.add_to_db_indices)}/{len(active_current)} ausgewählt):**")
-                        
-                        for row_start in range(0, len(active_current), 6):
-                            cols = st.columns(6)
-                            for col_idx in range(6):
-                                idx = row_start + col_idx
-                                if idx >= len(active_current):
-                                    break
-                                
-                                p = active_current[idx]
-                                with cols[col_idx]:
-                                    st.image(p['thumbnail'])
-                                    st.caption(f"{p.get('ai_name', 'N/A')}")
-                                    
-                                    checkbox_value = p['id'] in st.session_state.add_to_db_indices
-                                    checkbox_key = f"dbadd_{p['id']}_{force_key}"
-                                    
-                                    checked = st.checkbox(
-                                        f"ID {p['id']}", 
-                                        value=checkbox_value,
-                                        key=checkbox_key
-                                    )
-                                    
-                                    if checked and p['id'] not in st.session_state.add_to_db_indices:
-                                        st.session_state.add_to_db_indices.add(p['id'])
-                                    elif not checked and p['id'] in st.session_state.add_to_db_indices:
-                                        st.session_state.add_to_db_indices.discard(p['id'])
-                        
-                        st.markdown("---")
-                        
-                        # Cluster zuweisen
-                        st.markdown("**Optional: Zu Cluster zuweisen**")
-                        assign_to_cluster = st.checkbox("Zu bestehendem Cluster zuweisen?")
-                        
-                        target_cluster = None
-                        if assign_to_cluster and db.get('clusters'):
-                            cluster_options = {
-                                f"{v['name']} ({v['piece_count']} Teile)": k 
-                                for k, v in db['clusters'].items()
-                            }
-                            selected = st.selectbox("Cluster wählen:", list(cluster_options.keys()))
-                            target_cluster = cluster_options[selected]
-                        
-                        if st.session_state.add_to_db_indices:
-                            st.success(f"📌 {len(st.session_state.add_to_db_indices)} Teile markiert")
-                            
-                            if st.button("➕ Zur DB hinzufügen", type="primary", use_container_width=True):
-                                added_count = 0
-                                for p_id in st.session_state.add_to_db_indices:
-                                    piece = next((p for p in active_current if p['id'] == p_id), None)
-                                    if piece:
-                                        piece_data = {
-                                            'features': piece['features'],
+                        if selected_ids:
+                            if st.button(f"➕ {len(selected_ids)} Fundstücke hinzufügen", type="primary"):
+                                added = 0
+                                for pid in selected_ids:
+                                    piece = next((p for p in active_current if p['id'] == pid), None)
+                                    if piece and piece['id'] not in db['pieces']:
+                                        db['pieces'][piece['id']] = {
+                                            'id': piece['id'],
+                                            'name': piece.get('name'),
+                                            'material': piece.get('material'),
+                                            'object_type': piece.get('object_type'),
+                                            'color_name': piece.get('color_name'),
+                                            'excavation': piece.get('excavation'),
+                                            'layer': piece.get('layer'),
                                             'thumbnail': piece['thumbnail'],
-                                            'original_id': piece['id'],
+                                            'features': piece.get('features'),
                                             'area': piece['area'],
-                                            'ai_name': piece.get('ai_name', 'Unbenannt'),
-                                            'batch': piece.get('batch', '')
+                                            'created': piece.get('created', datetime.now().isoformat())
                                         }
-                                        
-                                        if target_cluster and target_cluster in db['clusters']:
-                                            piece_data['cluster_key'] = target_cluster
-                                            db['clusters'][target_cluster]['pieces'].append(piece_data)
-                                            db['clusters'][target_cluster]['piece_count'] += 1
-                                        
-                                        db['pieces'].append(piece_data)
-                                        added_count += 1
+                                        added += 1
                                 
                                 save_database(db)
-                                st.session_state.add_to_db_indices = set()
-                                st.success(f"✓ {added_count} Teile zur DB hinzugefügt!")
+                                st.success(f"✓ {added} Fundstücke hinzugefügt!")
                                 st.rerun()
-                        else:
-                            st.info("Keine Teile ausgewählt")
                 
                 st.markdown("---")
                 
-                if not db['pieces'] and not db.get('clusters'):
-                    st.info("DB leer")
-                else:
-                    with st.expander("📋 Einzelne Teile löschen", expanded=False):
-                        if not db['pieces']:
-                            st.info("Keine Teile")
-                        else:
-                            if 'db_delete_indices' not in st.session_state:
-                                st.session_state.db_delete_indices = set()
-                            
-                            for row_start in range(0, min(24, len(db['pieces'])), 6):
-                                cols = st.columns(6)
-                                for col_idx in range(6):
-                                    idx = row_start + col_idx
-                                    if idx >= len(db['pieces']):
-                                        break
-                                    
-                                    with cols[col_idx]:
-                                        p = db['pieces'][idx]
-                                        st.image(p['thumbnail'])
-                                        is_checked = st.checkbox(
-                                            f"#{idx}", 
-                                            value=idx in st.session_state.db_delete_indices, 
-                                            key=f"dbdel_{idx}"
-                                        )
-                                        
-                                        if is_checked:
-                                            st.session_state.db_delete_indices.add(idx)
-                                        else:
-                                            st.session_state.db_delete_indices.discard(idx)
-                            
-                            if st.session_state.db_delete_indices:
-                                if st.button("🗑️ Markierte löschen", type="primary"):
-                                    for idx in sorted(st.session_state.db_delete_indices, reverse=True):
-                                        if idx < len(db['pieces']):
-                                            del db['pieces'][idx]
-                                    save_database(db)
-                                    st.session_state.db_delete_indices = set()
-                                    st.rerun()
+                # Löschen
+                with st.expander("🗑️ Daten löschen", expanded=False):
+                    st.warning("⚠️ Diese Aktionen sind permanent!")
                     
-                    with st.expander("📦 Cluster löschen", expanded=False):
-                        if not db.get('clusters'):
-                            st.info("Keine Cluster")
-                        else:
-                            for cluster_key in list(db['clusters'].keys()):
-                                cluster_data = db['clusters'][cluster_key]
-                                col1, col2 = st.columns([3, 1])
-                                with col1:
-                                    st.markdown(f"📦 **{cluster_data['name']}** ({cluster_data['piece_count']})")
-                                with col2:
-                                    if st.button("🗑️", key=f"delc_{cluster_key}"):
-                                        del db['clusters'][cluster_key]
-                                        save_database(db)
-                                        st.rerun()
+                    if db['pieces']:
+                        delete_id = st.selectbox(
+                            "Fundstück löschen:",
+                            options=[""] + list(db['pieces'].keys()),
+                            format_func=lambda x: f"{x} - {db['pieces'][x].get('name', 'N/A')[:30]}" if x else "Auswählen..."
+                        )
+                        
+                        if delete_id and st.button(f"🗑️ {delete_id} löschen"):
+                            del db['pieces'][delete_id]
+                            save_database(db)
+                            st.success("Gelöscht!")
+                            st.rerun()
                     
-                    with st.expander("🔥 Alles löschen", expanded=False):
-                        confirm = st.text_input("'LÖSCHEN' eingeben:", key="confirm_all")
-                        if st.button("🔥 ALLES LÖSCHEN"):
-                            if confirm == "LÖSCHEN":
-                                save_database({'pieces': [], 'clusters': {}, 'version': FEATURE_VERSION})
-                                st.rerun()
+                    st.markdown("---")
+                    
+                    confirm = st.text_input("Zum Löschen der gesamten DB 'LÖSCHEN' eingeben:")
+                    if st.button("🔥 GESAMTE DATENBANK LÖSCHEN", type="secondary"):
+                        if confirm == "LÖSCHEN":
+                            save_database(create_empty_database())
+                            st.success("Datenbank gelöscht!")
+                            st.rerun()
+                        else:
+                            st.error("Bestätigung erforderlich!")
 
         # TAB 5: QR-SCANNER
         with tab5:
             st.header("📷 QR-Code Scanner")
-            st.markdown("Scanne QR-Codes von Labels um Teile in der Datenbank zu finden")
+            st.markdown("Scanne QR-Codes von Labels um Fundstücke zu identifizieren")
             
             qr_input = st.text_input(
-                "QR-Code eingeben oder scannen:",
-                placeholder="shardmind://piece/5 oder einfach die ID",
-                key="qr_scanner_input"
+                "QR-Code / ID eingeben:",
+                placeholder="shardmind://find/SM-XXXXXXXX oder SM-XXXXXXXX",
+                help="Scanne den QR-Code oder gib die ID manuell ein"
             )
             
             if qr_input:
+                # Parse Input
                 piece_id = None
-                batch = None
                 
-                if "shardmind://piece/" in qr_input:
-                    try:
-                        parts = qr_input.replace("shardmind://piece/", "").split("?")
-                        piece_id = int(parts[0])
-                        if len(parts) > 1 and "batch=" in parts[1]:
-                            batch = parts[1].split("batch=")[1]
-                    except:
-                        st.error("Ungültiger QR-Code")
+                if "shardmind://find/" in qr_input:
+                    # QR-Code Format
+                    parts = qr_input.replace("shardmind://find/", "").split("?")
+                    piece_id = parts[0]
+                elif qr_input.startswith("SM-"):
+                    # Direkte ID
+                    piece_id = qr_input
                 else:
-                    try:
-                        piece_id = int(qr_input)
-                    except:
-                        st.error("Bitte ID oder QR-Code eingeben")
+                    st.error("Ungültiges Format. Erwartet: SM-XXXXXXXX")
                 
-                if piece_id is not None:
+                if piece_id:
+                    # Suche in Session
                     session_piece = next(
-                        (p for p in st.session_state.pieces if p['id'] == piece_id and not p['deleted']), 
+                        (p for p in st.session_state.pieces if p['id'] == piece_id and not p.get('deleted')), 
                         None
                     )
-                    db_pieces = [p for p in db['pieces'] if p.get('original_id') == piece_id]
                     
-                    if session_piece or db_pieces:
-                        st.success(f"✓ Teil gefunden: ID {piece_id}")
+                    # Suche in Datenbank
+                    db_piece = db['pieces'].get(piece_id)
+                    
+                    if session_piece or db_piece:
+                        st.success(f"✓ Fundstück gefunden: {piece_id}")
                         
                         col1, col2 = st.columns(2)
                         
+                        piece = session_piece or db_piece
+                        
                         with col1:
-                            if session_piece:
-                                st.markdown("### 📌 In aktueller Session:")
-                                st.image(session_piece['thumbnail'], width=300)
-                                st.write(f"**Name:** {session_piece.get('ai_name', 'N/A')}")
-                                st.write(f"**ID:** {session_piece['id']}")
-                                if 'batch' in session_piece:
-                                    st.write(f"**Batch:** {session_piece['batch']}")
-                                if 'cluster' in session_piece and session_piece['cluster'] >= 0:
-                                    cluster_name = st.session_state.cluster_names.get(
-                                        session_piece['cluster'], 
-                                        f"Cluster_{session_piece['cluster']}"
-                                    )
-                                    st.write(f"**Gruppe:** {cluster_name}")
-                                
-                                if st.button("🔍 Matches zeigen", key="qr_show_matches"):
-                                    st.session_state.selected_id = session_piece['id']
-                                    st.rerun()
+                            st.markdown("### 🏺 Fundstück-Details")
+                            if 'thumbnail' in piece:
+                                st.image(piece['thumbnail'], width=250)
+                            
+                            st.write(f"**ID:** `{piece['id']}`")
+                            st.write(f"**Name:** {piece.get('name', 'N/A')}")
+                            st.write(f"**Material:** {piece.get('material', 'N/A')}")
+                            st.write(f"**Objekttyp:** {piece.get('object_type', 'N/A')}")
+                            st.write(f"**Farbe:** {piece.get('color_name', 'N/A')}")
                         
                         with col2:
-                            if db_pieces:
-                                st.markdown(f"### 💾 In Datenbank ({len(db_pieces)}x):")
-                                for i, db_piece in enumerate(db_pieces[:3]):
-                                    st.image(db_piece['thumbnail'], width=150)
-                                    st.caption(f"🏷️ {db_piece.get('ai_name', 'N/A')}")
-                                    if 'batch' in db_piece:
-                                        st.caption(f"📦 {db_piece['batch']}")
-                                    if 'cluster_key' in db_piece:
-                                        cluster_info = db['clusters'].get(db_piece['cluster_key'], {})
-                                        st.caption(f"📊 {cluster_info.get('name', 'N/A')}")
-                                    st.markdown("---")
+                            st.markdown("### 🗺️ Kontext")
+                            st.write(f"**Grabung:** {piece.get('excavation', 'N/A')}")
+                            st.write(f"**Schicht:** {piece.get('layer', 'N/A')}")
+                            st.write(f"**Erstellt:** {piece.get('created', 'N/A')[:10] if piece.get('created') else 'N/A'}")
+                            
+                            if piece.get('cluster_key') and piece['cluster_key'] in db.get('clusters', {}):
+                                cluster = db['clusters'][piece['cluster_key']]
+                                st.write(f"**Gruppe:** {cluster['name']}")
+                            
+                            # Aktionen
+                            st.markdown("---")
+                            if session_piece and st.button("🔍 Matches zeigen"):
+                                st.session_state.selected_id = piece_id
+                                st.rerun()
+                            
+                            if st.button("📄 Einzel-Label"):
+                                pdf = create_single_label_pdf(piece)
+                                st.download_button(
+                                    "⬇️ Download",
+                                    data=pdf,
+                                    file_name=f"label_{piece_id}.pdf",
+                                    mime="application/pdf"
+                                )
                     else:
-                        st.warning(f"❌ Teil mit ID {piece_id} nicht gefunden")
+                        st.warning(f"❌ Fundstück {piece_id} nicht gefunden")
+                        st.info("Das Fundstück ist weder in der aktuellen Session noch in der Datenbank.")
 
         # TAB 6: VERWALTEN
         with tab6:
-            st.header("Verwalten")
-            m_cols = st.columns(6)
-            for i, p in enumerate(st.session_state.pieces):
-                with m_cols[i % 6]:
+            st.header("⚙️ Session verwalten")
+            st.markdown("Fundstücke aus der aktuellen Session löschen oder wiederherstellen")
+            
+            all_pieces = st.session_state.pieces
+            active = [p for p in all_pieces if not p['deleted']]
+            deleted = [p for p in all_pieces if p['deleted']]
+            
+            st.write(f"**Aktiv:** {len(active)} | **Gelöscht:** {len(deleted)}")
+            
+            cols = st.columns(6)
+            for i, p in enumerate(all_pieces):
+                with cols[i % 6]:
                     if p['deleted']:
                         st.markdown(
                             f'<div style="opacity: 0.3; border: 2px solid red; padding: 3px;">'
@@ -1298,18 +1662,30 @@ Blau_Teil_005
                             f'</div>', 
                             unsafe_allow_html=True
                         )
-                        if st.button(f"↩️ #{p['id']}", key=f"rev_{p['id']}", use_container_width=True):
+                        st.caption(f"~~{p['id'][:11]}~~")
+                        if st.button(f"↩️", key=f"rev_{p['id']}", use_container_width=True):
                             p['deleted'] = False
                             st.rerun()
                     else:
                         st.image(p['thumbnail'])
-                        st.caption(f"ID: {p['id']}")
-                        st.caption(f"🤖 {p.get('ai_name', 'N/A')}")
+                        st.caption(f"**{p['id'][:11]}**")
+                        st.caption(f"{p.get('name', 'N/A')[:20]}")
                         if st.button(f"❌", key=f"del_{p['id']}", use_container_width=True):
                             p['deleted'] = True
                             st.rerun()
+    
     else:
-        st.info("👈 Bilder hochladen")
+        st.info("👈 Lade Fundfotos in der Sidebar hoch, um zu beginnen")
+        
+        # Quick-Start
+        st.markdown("---")
+        st.markdown("### 🚀 Schnellstart")
+        st.markdown("""
+        1. **API Key eingeben** (optional, für KI-Erkennung)
+        2. **Fundfotos hochladen** (neutraler Hintergrund)
+        3. **Grabungskontext** eingeben
+        4. **"🔬 Analyse starten"** klicken
+        """)
 
 
 if __name__ == "__main__":
