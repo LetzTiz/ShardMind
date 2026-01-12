@@ -43,7 +43,6 @@ from PIL import Image
 import base64
 import pickle
 import qrcode
-from pyzbar import pyzbar
 import hashlib
 from pathlib import Path
 from datetime import datetime
@@ -715,17 +714,48 @@ def generate_qr_code(data, size=10):
 
 
 def scan_qr_code(image):
-    """Scannt QR-Codes aus einem Bild"""
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    decoded = pyzbar.decode(gray)
+    """Scannt QR-Codes aus einem Bild mit OpenCV"""
+    # OpenCV QR-Code Detector (keine externe Bibliothek nötig)
+    detector = cv2.QRCodeDetector()
     
     results = []
-    for d in decoded:
+    
+    # Versuche QR-Code zu decodieren
+    data, vertices, _ = detector.detectAndDecode(image)
+    
+    if data:
         results.append({
-            'data': d.data.decode('utf-8'),
-            'type': d.type,
-            'rect': d.rect
+            'data': data,
+            'type': 'QRCODE',
+            'vertices': vertices
         })
+    
+    # Versuche auch mit Graustufen
+    if not results:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        data, vertices, _ = detector.detectAndDecode(gray)
+        
+        if data:
+            results.append({
+                'data': data,
+                'type': 'QRCODE',
+                'vertices': vertices
+            })
+    
+    # Versuche mehrere QR-Codes
+    if not results:
+        try:
+            retval, decoded_info, points, straight_qrcode = detector.detectAndDecodeMulti(image)
+            if retval and decoded_info:
+                for i, data in enumerate(decoded_info):
+                    if data:
+                        results.append({
+                            'data': data,
+                            'type': 'QRCODE',
+                            'vertices': points[i] if points is not None else None
+                        })
+        except:
+            pass
     
     return results
 
