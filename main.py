@@ -58,7 +58,8 @@ import uuid
 # KONFIGURATION
 # =============================================================================
 
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.3"
+BASE_URL = "https://shardmind.streamlit.app"
 USERS_DB_PATH = Path("shardmind_users.pkl")
 FEATURE_VERSION = 12
 
@@ -308,12 +309,17 @@ def generate_example_pottery_shards(num_shards=6):
         for angle, r in zip(angles, radii):
             x = cx + int(r * np.cos(angle))
             y = cy + int(r * np.sin(angle))
-            pts.append((x, y))
+            pts.append([x, y])
         
         pts = np.array(pts, dtype=np.int32)
         
         color = colors[i % len(colors)]
-        color_var = tuple(max(0, min(255, c + np.random.randint(-15, 15))) for c in color)
+        # WICHTIG: int() für alle Farbwerte
+        color_var = (
+            int(max(0, min(255, color[0] + np.random.randint(-15, 15)))),
+            int(max(0, min(255, color[1] + np.random.randint(-15, 15)))),
+            int(max(0, min(255, color[2] + np.random.randint(-15, 15))))
+        )
         
         cv2.fillPoly(img, [pts], color_var)
         cv2.polylines(img, [pts], True, (80, 50, 30), 2)
@@ -322,7 +328,7 @@ def generate_example_pottery_shards(num_shards=6):
         for _ in range(5):
             tx = cx + np.random.randint(-30, 30)
             ty = cy + np.random.randint(-30, 30)
-            cv2.circle(img, (tx, ty), 1, (color[0]-20, color[1]-20, color[2]-20), -1)
+            cv2.circle(img, (tx, ty), 1, (max(0, color[0]-20), max(0, color[1]-20), max(0, color[2]-20)), -1)
     
     return img
 
@@ -345,13 +351,13 @@ def generate_example_glass_shards(num_shards=7):
         for angle, r in zip(angles, radii):
             x = cx + int(r * np.cos(angle))
             y = cy + int(r * np.sin(angle))
-            pts.append((x, y))
+            pts.append([x, y])
         
         pts = np.array(pts, dtype=np.int32)
         
-        # Transparentes Glas-Grün/Blau
-        hue = np.random.choice([100, 110, 120, 90])  # Grün-Blau Bereich
-        color = (hue + 80, hue + 100, hue + 90)
+        # Transparentes Glas-Grün/Blau - WICHTIG: int() für alle Farbwerte
+        hue = int(np.random.choice([100, 110, 120, 90]))
+        color = (int(hue + 80), int(hue + 100), int(hue + 90))
         
         cv2.fillPoly(img, [pts], color)
         cv2.polylines(img, [pts], True, (150, 180, 170), 1)
@@ -711,6 +717,100 @@ def generate_qr_code(data, size=10):
     qr.add_data(data)
     qr.make(fit=True)
     return qr.make_image(fill_color="black", back_color="white")
+
+
+def create_labels_pdf(pieces, username):
+    """Erstellt PDF mit QR-Code Labels"""
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    # Layout: 3 Spalten, 4 Zeilen
+    cols, rows = 3, 4
+    cell_width = width / cols
+    cell_height = height / rows
+    margin = 12
+    qr_size = 60
+    
+    # Titel
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(margin, height - 25, f"ShardMind Labels - {username}")
+    c.setFont("Helvetica", 9)
+    c.drawString(margin, height - 40, f"{datetime.now().strftime('%Y-%m-%d %H:%M')} | {len(pieces)} items")
+    
+    start_offset = 50
+    
+    for idx, piece in enumerate(pieces):
+        if piece.get('deleted'):
+            continue
+        
+        col = idx % cols
+        row = (idx // cols) % rows
+        
+        if idx > 0 and idx % (cols * rows) == 0:
+            c.showPage()
+            start_offset = 0
+        
+        x = col * cell_width + margin
+        y = height - (row + 1) * cell_height - start_offset + margin
+        
+        # QR-Code mit URL
+        piece_url = f"{BASE_URL}/?piece={piece['id']}&user={username}"
+        qr_img = generate_qr_code(piece_url, size=5)
+        qr_buffer = io.BytesIO()
+        qr_img.save(qr_buffer, format='PNG')
+        qr_buffer.seek(0)
+        
+        try:
+            c.drawImage(ImageReader(qr_buffer), x, y, width=qr_size, height=qr_size)
+        except:
+            pass
+        
+        # Thumbnail
+        if 'thumbnail' in piece:
+            try:
+                thumb = piece['thumbnail']
+                thumb_rgb = cv2.cvtColor(thumb, cv2.COLOR_BGR2RGB)
+                pil_thumb = Image.fromarray(thumb_rgb)
+                pil_thumb.thumbnail((40, 40))
+                thumb_buffer = io.BytesIO()
+                pil_thumb.save(thumb_buffer, format='PNG')
+                thumb_buffer.seek(0)
+                c.drawImage(ImageReader(thumb_buffer), x + qr_size + 5, y + 20, width=35, height=35)
+            except:
+                pass
+        
+        # Text
+        text_x = x + qr_size + 5
+        text_y = y + qr_size - 5
+        
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(text_x, text_y, piece['id'])
+        
+        c.setFont("Helvetica", 6)
+        name = piece.get('name', 'N/A')[:20]
+        c.drawString(text_x, text_y - 9, name)
+        
+        if piece.get('material'):
+            c.drawString(text_x, text_y - 17, f"Mat: {piece['material'][:12]}")
+        
+        if piece.get('excavation'):
+            c.drawString(text_x, text_y - 25, f"Proj: {piece['excavation'][:12]}")
+        
+        # Rahmen (gestrichelt)
+        c.setStrokeColorRGB(0.75, 0.75, 0.75)
+        c.setLineWidth(0.5)
+        c.setDash(2, 2)
+        c.rect(x - 3, y - 5, cell_width - 8, cell_height - 10)
+        c.setDash()
+    
+    # Footer
+    c.setFont("Helvetica", 7)
+    c.drawString(margin, 15, f"ShardMind v{APP_VERSION}")
+    
+    c.save()
+    buffer.seek(0)
+    return buffer
 
 
 def scan_qr_code(image):
@@ -1121,40 +1221,118 @@ def main():
         st.metric(t('fragments'), len(db_pieces) if isinstance(db_pieces, dict) else 0)
         st.metric(t('groups'), len(db_clusters) if isinstance(db_clusters, dict) else 0)
     
-    # HAUPTBEREICH
-    if st.session_state.pieces:
-        active = [p for p in st.session_state.pieces if not p.get('deleted')]
-        
-        if len(active) > 1:
-            labels = cluster_by_reconstruction(active, edge_weight, cluster_threshold)
-            for i, p in enumerate(active):
-                p['cluster'] = labels[i]
-        else:
-            for p in active:
-                p['cluster'] = -1
-        
-        cluster_ids = set([p.get('cluster', -1) for p in active])
-        n_clusters = len([c for c in cluster_ids if c >= 0])
-        
+    # HAUPTBEREICH - TABS IMMER SICHTBAR
+    
+    # Check URL params for QR code deep links
+    query_params = st.query_params
+    search_piece_id = query_params.get('piece', None)
+    
+    # Process pieces if any
+    active = [p for p in st.session_state.pieces if not p.get('deleted')]
+    
+    if len(active) > 1:
+        labels = cluster_by_reconstruction(active, edge_weight, cluster_threshold)
+        for i, p in enumerate(active):
+            p['cluster'] = labels[i]
+    elif active:
+        for p in active:
+            p['cluster'] = 0
+    else:
+        active = []
+    
+    cluster_ids = set([p.get('cluster', -1) for p in active]) if active else set()
+    n_clusters = len([c for c in cluster_ids if c >= 0])
+    
+    # Metriken wenn Daten vorhanden
+    if active:
         col1, col2, col3 = st.columns(3)
         col1.metric(f"🏺 {t('fragments')}", len(active))
         col2.metric(f"📦 {t('groups')}", n_clusters)
         col3.metric(f"🗺️", excavation[:15])
+    
+    # TABS - IMMER SICHTBAR
+    tabs = st.tabs([
+        "🏠 Start",
+        t('tab_gallery'),
+        t('tab_groups'),
+        t('tab_reconstruction'),
+        t('tab_database'),
+        "🏷️ Labels",
+        t('tab_help')
+    ])
+    
+    # TAB 0: START / DEMO
+    with tabs[0]:
+        st.header(f"🏺 {t('app_title')}")
+        st.write(t('app_subtitle'))
         
-        # TABS
-        tabs = st.tabs([
-            t('tab_gallery'),
-            t('tab_groups'),
-            t('tab_reconstruction'),
-            t('tab_database'),
-            t('tab_qr_scanner'),
-            t('tab_examples'),
-            t('tab_help')
-        ])
+        # QR-Code Deep Link Suche
+        if search_piece_id:
+            st.info(f"🔍 Suche nach: **{search_piece_id}**")
+            found = None
+            for p in active:
+                if p['id'] == search_piece_id:
+                    found = p
+                    break
+            if not found and search_piece_id in db.get('pieces', {}):
+                found = db['pieces'][search_piece_id]
+            
+            if found:
+                st.success(t('qr_found'))
+                c1, c2 = st.columns([1, 2])
+                with c1:
+                    if 'thumbnail' in found:
+                        st.image(found['thumbnail'])
+                with c2:
+                    st.write(f"**ID:** {found['id']}")
+                    st.write(f"**Name:** {found.get('name', 'N/A')}")
+                    st.write(f"**Material:** {found.get('material', 'N/A')}")
+                    st.write(f"**Projekt:** {found.get('excavation', 'N/A')}")
+            else:
+                st.warning(f"{t('qr_not_found')}: {search_piece_id}")
+            st.markdown("---")
         
-        # GALERIE
-        with tabs[0]:
-            st.header(t('detected_fragments'))
+        # Manuelle Suche
+        st.subheader(t('qr_title'))
+        c1, c2 = st.columns([3, 1])
+        with c1:
+            search_input = st.text_input("ID eingeben / Enter ID", placeholder="SM-XXXXXXXX", key="search_id")
+        with c2:
+            st.write("")
+            if st.button(t('qr_search'), use_container_width=True):
+                if search_input:
+                    st.query_params['piece'] = search_input
+                    st.rerun()
+        
+        st.markdown("---")
+        
+        # Demo Bilder
+        st.subheader(t('demo_title'))
+        st.write("Lade ein Demo-Bild herunter und teste ShardMind! / Download a demo image and test ShardMind!")
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("### 🏺 Keramik / Pottery")
+            demo1 = generate_example_pottery_shards(6)
+            st.image(cv2.cvtColor(demo1, cv2.COLOR_BGR2RGB), use_container_width=True)
+            buf1 = io.BytesIO()
+            Image.fromarray(cv2.cvtColor(demo1, cv2.COLOR_BGR2RGB)).save(buf1, format='PNG')
+            st.download_button("📥 Download", buf1.getvalue(), "demo_pottery.png", "image/png", use_container_width=True, key="dl_pot")
+        
+        with c2:
+            st.markdown("### 🍽️ Teller / Plate")
+            demo2 = generate_example_broken_plate(5)
+            st.image(cv2.cvtColor(demo2, cv2.COLOR_BGR2RGB), use_container_width=True)
+            buf2 = io.BytesIO()
+            Image.fromarray(cv2.cvtColor(demo2, cv2.COLOR_BGR2RGB)).save(buf2, format='PNG')
+            st.download_button("📥 Download", buf2.getvalue(), "demo_plate.png", "image/png", use_container_width=True, key="dl_plate")
+        
+        st.info("💡 Nach dem Download: Bild links hochladen → 'Analysieren' klicken")
+    
+    # TAB 1: GALERIE
+    with tabs[1]:
+        st.header(t('detected_fragments'))
+        if active:
             cols = st.columns(5)
             for i, p in enumerate(active):
                 with cols[i % 5]:
@@ -1165,11 +1343,14 @@ def main():
                         unsafe_allow_html=True
                     )
                     st.caption(f"**{p['id'][:11]}**\n{p.get('name', '')[:18]}")
+        else:
+            st.info(t('upload_first'))
+    
+    # TAB 2: GRUPPEN
+    with tabs[2]:
+        st.header(t('groups_title'))
         
-        # GRUPPEN
-        with tabs[1]:
-            st.header(t('groups_title'))
-            
+        if active:
             cluster_sorted = sorted([c for c in cluster_ids if c >= 0])
             
             if not cluster_sorted:
@@ -1191,241 +1372,132 @@ def main():
                                 st.image(p['thumbnail'])
                                 st.caption(p['id'][:8])
                         
-                        c1, c2 = st.columns(2)
-                        with c1:
-                            if st.button(t('save_btn'), key=f"s_{cid}"):
-                                key = f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                                db['clusters'][key] = {
-                                    'name': name,
-                                    'created': datetime.now().isoformat(),
-                                    'piece_ids': [p['id'] for p in cluster_pieces]
-                                }
-                                for p in cluster_pieces:
-                                    db['pieces'][p['id']] = p.copy()
-                                save_user_database(username, db)
-                                st.success(t('saved'))
+                        if st.button(t('save_btn'), key=f"s_{cid}"):
+                            key = f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                            db['clusters'][key] = {
+                                'name': name,
+                                'created': datetime.now().isoformat(),
+                                'piece_ids': [p['id'] for p in cluster_pieces]
+                            }
+                            for p in cluster_pieces:
+                                # Remove non-serializable features
+                                p_copy = {k: v for k, v in p.items() if k != 'features'}
+                                db['pieces'][p['id']] = p_copy
+                            save_user_database(username, db)
+                            st.success(t('saved'))
+                            st.rerun()
+        else:
+            st.info(t('upload_first'))
+    
+    # TAB 3: REKONSTRUKTION
+    with tabs[3]:
+        st.header(t('reconstruction_title'))
         
-        # REKONSTRUKTION
-        with tabs[2]:
-            st.header(t('reconstruction_title'))
-            
+        if active and n_clusters > 0:
             cluster_opts = {
-                f"{st.session_state.cluster_names.get(c, f'G{c}')} ({sum(1 for p in active if p.get('cluster')==c)})": c
+                f"{st.session_state.cluster_names.get(c, f'Gruppe_{c}')} ({sum(1 for p in active if p.get('cluster')==c)} {t('pieces')})": c
                 for c in cluster_ids if c >= 0
             }
             
-            if cluster_opts:
-                sel_name = st.selectbox(t('select_group'), list(cluster_opts.keys()))
-                sel_id = cluster_opts[sel_name]
-                
-                recon_pieces = [p for p in active if p.get('cluster') == sel_id]
-                st.write(f"**{len(recon_pieces)} {t('fragments_in_group')}**")
-                
-                pcols = st.columns(min(8, len(recon_pieces)))
-                for i, p in enumerate(recon_pieces[:8]):
-                    with pcols[i]:
-                        st.image(p['thumbnail'], use_container_width=True)
-                
+            sel_name = st.selectbox(t('select_group'), list(cluster_opts.keys()))
+            sel_id = cluster_opts[sel_name]
+            
+            recon_pieces = [p for p in active if p.get('cluster') == sel_id]
+            st.write(f"**{len(recon_pieces)} {t('fragments_in_group')}**")
+            
+            pcols = st.columns(min(8, len(recon_pieces)))
+            for i, p in enumerate(recon_pieces[:8]):
+                with pcols[i]:
+                    st.image(p['thumbnail'], use_container_width=True)
+            
+            canvas_size = st.slider(t('canvas_size'), 400, 1000, 700, 50)
+            
+            if st.button(t('calculate_btn'), type='primary', use_container_width=True):
+                with st.spinner(t('analyzing')):
+                    img, plc, mtch = reconstruct_group(recon_pieces, canvas_size)
+                    if img is not None:
+                        st.session_state.recon_image = img
+                        st.session_state.recon_matches = mtch
+                        st.success(f"✓ {len(mtch)} {t('matches_found')}")
+            
+            if 'recon_image' in st.session_state and st.session_state.recon_image is not None:
                 c1, c2 = st.columns([2, 1])
                 with c1:
-                    canvas_size = st.slider(t('canvas_size'), 400, 1200, 800, 100)
+                    rgb = cv2.cvtColor(st.session_state.recon_image, cv2.COLOR_BGR2RGB)
+                    st.image(rgb, use_container_width=True)
+                    buf = io.BytesIO()
+                    Image.fromarray(rgb).save(buf, format='PNG')
+                    st.download_button(t('export_btn'), buf.getvalue(), f"recon_{sel_id}.png", "image/png")
                 with c2:
-                    show_edges = st.checkbox(t('show_edges'), value=True)
-                
-                if st.button(t('calculate_btn'), type='primary', use_container_width=True):
-                    with st.spinner(t('analyzing')):
-                        img, plc, mtch = reconstruct_group(recon_pieces, canvas_size)
-                        if img is not None:
-                            st.session_state.recon_image = img
-                            st.session_state.recon_placements = plc
-                            st.session_state.recon_matches = mtch
-                            st.success(f"✓ {len(mtch)} {t('matches_found')}")
-                
-                if 'recon_image' in st.session_state and st.session_state.recon_image is not None:
-                    st.markdown(f"### {t('result_title')}")
-                    
-                    c1, c2 = st.columns([2, 1])
-                    with c1:
-                        rgb = cv2.cvtColor(st.session_state.recon_image, cv2.COLOR_BGR2RGB)
-                        st.image(rgb, use_container_width=True)
-                        
-                        buf = io.BytesIO()
-                        Image.fromarray(rgb).save(buf, format='PNG')
-                        st.download_button(t('export_btn'), buf.getvalue(), f"recon_{sel_id}.png", "image/png")
-                    
-                    with c2:
-                        st.markdown(f"**{t('edge_matches')}**")
-                        for i, m in enumerate(st.session_state.get('recon_matches', [])[:5]):
-                            st.write(f"Match {i+1}: {m['score']:.0f}%")
-                        
-                        st.markdown("---")
-                        st.markdown(f"**{t('manual_adjust')}**")
-                        
-                        if recon_pieces and st.session_state.get('recon_placements'):
-                            pidx = st.selectbox(t('select_fragment'), range(len(recon_pieces)),
-                                               format_func=lambda x: recon_pieces[x]['id'][:11] if x < len(recon_pieces) else '')
-                            
-                            if pidx < len(st.session_state.recon_placements):
-                                pl = st.session_state.recon_placements[pidx]
-                                nx = st.slider("X", 0, canvas_size, int(pl.get('x', 400)))
-                                ny = st.slider("Y", 0, canvas_size, int(pl.get('y', 400)))
-                                nr = st.slider("°", -180, 180, int(np.degrees(pl.get('rotation', 0))))
-                                ns = st.slider("Scale", 0.5, 2.0, pl.get('scale', 1.0), 0.1)
-                                
-                                if st.button(t('apply_btn')):
-                                    st.session_state.recon_placements[pidx] = {
-                                        'x': nx, 'y': ny, 'rotation': np.radians(nr), 'scale': ns, 'placed': True
-                                    }
-                                    img, _, _ = reconstruct_group(recon_pieces, canvas_size)
-                                    st.session_state.recon_image = img
-                                    st.rerun()
-                
-                if show_edges and recon_pieces:
-                    st.markdown("### Edges")
-                    ecols = st.columns(min(4, len(recon_pieces)))
-                    for i, p in enumerate(recon_pieces[:4]):
-                        with ecols[i]:
-                            vis = p['thumbnail'].copy()
-                            if 'contour' in p:
-                                cv2.drawContours(vis, [p['contour']], -1, (0, 255, 0), 2)
-                            st.image(cv2.cvtColor(vis, cv2.COLOR_BGR2RGB))
-            else:
-                st.warning(t('no_groups'))
-        
-        # DATENBANK
-        with tabs[3]:
-            st.header(t('database_title'))
-            
-            db_pieces = db.get('pieces', {})
-            if db_pieces:
-                st.write(f"**{len(db_pieces)} {t('fragments_saved')}**")
-                
-                dcols = st.columns(6)
-                for i, (pid, piece) in enumerate(list(db_pieces.items())[:12]):
-                    with dcols[i % 6]:
-                        if 'thumbnail' in piece:
-                            st.image(piece['thumbnail'])
-                        st.caption(pid[:11])
-            else:
-                st.info(t('db_empty'))
-            
-            if db.get('clusters'):
-                st.markdown("---")
-                st.write(f"**{t('groups_saved')}**")
-                for k, v in db['clusters'].items():
-                    st.write(f"• {v['name']} ({len(v.get('piece_ids', []))} {t('pieces')})")
-        
-        # QR-SCANNER
-        with tabs[4]:
-            st.header(t('qr_scanner_title'))
-            
-            qr_file = st.file_uploader(t('qr_upload'), type=['png', 'jpg', 'jpeg'], key='qr_upload')
-            
-            if qr_file:
-                img = cv2.imdecode(np.asarray(bytearray(qr_file.read()), dtype=np.uint8), cv2.IMREAD_COLOR)
-                st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), width=300)
-                
-                results = scan_qr_code(img)
-                
-                if results:
-                    for r in results:
-                        st.success(f"**{t('qr_result')}:** `{r['data']}`")
-                        
-                        parsed = parse_shardmind_qr(r['data'])
-                        if parsed:
-                            piece_id = parsed['id']
-                            
-                            # Suche in aktueller Session
-                            found = None
-                            for p in active:
-                                if p['id'] == piece_id:
-                                    found = p
-                                    break
-                            
-                            # Suche in Datenbank
-                            if not found and piece_id in db.get('pieces', {}):
-                                found = db['pieces'][piece_id]
-                            
-                            if found:
-                                st.success(f"✓ {t('qr_found')}")
-                                c1, c2 = st.columns([1, 2])
-                                with c1:
-                                    if 'thumbnail' in found:
-                                        st.image(found['thumbnail'])
-                                with c2:
-                                    st.write(f"**ID:** {found['id']}")
-                                    st.write(f"**Name:** {found.get('name', 'N/A')}")
-                                    st.write(f"**Material:** {found.get('material', 'N/A')}")
-                                    st.write(f"**Grabung:** {found.get('excavation', 'N/A')}")
-                            else:
-                                st.warning(f"⚠️ {t('qr_not_found')}: {piece_id}")
-                else:
-                    st.warning("Kein QR-Code gefunden / No QR code found")
-        
-        # BEISPIELE
-        with tabs[5]:
-            st.header(t('examples_title'))
-            
-            st.info("Generiere Testbilder um ShardMind auszuprobieren / Generate test images to try ShardMind")
-            
-            c1, c2, c3 = st.columns(3)
-            
-            with c1:
-                st.subheader(f"🍽️ {t('example_plates')}")
-                num_plate = st.slider("Teile/Pieces", 3, 8, 5, key='plate_n')
-                if st.button(t('generate_example'), key='gen_plate'):
-                    img = generate_example_broken_plate(num_plate)
-                    st.session_state.example_plate = img
-                
-                if 'example_plate' in st.session_state:
-                    st.image(cv2.cvtColor(st.session_state.example_plate, cv2.COLOR_BGR2RGB))
-                    
-                    buf = io.BytesIO()
-                    Image.fromarray(cv2.cvtColor(st.session_state.example_plate, cv2.COLOR_BGR2RGB)).save(buf, format='PNG')
-                    st.download_button("📥 Download", buf.getvalue(), "broken_plate.png", "image/png")
-            
-            with c2:
-                st.subheader(f"🏺 {t('example_pottery')}")
-                num_pot = st.slider("Teile/Pieces", 3, 10, 6, key='pot_n')
-                if st.button(t('generate_example'), key='gen_pot'):
-                    img = generate_example_pottery_shards(num_pot)
-                    st.session_state.example_pottery = img
-                
-                if 'example_pottery' in st.session_state:
-                    st.image(cv2.cvtColor(st.session_state.example_pottery, cv2.COLOR_BGR2RGB))
-                    
-                    buf = io.BytesIO()
-                    Image.fromarray(cv2.cvtColor(st.session_state.example_pottery, cv2.COLOR_BGR2RGB)).save(buf, format='PNG')
-                    st.download_button("📥 Download", buf.getvalue(), "pottery.png", "image/png")
-            
-            with c3:
-                st.subheader("🔮 Glas / Glass")
-                num_glass = st.slider("Teile/Pieces", 3, 10, 7, key='glass_n')
-                if st.button(t('generate_example'), key='gen_glass'):
-                    img = generate_example_glass_shards(num_glass)
-                    st.session_state.example_glass = img
-                
-                if 'example_glass' in st.session_state:
-                    st.image(cv2.cvtColor(st.session_state.example_glass, cv2.COLOR_BGR2RGB))
-                    
-                    buf = io.BytesIO()
-                    Image.fromarray(cv2.cvtColor(st.session_state.example_glass, cv2.COLOR_BGR2RGB)).save(buf, format='PNG')
-                    st.download_button("📥 Download", buf.getvalue(), "glass.png", "image/png")
-        
-        # HILFE
-        with tabs[6]:
-            st.header(t('help_title'))
-            st.markdown(HELP_DE if st.session_state.language == 'de' else HELP_EN)
+                    st.markdown(f"**{t('edge_matches')}**")
+                    for i, m in enumerate(st.session_state.get('recon_matches', [])[:5]):
+                        st.write(f"• {m['piece_i']+1} ↔ {m['piece_j']+1}: {m['score']:.0f}%")
+        else:
+            st.info(t('upload_first'))
     
-    else:
-        # Startseite
-        st.title(f"🏺 {t('app_title')} v{APP_VERSION}")
-        st.markdown(f"### {t('app_subtitle')}")
+    # TAB 4: DATENBANK
+    with tabs[4]:
+        st.header(t('database_title'))
         
+        db_pieces = db.get('pieces', {})
+        db_clusters = db.get('clusters', {})
+        
+        if db_pieces:
+            st.write(f"**{len(db_pieces)} {t('fragments_saved')}**")
+            
+            dcols = st.columns(6)
+            for i, (pid, piece) in enumerate(list(db_pieces.items())[:18]):
+                with dcols[i % 6]:
+                    if 'thumbnail' in piece:
+                        st.image(piece['thumbnail'])
+                    st.caption(pid[:11])
+            
+            if db_clusters:
+                st.markdown("---")
+                st.write(f"**{len(db_clusters)} {t('groups_saved')}**")
+                for k, v in db_clusters.items():
+                    st.write(f"• {v.get('name', k)} ({len(v.get('piece_ids', []))} {t('pieces')})")
+        else:
+            st.info(t('db_empty'))
+    
+    # TAB 5: ETIKETTEN / LABELS
+    with tabs[5]:
+        st.header("🏷️ Etiketten & QR-Codes / Labels & QR Codes")
+        
+        source = st.radio("Quelle / Source", ["Session", "Datenbank / Database"], horizontal=True)
+        
+        if source == "Session":
+            label_pieces = active
+        else:
+            label_pieces = list(db.get('pieces', {}).values())
+        
+        if label_pieces:
+            st.write(f"**{len(label_pieces)} Labels**")
+            
+            pcols = st.columns(min(6, len(label_pieces)))
+            for i, p in enumerate(label_pieces[:6]):
+                with pcols[i]:
+                    if 'thumbnail' in p:
+                        st.image(p['thumbnail'], width=60)
+                    st.caption(p['id'][:8])
+            
+            if st.button("📄 PDF erstellen / Create PDF", type='primary', use_container_width=True):
+                with st.spinner("Erstelle PDF..."):
+                    pdf_buf = create_labels_pdf(label_pieces, username)
+                    st.download_button(
+                        "📥 PDF herunterladen / Download PDF",
+                        pdf_buf.getvalue(),
+                        f"shardmind_labels_{datetime.now().strftime('%Y%m%d')}.pdf",
+                        "application/pdf",
+                        use_container_width=True
+                    )
+        else:
+            st.info("Keine Daten. Lade Fotos hoch oder speichere Gruppen in der Datenbank.")
+    
+    # TAB 6: HILFE
+    with tabs[6]:
+        st.header(t('help_title'))
         st.markdown(HELP_DE if st.session_state.language == 'de' else HELP_EN)
-        
-        st.markdown("---")
-        st.info("👈 Lade Fotos in der Sidebar hoch um zu starten / Upload photos in the sidebar to start")
 
 
 if __name__ == "__main__":
