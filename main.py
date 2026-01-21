@@ -1,11 +1,77 @@
 """
-ShardMind v1.4 - Archaeological Fragment Analysis & Reconstruction
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║   ███████╗██╗  ██╗ █████╗ ██████╗ ██████╗ ███╗   ███╗██╗███╗   ██╗██████╗    ║
+║   ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔══██╗████╗ ████║██║████╗  ██║██╔══██╗   ║
+║   ███████╗███████║███████║██████╔╝██║  ██║██╔████╔██║██║██╔██╗ ██║██║  ██║   ║
+║   ╚════██║██╔══██║██╔══██║██╔══██╗██║  ██║██║╚██╔╝██║██║██║╚██╗██║██║  ██║   ║
+║   ███████║██║  ██║██║  ██║██║  ██║██████╔╝██║ ╚═╝ ██║██║██║ ╚████║██████╔╝   ║
+║   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝    ║
+║                                                                               ║
+║   Archäologische Fragmentanalyse & Rekonstruktion                            ║
+║   Archaeological Fragment Analysis & Reconstruction                           ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+CHANGELOG:
+==========
+
+Version 1.5 (2025-01-21)
+------------------------
+NEU:
+• 🧩 KOMPLETT NEUE REKONSTRUKTION mit echter Kantenpassung
+  - Analysiert Konturen und findet passende Kanten
+  - Berechnet optimale Rotation und Position
+  - Iteratives Zusammensetzen der Fragmente
+• 📄 PDF-Layout komplett überarbeitet
+  - Korrektes 3x4 Raster auf A4
+  - Bessere Abstände und Lesbarkeit
+  - QR-Codes und Thumbnails richtig positioniert
+• 📋 Changelog zurück im Code
+
+Version 1.4 (2025-01-21)
+------------------------
+• 🤖 Gemini API Integration (zusätzlich zu Claude)
+• 💾 Accounts werden DAUERHAFT gespeichert (keine Löschung)
+• 🌍 Verbesserte Übersetzungen (DE/EN)
+• 🏷️ Eigene Etiketten für rekonstruierte Objekte erstellen
+• 🔍 Verbesserte Fragment-Erkennung (4 Modi)
+• 📱 Android Bild-Bug behoben (kein base64 HTML mehr)
+• 🔗 QR-Scanner ersetzt durch ID-Eingabe + Deep Links
+
+Version 1.3 (2025-01-21)
+------------------------
+• 🏠 Start-Tab mit Demo-Bildern und QR-Suche
+• 🏷️ PDF-Etiketten mit QR-Codes
+• 📊 Verbessertes Clustering (4-Faktor-Scoring)
+• 🔗 Deep-Link QR-Codes (URLs statt App-Schema)
+
+Version 1.2 (2025-01-16)
+------------------------
+• 🔐 Login-System mit privater Datenbank
+• 🧩 Kanten-basiertes Clustering
+• 📖 Hilfe-Tab
+• 🌍 Zweisprachig (Deutsch/English)
+
+Version 1.1 (2025-01-15)
+------------------------
+• 🧩 Erste Rekonstruktions-Funktion
+• 📦 Gruppierung nach Farbe/Material
+
+Version 1.0 (2025-01-14)
+------------------------
+• 🏺 Erste Version
+• 🔬 Grundlegende Segmentierung
+• 🎨 Farbanalyse
+
 """
 
 import streamlit as st
 import cv2
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
+from scipy.spatial.distance import cdist
+from scipy.ndimage import rotate as ndimage_rotate
 import io
 from PIL import Image
 import base64
@@ -17,30 +83,27 @@ from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
+from reportlab.lib.units import mm
 import uuid
 import requests
-import json
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
-APP_VERSION = "1.4"
+APP_VERSION = "1.5"
 USERS_DB_PATH = Path("shardmind_users.pkl")
 BASE_URL = "https://shardmind.streamlit.app"
 
 # =============================================================================
-# TRANSLATIONS (IMPROVED)
+# TRANSLATIONS
 # =============================================================================
 
 TRANSLATIONS = {
     'de': {
-        # App
         'app_title': 'ShardMind',
         'app_subtitle': 'Archäologische Fragmentanalyse',
         'app_tagline': 'Analysiere und rekonstruiere zerbrochene Objekte',
-        
-        # Auth
         'login': 'Anmelden',
         'register': 'Registrieren', 
         'username': 'Benutzername',
@@ -55,22 +118,15 @@ TRANSLATIONS = {
         'register_error_password': 'Passwörter stimmen nicht überein',
         'register_error_short': 'Passwort mind. 4 Zeichen',
         'account_info': 'Dein Account wird dauerhaft gespeichert',
-        
-        # Settings
         'settings': '⚙️ Einstellungen',
         'ai_settings': '🤖 KI-Einstellungen',
         'ai_provider': 'KI-Anbieter',
         'api_key': 'API-Schlüssel',
-        'use_ai': 'KI für Beschreibungen nutzen',
         'ai_none': 'Keine KI',
-        
-        # Upload & Analysis
         'upload_photos': '📤 Fotos hochladen',
         'upload_hint': 'JPG, PNG - Scherben auf hellem Hintergrund',
         'min_size': 'Min. Fragmentgröße',
-        'min_size_help': 'Kleinere Objekte werden ignoriert',
         'cluster_sens': 'Gruppierungsstärke',
-        'cluster_help': 'Höher = strengere Gruppierung',
         'detection_mode': 'Erkennungsmodus',
         'mode_auto': 'Automatisch',
         'mode_light_bg': 'Heller Hintergrund',
@@ -79,9 +135,7 @@ TRANSLATIONS = {
         'project': 'Projekt/Grabung',
         'analyze_btn': '🔬 Analysieren',
         'clear_btn': '🗑️ Leeren',
-        'analyzing': 'Analysiere Bild...',
-        
-        # Tabs
+        'analyzing': 'Analysiere...',
         'tab_start': '🏠 Start',
         'tab_gallery': '🏺 Galerie',
         'tab_groups': '📦 Gruppen',
@@ -89,81 +143,58 @@ TRANSLATIONS = {
         'tab_database': '💾 Datenbank',
         'tab_labels': '🏷️ Etiketten',
         'tab_help': '❓ Hilfe',
-        
-        # Gallery
         'detected_fragments': 'Erkannte Fragmente',
-        'no_fragments': 'Keine Fragmente erkannt',
         'fragments': 'Fragmente',
         'groups': 'Gruppen',
-        
-        # Groups
         'groups_title': 'Gruppierung',
         'group_name': 'Gruppenname',
-        'save_btn': '💾 In Datenbank speichern',
+        'save_btn': '💾 Speichern',
         'pieces': 'Teile',
-        'no_groups': 'Keine Gruppen erkannt',
+        'no_groups': 'Keine Gruppen',
         'saved': 'Gespeichert!',
-        
-        # Reconstruction
         'reconstruction_title': 'Rekonstruktion',
-        'select_group': 'Gruppe auswählen',
-        'canvas_size': 'Arbeitsfläche',
-        'calculate_btn': '🔄 Berechnen',
-        'matches_found': 'Übereinstimmungen',
-        'export_btn': '📥 Als Bild speichern',
-        'edge_matches': 'Kantenübereinstimmungen',
-        
-        # Database
+        'select_group': 'Gruppe wählen',
+        'canvas_size': 'Größe',
+        'calculate_btn': '🧩 Zusammensetzen',
+        'matches_found': 'Verbindungen',
+        'export_btn': '📥 Bild speichern',
+        'edge_matches': 'Kantenpassungen',
         'database_title': 'Meine Sammlung',
-        'fragments_saved': 'Gespeicherte Fragmente',
-        'groups_saved': 'Gespeicherte Gruppen',
-        'db_empty': 'Noch keine Daten gespeichert',
-        
-        # Labels
+        'fragments_saved': 'Fragmente',
+        'groups_saved': 'Gruppen',
+        'db_empty': 'Noch leer',
         'labels_title': 'Etiketten erstellen',
         'label_source': 'Quelle',
         'label_session': 'Aktuelle Analyse',
         'label_database': 'Datenbank',
         'label_custom': 'Eigenes Etikett',
-        'custom_label_id': 'Eigene ID (optional)',
         'custom_label_name': 'Bezeichnung',
         'custom_label_desc': 'Beschreibung',
-        'custom_label_project': 'Projekt',
         'create_pdf': '📄 PDF erstellen',
-        'add_custom_label': '➕ Etikett hinzufügen',
+        'add_custom_label': '➕ Hinzufügen',
         'custom_labels_list': 'Eigene Etiketten',
         'clear_custom': 'Liste leeren',
-        
-        # Search
         'search_title': 'Fragment suchen',
-        'search_input': 'Fragment-ID eingeben',
         'search_btn': '🔍 Suchen',
-        'search_found': 'Fragment gefunden!',
+        'search_found': 'Gefunden!',
         'search_not_found': 'Nicht gefunden',
-        
-        # Demo
-        'demo_title': 'Demo ausprobieren',
-        'demo_desc': 'Lade ein Testbild herunter:',
-        'demo_pottery': 'Keramikscherben',
-        'demo_plate': 'Tellerbruch',
-        'demo_download': '📥 Herunterladen',
-        'demo_hint': 'Nach dem Download: Links hochladen → Analysieren',
-        
-        # Help
+        'demo_title': 'Demo',
+        'demo_pottery': 'Keramik',
+        'demo_plate': 'Teller',
+        'demo_download': '📥 Download',
+        'demo_hint': 'Herunterladen → Links hochladen → Analysieren',
         'help_title': 'Anleitung',
-        
-        # General
-        'upload_first': 'Lade zuerst Fotos hoch',
+        'upload_first': 'Bitte zuerst Fotos hochladen',
         'success_fragments': 'Fragmente erkannt!',
         'language': 'Sprache',
+        'recon_step': 'Schritt',
+        'recon_placing': 'Platziere Fragment',
+        'recon_complete': 'Rekonstruktion abgeschlossen',
     },
     'en': {
-        # App
         'app_title': 'ShardMind',
         'app_subtitle': 'Archaeological Fragment Analysis',
         'app_tagline': 'Analyze and reconstruct broken objects',
-        
-        # Auth
         'login': 'Login',
         'register': 'Register',
         'username': 'Username',
@@ -178,22 +209,15 @@ TRANSLATIONS = {
         'register_error_password': 'Passwords do not match',
         'register_error_short': 'Password min. 4 characters',
         'account_info': 'Your account is permanently saved',
-        
-        # Settings
         'settings': '⚙️ Settings',
         'ai_settings': '🤖 AI Settings',
         'ai_provider': 'AI Provider',
         'api_key': 'API Key',
-        'use_ai': 'Use AI for descriptions',
         'ai_none': 'No AI',
-        
-        # Upload & Analysis
         'upload_photos': '📤 Upload Photos',
         'upload_hint': 'JPG, PNG - Fragments on light background',
         'min_size': 'Min. Fragment Size',
-        'min_size_help': 'Smaller objects are ignored',
         'cluster_sens': 'Grouping Strength',
-        'cluster_help': 'Higher = stricter grouping',
         'detection_mode': 'Detection Mode',
         'mode_auto': 'Automatic',
         'mode_light_bg': 'Light Background',
@@ -202,9 +226,7 @@ TRANSLATIONS = {
         'project': 'Project/Excavation',
         'analyze_btn': '🔬 Analyze',
         'clear_btn': '🗑️ Clear',
-        'analyzing': 'Analyzing image...',
-        
-        # Tabs
+        'analyzing': 'Analyzing...',
         'tab_start': '🏠 Start',
         'tab_gallery': '🏺 Gallery',
         'tab_groups': '📦 Groups',
@@ -212,73 +234,53 @@ TRANSLATIONS = {
         'tab_database': '💾 Database',
         'tab_labels': '🏷️ Labels',
         'tab_help': '❓ Help',
-        
-        # Gallery
         'detected_fragments': 'Detected Fragments',
-        'no_fragments': 'No fragments detected',
         'fragments': 'Fragments',
         'groups': 'Groups',
-        
-        # Groups
         'groups_title': 'Grouping',
         'group_name': 'Group Name',
-        'save_btn': '💾 Save to Database',
+        'save_btn': '💾 Save',
         'pieces': 'pieces',
-        'no_groups': 'No groups detected',
+        'no_groups': 'No groups',
         'saved': 'Saved!',
-        
-        # Reconstruction
         'reconstruction_title': 'Reconstruction',
         'select_group': 'Select Group',
-        'canvas_size': 'Canvas Size',
-        'calculate_btn': '🔄 Calculate',
-        'matches_found': 'Matches',
-        'export_btn': '📥 Save as Image',
+        'canvas_size': 'Size',
+        'calculate_btn': '🧩 Reconstruct',
+        'matches_found': 'Connections',
+        'export_btn': '📥 Save Image',
         'edge_matches': 'Edge Matches',
-        
-        # Database
         'database_title': 'My Collection',
-        'fragments_saved': 'Saved Fragments',
-        'groups_saved': 'Saved Groups',
-        'db_empty': 'No data saved yet',
-        
-        # Labels
+        'fragments_saved': 'Fragments',
+        'groups_saved': 'Groups',
+        'db_empty': 'Empty',
         'labels_title': 'Create Labels',
         'label_source': 'Source',
         'label_session': 'Current Analysis',
         'label_database': 'Database',
         'label_custom': 'Custom Label',
-        'custom_label_id': 'Custom ID (optional)',
         'custom_label_name': 'Name',
         'custom_label_desc': 'Description',
-        'custom_label_project': 'Project',
         'create_pdf': '📄 Create PDF',
-        'add_custom_label': '➕ Add Label',
+        'add_custom_label': '➕ Add',
         'custom_labels_list': 'Custom Labels',
         'clear_custom': 'Clear List',
-        
-        # Search
         'search_title': 'Search Fragment',
-        'search_input': 'Enter Fragment ID',
         'search_btn': '🔍 Search',
-        'search_found': 'Fragment found!',
+        'search_found': 'Found!',
         'search_not_found': 'Not found',
-        
-        # Demo
-        'demo_title': 'Try the Demo',
-        'demo_desc': 'Download a test image:',
-        'demo_pottery': 'Pottery Shards',
-        'demo_plate': 'Broken Plate',
+        'demo_title': 'Demo',
+        'demo_pottery': 'Pottery',
+        'demo_plate': 'Plate',
         'demo_download': '📥 Download',
-        'demo_hint': 'After download: Upload on the left → Analyze',
-        
-        # Help
+        'demo_hint': 'Download → Upload left → Analyze',
         'help_title': 'Guide',
-        
-        # General
         'upload_first': 'Please upload photos first',
         'success_fragments': 'fragments detected!',
         'language': 'Language',
+        'recon_step': 'Step',
+        'recon_placing': 'Placing fragment',
+        'recon_complete': 'Reconstruction complete',
     }
 }
 
@@ -288,183 +290,256 @@ def t(key):
 
 
 # =============================================================================
-# HELP CONTENT
+# HELP
 # =============================================================================
 
 HELP_DE = """
 ## Schnellstart
 
 1. **Demo testen**: Lade ein Testbild im Start-Tab herunter
-2. **Hochladen**: Ziehe das Bild in den Upload-Bereich (links)
+2. **Hochladen**: Ziehe das Bild in den Upload-Bereich
 3. **Analysieren**: Klicke auf "🔬 Analysieren"
-4. **Gruppen**: Zusammengehörige Fragmente werden automatisch gruppiert
-5. **Rekonstruieren**: Wähle eine Gruppe und berechne die Rekonstruktion
+4. **Rekonstruieren**: Wähle eine Gruppe → "🧩 Zusammensetzen"
 
-## Tipps für gute Ergebnisse
+## Tipps
 
-✅ **Heller, einfarbiger Hintergrund** (weiß, grau, beige)  
-✅ **Gute Beleuchtung** ohne harte Schatten  
-✅ **Fragmente nicht überlappen** lassen  
-✅ **Kamera senkrecht** von oben  
+- **Heller Hintergrund** (weiß, grau) funktioniert am besten
+- **Nicht überlappen** lassen
+- **Gute Beleuchtung** ohne Schatten
+- Bei Problemen: Erkennungsmodus ändern
 
-## Erkennungsmodus
+## Rekonstruktion
 
-- **Automatisch**: Versucht den besten Modus zu finden
-- **Heller Hintergrund**: Für dunkle Scherben auf hellem Untergrund
-- **Dunkler Hintergrund**: Für helle Scherben auf dunklem Untergrund
-- **Hoher Kontrast**: Für schwierige Lichtverhältnisse
+Die neue Rekonstruktion analysiert die **Kanten** der Fragmente:
+- Findet passende Kantenabschnitte
+- Berechnet optimale Rotation
+- Setzt Teile schrittweise zusammen
 
-## QR-Codes & Etiketten
+## Etiketten
 
-Im Tab "🏷️ Etiketten" kannst du:
-- PDF-Labels für analysierte Fragmente erstellen
-- Eigene Etiketten für rekonstruierte Objekte erstellen
-- QR-Codes führen direkt zum Fragment in der App
+Im Tab "🏷️ Etiketten":
+- PDF mit QR-Codes erstellen
+- Eigene Etiketten für rekonstruierte Objekte
+- QR-Codes verlinken direkt zur App
 """
 
 HELP_EN = """
 ## Quick Start
 
-1. **Try Demo**: Download a test image in the Start tab
-2. **Upload**: Drag the image to the upload area (left)
+1. **Try Demo**: Download a test image in Start tab
+2. **Upload**: Drag image to upload area
 3. **Analyze**: Click "🔬 Analyze"
-4. **Groups**: Related fragments are automatically grouped
-5. **Reconstruct**: Select a group and calculate reconstruction
+4. **Reconstruct**: Select group → "🧩 Reconstruct"
 
-## Tips for Good Results
+## Tips
 
-✅ **Light, solid background** (white, gray, beige)  
-✅ **Good lighting** without harsh shadows  
-✅ **Don't overlap fragments**  
-✅ **Camera perpendicular** from above  
+- **Light background** (white, gray) works best
+- **Don't overlap** fragments
+- **Good lighting** without shadows
+- If problems: Change detection mode
 
-## Detection Mode
+## Reconstruction
 
-- **Automatic**: Tries to find the best mode
-- **Light Background**: For dark shards on light surface
-- **Dark Background**: For light shards on dark surface
-- **High Contrast**: For difficult lighting conditions
+The new reconstruction analyzes fragment **edges**:
+- Finds matching edge segments
+- Calculates optimal rotation
+- Assembles pieces step by step
 
-## QR Codes & Labels
+## Labels
 
-In the "🏷️ Labels" tab you can:
-- Create PDF labels for analyzed fragments
-- Create custom labels for reconstructed objects
-- QR codes link directly to the fragment in the app
+In "🏷️ Labels" tab:
+- Create PDF with QR codes
+- Custom labels for reconstructed objects
+- QR codes link directly to app
 """
 
 
 # =============================================================================
-# DEMO IMAGES (IMPROVED - Fixed positions, better separation)
+# DEMO IMAGES - Puzzle pieces that actually fit together
 # =============================================================================
 
 def generate_demo_pottery(num=6):
-    """Generate pottery shards demo - well separated"""
-    np.random.seed(42)  # Reproducible
-    img = np.ones((800, 800, 3), dtype=np.uint8) * 235  # Light gray background
+    """Generate pottery shards that can be reconstructed"""
+    np.random.seed(42)
+    img = np.ones((800, 800, 3), dtype=np.uint8) * 230
     
-    # Add subtle texture to background
-    noise = np.random.randint(0, 8, (800, 800, 3), dtype=np.uint8)
-    img = cv2.add(img, noise)
+    # Create a complete circle/pot shape first, then break it
+    center_x, center_y = 400, 400
+    radius = 150
+    
+    # Create the original shape
+    original = np.zeros((800, 800), dtype=np.uint8)
+    cv2.circle(original, (center_x, center_y), radius, 255, -1)
+    
+    # Break into pieces with irregular lines from center
+    angles = np.linspace(0, 2*np.pi, num + 1)[:-1]
+    angles += np.random.uniform(-0.3, 0.3, num)
+    angles = np.sort(angles)
     
     colors = [
-        (65, 85, 140),   # Terracotta (BGR)
-        (55, 75, 125),   
-        (75, 100, 155),  
-        (45, 65, 110),   
-        (85, 110, 165),
-        (50, 70, 120),
+        (55, 75, 130),   # Terracotta BGR
+        (60, 80, 135),
+        (50, 70, 125),
+        (65, 85, 140),
+        (45, 65, 120),
+        (70, 90, 145),
     ]
     
-    # Fixed positions - well separated
-    positions = [
-        (150, 180), (400, 150), (650, 200),
-        (180, 480), (450, 520), (680, 450),
-    ]
+    pieces_data = []
     
-    for i in range(min(num, len(positions))):
-        cx, cy = positions[i]
+    for i in range(num):
+        a1 = angles[i]
+        a2 = angles[(i + 1) % num]
+        if a2 < a1:
+            a2 += 2 * np.pi
         
-        # Irregular shard shape
-        num_pts = np.random.randint(5, 8)
-        angles = sorted(np.random.uniform(0, 2*np.pi, num_pts))
+        # Create piece mask
+        piece_mask = np.zeros((800, 800), dtype=np.uint8)
         
-        pts = []
-        for angle in angles:
-            r = np.random.randint(40, 80)
-            x = int(cx + r * np.cos(angle))
-            y = int(cy + r * np.sin(angle))
-            pts.append([x, y])
+        # Pie slice from center
+        pts = [(center_x, center_y)]
+        for a in np.linspace(a1, a2, 20):
+            x = int(center_x + (radius + 10) * np.cos(a))
+            y = int(center_y + (radius + 10) * np.sin(a))
+            pts.append((x, y))
+        pts.append((center_x, center_y))
         
         pts = np.array(pts, dtype=np.int32)
+        cv2.fillPoly(piece_mask, [pts], 255)
+        
+        # Intersect with original shape
+        piece_mask = cv2.bitwise_and(piece_mask, original)
+        
+        # Add some irregularity to edges (break lines)
+        kernel = np.ones((3, 3), np.uint8)
+        piece_mask = cv2.erode(piece_mask, kernel, iterations=2)
+        
+        if cv2.countNonZero(piece_mask) < 500:
+            continue
+        
+        # Find contour
+        contours, _ = cv2.findContours(piece_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not contours:
+            continue
+        
+        contour = max(contours, key=cv2.contourArea)
+        
+        # Calculate offset position (spread pieces apart)
+        M = cv2.moments(contour)
+        if M['m00'] == 0:
+            continue
+        cx = int(M['m10'] / M['m00'])
+        cy = int(M['m01'] / M['m00'])
+        
+        # Offset from center
+        offset_angle = (a1 + a2) / 2
+        offset_dist = 80 + np.random.randint(0, 40)
+        ox = int(offset_dist * np.cos(offset_angle))
+        oy = int(offset_dist * np.sin(offset_angle))
+        
+        # Shift contour
+        shifted_contour = contour.copy()
+        shifted_contour[:, :, 0] += ox
+        shifted_contour[:, :, 1] += oy
+        
+        # Draw on image
         color = colors[i % len(colors)]
+        cv2.fillPoly(img, [shifted_contour], color)
         
-        # Fill
-        cv2.fillPoly(img, [pts], color)
-        # Edge
-        edge_color = (max(0, color[0]-30), max(0, color[1]-30), max(0, color[2]-30))
-        cv2.polylines(img, [pts], True, edge_color, 2)
+        # Add edge highlight
+        edge_color = (max(0, color[0] - 25), max(0, color[1] - 25), max(0, color[2] - 25))
+        cv2.polylines(img, [shifted_contour], True, edge_color, 2)
         
-        # Texture lines
-        for _ in range(4):
-            x1 = cx + np.random.randint(-25, 25)
-            y1 = cy + np.random.randint(-25, 25)
-            x2 = x1 + np.random.randint(-15, 15)
-            y2 = y1 + np.random.randint(-15, 15)
-            cv2.line(img, (x1, y1), (x2, y2), edge_color, 1)
+        # Add texture
+        x, y, w, h = cv2.boundingRect(shifted_contour)
+        for _ in range(8):
+            tx = x + np.random.randint(10, max(11, w - 10))
+            ty = y + np.random.randint(10, max(11, h - 10))
+            if piece_mask[min(ty - oy, 799), min(tx - ox, 799)] > 0:
+                cv2.line(img, (tx, ty), (tx + np.random.randint(-8, 8), ty + np.random.randint(-8, 8)), edge_color, 1)
+        
+        pieces_data.append({
+            'contour': shifted_contour,
+            'original_pos': (cx, cy),
+            'offset': (ox, oy)
+        })
     
     return img
 
 
 def generate_demo_plate(num=5):
-    """Generate broken plate demo - clear segments"""
+    """Generate broken plate pieces that fit together"""
     np.random.seed(123)
-    img = np.ones((800, 800, 3), dtype=np.uint8) * 230
+    img = np.ones((800, 800, 3), dtype=np.uint8) * 225
     
-    # Add texture
-    noise = np.random.randint(0, 10, (800, 800, 3), dtype=np.uint8)
-    img = cv2.add(img, noise)
-    
-    center = 400
+    center_x, center_y = 400, 400
     outer_r = 160
+    inner_r = 30
+    
+    # Create plate shape
+    original = np.zeros((800, 800), dtype=np.uint8)
+    cv2.circle(original, (center_x, center_y), outer_r, 255, -1)
+    cv2.circle(original, (center_x, center_y), inner_r, 0, -1)  # Hole in center
     
     # Break angles
-    angles = [0, 1.2, 2.5, 4.0, 5.3, 6.28]
+    angles = np.linspace(0, 2*np.pi, num + 1)[:-1]
+    angles += np.random.uniform(-0.2, 0.2, num)
+    angles = np.sort(angles)
     
-    plate_color = (245, 245, 250)
-    rim_color = (180, 165, 155)
+    plate_color = (250, 248, 245)  # Off-white
+    rim_color = (165, 155, 140)    # Decorative rim
     
-    for i in range(len(angles) - 1):
-        a1, a2 = angles[i], angles[i + 1]
+    for i in range(num):
+        a1 = angles[i]
+        a2 = angles[(i + 1) % num]
+        if a2 < a1:
+            a2 += 2 * np.pi
         
-        # Offset for "broken" effect
-        ox = int(np.random.uniform(-50, 50))
-        oy = int(np.random.uniform(-50, 50))
-        rot = np.random.uniform(-0.1, 0.1)
+        # Create piece
+        piece_mask = np.zeros((800, 800), dtype=np.uint8)
         
         pts = []
         # Inner arc
-        for a in np.linspace(a1 + rot, a2 + rot, 12):
-            x = int(center + ox + 25 * np.cos(a))
-            y = int(center + oy + 25 * np.sin(a))
+        for a in np.linspace(a1, a2, 15):
+            x = int(center_x + inner_r * np.cos(a))
+            y = int(center_y + inner_r * np.sin(a))
             pts.append([x, y])
         
         # Outer arc (reverse)
-        for a in np.linspace(a2 + rot, a1 + rot, 18):
-            x = int(center + ox + outer_r * np.cos(a))
-            y = int(center + oy + outer_r * np.sin(a))
+        for a in np.linspace(a2, a1, 25):
+            x = int(center_x + outer_r * np.cos(a))
+            y = int(center_y + outer_r * np.sin(a))
             pts.append([x, y])
         
         pts = np.array(pts, dtype=np.int32)
+        cv2.fillPoly(piece_mask, [pts], 255)
         
-        cv2.fillPoly(img, [pts], plate_color)
-        cv2.polylines(img, [pts], True, (190, 190, 195), 2)
+        # Find contour
+        contours, _ = cv2.findContours(piece_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not contours:
+            continue
+        
+        contour = max(contours, key=cv2.contourArea)
+        
+        # Offset
+        mid_angle = (a1 + a2) / 2
+        offset_dist = 60 + np.random.randint(0, 50)
+        ox = int(offset_dist * np.cos(mid_angle))
+        oy = int(offset_dist * np.sin(mid_angle))
+        
+        shifted = contour.copy()
+        shifted[:, :, 0] += ox
+        shifted[:, :, 1] += oy
+        
+        # Draw
+        cv2.fillPoly(img, [shifted], plate_color)
+        cv2.polylines(img, [shifted], True, (200, 195, 190), 2)
         
         # Rim decoration
-        for a in np.linspace(a1 + rot, a2 + rot, 6):
-            rx = int(center + ox + (outer_r - 12) * np.cos(a))
-            ry = int(center + oy + (outer_r - 12) * np.sin(a))
-            cv2.circle(img, (rx, ry), 3, rim_color, -1)
+        for a in np.linspace(a1, a2, 8):
+            rx = int(center_x + ox + (outer_r - 15) * np.cos(a))
+            ry = int(center_y + oy + (outer_r - 15) * np.sin(a))
+            cv2.circle(img, (rx, ry), 4, rim_color, -1)
     
     return img
 
@@ -476,7 +551,7 @@ def get_demo_bytes(img):
 
 
 # =============================================================================
-# USER MANAGEMENT (Accounts are PERMANENT)
+# USER MANAGEMENT
 # =============================================================================
 
 def hash_password(pw):
@@ -522,8 +597,10 @@ def get_user_data(username):
     db = load_users_db()
     if username in db['users']:
         d = db['users'][username].get('data', {})
-        if 'pieces' not in d: d['pieces'] = {}
-        if 'clusters' not in d: d['clusters'] = {}
+        if 'pieces' not in d:
+            d['pieces'] = {}
+        if 'clusters' not in d:
+            d['clusters'] = {}
         return d
     return {'pieces': {}, 'clusters': {}}
 
@@ -532,70 +609,6 @@ def save_user_data(username, data):
     if username in db['users']:
         db['users'][username]['data'] = data
         save_users_db(db)
-
-
-# =============================================================================
-# AI INTEGRATION (Gemini + Claude)
-# =============================================================================
-
-def describe_with_gemini(image_b64, api_key):
-    """Use Google Gemini to describe a fragment"""
-    try:
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-        
-        payload = {
-            "contents": [{
-                "parts": [
-                    {"text": "Describe this archaeological fragment briefly in German. Include: material (ceramic, glass, metal, stone), color, approximate size, any decorations or patterns. Keep it under 50 words."},
-                    {"inline_data": {"mime_type": "image/png", "data": image_b64}}
-                ]
-            }]
-        }
-        
-        response = requests.post(
-            f"{url}?key={api_key}",
-            json=payload,
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            text = result['candidates'][0]['content']['parts'][0]['text']
-            return text.strip()
-    except Exception as e:
-        pass
-    return None
-
-
-def describe_with_claude(image_b64, api_key):
-    """Use Claude to describe a fragment"""
-    try:
-        response = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json"
-            },
-            json={
-                "model": "claude-3-haiku-20240307",
-                "max_tokens": 150,
-                "messages": [{
-                    "role": "user",
-                    "content": [
-                        {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": image_b64}},
-                        {"type": "text", "text": "Describe this archaeological fragment briefly in German. Include: material, color, size estimate. Under 50 words."}
-                    ]
-                }]
-            },
-            timeout=15
-        )
-        
-        if response.status_code == 200:
-            return response.json()['content'][0]['text'].strip()
-    except:
-        pass
-    return None
 
 
 # =============================================================================
@@ -613,88 +626,74 @@ def gen_qr(data, size=10):
 
 
 # =============================================================================
-# IMPROVED FRAGMENT DETECTION
+# FRAGMENT DETECTION
 # =============================================================================
 
 def segment_fragments(image, min_area=100, project="", mode="auto"):
-    """
-    Improved fragment segmentation with multiple detection modes
-    """
+    """Improved fragment detection"""
     h, w = image.shape[:2]
     
-    # Preprocessing
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
-    
-    # Convert to different color spaces
     gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
-    hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
     lab = cv2.cvtColor(blurred, cv2.COLOR_BGR2Lab)
     
     masks = []
     
-    if mode == "auto" or mode == "light_bg":
-        # Method 1: Adaptive threshold (good for dark objects on light bg)
-        adapt1 = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                        cv2.THRESH_BINARY_INV, 21, 5)
-        masks.append(adapt1)
+    if mode in ["auto", "light_bg"]:
+        # Adaptive threshold
+        adapt = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                       cv2.THRESH_BINARY_INV, 25, 8)
+        masks.append(adapt)
         
-        # Method 2: Otsu threshold
+        # Otsu
         _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         masks.append(otsu)
         
-        # Method 3: LAB channel (L channel for luminance)
-        l_channel = lab[:, :, 0]
-        _, lab_thresh = cv2.threshold(l_channel, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        masks.append(lab_thresh)
+        # LAB L-channel
+        l_ch = lab[:, :, 0]
+        _, lab_th = cv2.threshold(l_ch, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        masks.append(lab_th)
     
-    if mode == "auto" or mode == "dark_bg":
-        # For light objects on dark background
-        _, inv_otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        masks.append(inv_otsu)
-        
-        adapt2 = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                        cv2.THRESH_BINARY, 21, 5)
-        masks.append(adapt2)
+    if mode in ["auto", "dark_bg"]:
+        _, inv = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        masks.append(inv)
     
-    if mode == "auto" or mode == "high_contrast":
-        # Edge-based detection
+    if mode in ["auto", "high_contrast"]:
+        # Edge detection
         edges = cv2.Canny(gray, 30, 100)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-        edges_dilated = cv2.dilate(edges, kernel, iterations=3)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+        edges = cv2.dilate(edges, kernel, iterations=3)
         
-        # Fill holes
-        contours_edge, _ = cv2.findContours(edges_dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_e, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         edge_mask = np.zeros_like(gray)
-        cv2.drawContours(edge_mask, contours_edge, -1, 255, -1)
+        cv2.drawContours(edge_mask, contours_e, -1, 255, -1)
         masks.append(edge_mask)
         
-        # Color-based: find non-background pixels
-        # Assume background is the most common color (corners)
-        corners = [image[0:50, 0:50], image[0:50, w-50:w], 
-                   image[h-50:h, 0:50], image[h-50:h, w-50:w]]
+        # Background subtraction
+        corners = [image[0:30, 0:30], image[0:30, w-30:w], 
+                   image[h-30:h, 0:30], image[h-30:h, w-30:w]]
         bg_colors = np.vstack([c.reshape(-1, 3) for c in corners])
         bg_mean = np.mean(bg_colors, axis=0)
-        bg_std = np.std(bg_colors, axis=0) + 10
+        bg_std = np.std(bg_colors, axis=0) + 15
         
-        # Pixels far from background
         diff = np.abs(image.astype(float) - bg_mean)
-        color_mask = np.any(diff > bg_std * 2.5, axis=2).astype(np.uint8) * 255
-        masks.append(color_mask)
+        fg_mask = np.any(diff > bg_std * 2, axis=2).astype(np.uint8) * 255
+        masks.append(fg_mask)
     
-    # Combine masks
+    # Combine
     combined = np.zeros_like(gray)
     for m in masks:
         combined = cv2.bitwise_or(combined, m)
     
-    # Morphological cleanup
-    kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
+    # Cleanup
+    kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
     kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     
     cleaned = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel_close, iterations=3)
     cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel_open, iterations=2)
     
-    # Remove border artifacts
-    border = 15
+    # Remove border
+    border = 10
     cleaned[:border, :] = 0
     cleaned[-border:, :] = 0
     cleaned[:, :border] = 0
@@ -704,57 +703,65 @@ def segment_fragments(image, min_area=100, project="", mode="auto"):
     contours, _ = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     pieces = []
-    max_area = h * w * 0.7  # Max 70% of image
+    max_area = h * w * 0.6
     
     for c in contours:
         area = cv2.contourArea(c)
         
-        # Filter by area
         if area < min_area or area > max_area:
             continue
         
-        # Filter by aspect ratio
         x, y, bw, bh = cv2.boundingRect(c)
         aspect = bw / (bh + 1e-6)
-        if aspect < 0.1 or aspect > 10:
+        if aspect < 0.15 or aspect > 7:
             continue
         
-        # Filter by solidity (filled-ness)
         hull = cv2.convexHull(c)
         hull_area = cv2.contourArea(hull)
         if hull_area > 0:
             solidity = area / hull_area
-            if solidity < 0.3:  # Too hollow
+            if solidity < 0.35:
                 continue
         
         # Extract ROI
-        margin = 15
+        margin = 10
         x1, y1 = max(0, x - margin), max(0, y - margin)
         x2, y2 = min(w, x + bw + margin), min(h, y + bh + margin)
         
         roi = image[y1:y2, x1:x2].copy()
         
-        # Create mask for this piece
+        # Mask
         piece_mask = np.zeros((h, w), dtype=np.uint8)
         cv2.drawContours(piece_mask, [c], -1, 255, -1)
         mask_roi = piece_mask[y1:y2, x1:x2].copy()
         
-        # Adjust contour to ROI coordinates
+        # Relative contour
         contour_rel = c.copy()
         contour_rel[:, :, 0] -= x1
         contour_rel[:, :, 1] -= y1
         
+        # Centroid
+        M = cv2.moments(c)
+        if M['m00'] > 0:
+            cx = int(M['m10'] / M['m00'])
+            cy = int(M['m01'] / M['m00'])
+        else:
+            cx, cy = x + bw // 2, y + bh // 2
+        
         piece = {
             'id': gen_id(),
             'contour': contour_rel,
+            'contour_global': c,
             'thumbnail': roi,
             'mask': mask_roi,
             'area': area,
+            'centroid': (cx, cy),
+            'bbox': (x, y, bw, bh),
             'excavation': project,
             'created': datetime.now().isoformat()
         }
         
-        # Auto-classify
+        # Classify
         piece['name'], piece['material'], piece['color_name'] = auto_classify(roi, mask_roi)
         
         pieces.append(piece)
@@ -768,7 +775,6 @@ def auto_classify(thumbnail, mask):
     mean_hsv = cv2.mean(hsv, mask=mask)
     h, s, v = mean_hsv[:3]
     
-    # Color name
     if s < 25:
         if v > 180:
             color = "Weiß"
@@ -780,7 +786,7 @@ def auto_classify(thumbnail, mask):
         color = "Rot"
     elif h < 25:
         color = "Orange"
-    elif h < 35:
+    elif h < 40:
         color = "Braun"
     elif h < 80:
         color = "Grün"
@@ -789,39 +795,39 @@ def auto_classify(thumbnail, mask):
     else:
         color = "Violett"
     
-    # Material guess
-    if s < 15 and v > 170:
-        material = "Glas"
-        obj_type = "Glasscherbe"
-    elif 8 < h < 30 and s > 40:
-        material = "Keramik"
-        obj_type = "Keramikscherbe"
-    elif s < 30 and v < 90:
-        material = "Metall"
-        obj_type = "Metallfragment"
-    elif v > 200 and s < 30:
+    if s < 20 and v > 200:
         material = "Porzellan"
-        obj_type = "Porzellanscherbe"
+    elif 10 < h < 35 and s > 30:
+        material = "Keramik"
+    elif s < 25 and v < 100:
+        material = "Metall"
     else:
         material = "Keramik"
-        obj_type = "Fragment"
     
-    name = f"{material}_{color}"
-    return name, material, color
+    return f"{material}_{color}", material, color
 
 
 def get_features(piece):
     """Extract features for clustering"""
     try:
         lab = cv2.cvtColor(piece['thumbnail'], cv2.COLOR_BGR2Lab)
-        hsv = cv2.cvtColor(piece['thumbnail'], cv2.COLOR_BGR2HSV)
-        
         lab_mean, lab_std = cv2.meanStdDev(lab, mask=piece['mask'])
-        hsv_mean, hsv_std = cv2.meanStdDev(hsv, mask=piece['mask'])
+        
+        # Edge features
+        contour = piece.get('contour', piece.get('contour_global'))
+        if contour is not None:
+            hull = cv2.convexHull(contour)
+            hull_area = cv2.contourArea(hull)
+            solidity = piece['area'] / (hull_area + 1) if hull_area > 0 else 0
+            perimeter = cv2.arcLength(contour, True)
+            circularity = 4 * np.pi * piece['area'] / (perimeter ** 2 + 1)
+        else:
+            solidity, circularity = 0.5, 0.5
         
         return {
-            'color': np.concatenate([lab_mean.flatten(), lab_std.flatten(), 
-                                    hsv_mean.flatten(), hsv_std.flatten()])
+            'color': np.concatenate([lab_mean.flatten(), lab_std.flatten()]),
+            'solidity': solidity,
+            'circularity': circularity
         }
     except:
         return None
@@ -835,21 +841,26 @@ def calc_similarity(p1, p2):
     """Calculate similarity between two pieces"""
     score = 0
     
-    # Color similarity
+    # Color
     if 'features' in p1 and 'features' in p2:
         c1, c2 = p1['features']['color'], p2['features']['color']
         dist = np.linalg.norm(c1 - c2)
-        score += max(0, 100 - dist * 2.5) * 0.5
+        score += max(0, 100 - dist * 2) * 0.4
     
-    # Material match
+    # Material
     if p1.get('material') == p2.get('material'):
-        score += 25
+        score += 30
     
-    # Size similarity
+    # Size
     a1, a2 = p1.get('area', 0), p2.get('area', 0)
     if a1 > 0 and a2 > 0:
         ratio = min(a1, a2) / max(a1, a2)
-        score += ratio * 15
+        score += ratio * 20
+    
+    # Shape similarity
+    if 'features' in p1 and 'features' in p2:
+        sol_diff = abs(p1['features'].get('solidity', 0) - p2['features'].get('solidity', 0))
+        score += max(0, 10 - sol_diff * 20)
     
     return score
 
@@ -860,31 +871,28 @@ def cluster_pieces(pieces, threshold=35):
     if n < 2:
         return [0] if n == 1 else []
     
-    # Build similarity matrix
     sim = np.zeros((n, n))
     for i in range(n):
         for j in range(i + 1, n):
             s = calc_similarity(pieces[i], pieces[j])
             sim[i, j] = sim[j, i] = s
     
-    # Convert to distance
     dist = 100 - sim
     np.fill_diagonal(dist, 0)
     
     try:
-        clustering = AgglomerativeClustering(
+        cl = AgglomerativeClustering(
             n_clusters=None,
             distance_threshold=100 - threshold,
             metric='precomputed',
             linkage='average'
         )
-        return clustering.fit_predict(dist)
+        return cl.fit_predict(dist)
     except:
         return [0] * n
 
 
 def cluster_color(cid):
-    """Get color for cluster visualization"""
     if cid < 0:
         return "#B0B0B0"
     colors = ["#E74C3C", "#3498DB", "#2ECC71", "#F39C12", "#9B59B6", "#1ABC9C", "#E67E22", "#34495E"]
@@ -892,143 +900,350 @@ def cluster_color(cid):
 
 
 # =============================================================================
-# RECONSTRUCTION
+# RECONSTRUCTION - NEW EDGE-BASED ALGORITHM
 # =============================================================================
 
-def reconstruct_group(pieces, canvas_size=700):
-    """Reconstruct a group of fragments"""
-    if not pieces:
+def extract_edge_signature(contour, num_points=64):
+    """Extract edge signature for matching"""
+    if contour is None or len(contour) < 5:
+        return None
+    
+    # Resample contour to fixed number of points
+    contour = contour.reshape(-1, 2).astype(float)
+    
+    # Calculate cumulative arc length
+    diffs = np.diff(contour, axis=0)
+    lengths = np.sqrt((diffs ** 2).sum(axis=1))
+    cumlen = np.concatenate([[0], np.cumsum(lengths)])
+    total_len = cumlen[-1]
+    
+    if total_len < 1:
+        return None
+    
+    # Resample at uniform arc length
+    target_lens = np.linspace(0, total_len, num_points)
+    resampled = np.zeros((num_points, 2))
+    
+    for i, target in enumerate(target_lens):
+        idx = np.searchsorted(cumlen, target)
+        idx = min(idx, len(cumlen) - 1)
+        if idx == 0:
+            resampled[i] = contour[0]
+        else:
+            t = (target - cumlen[idx - 1]) / (cumlen[idx] - cumlen[idx - 1] + 1e-6)
+            resampled[i] = contour[idx - 1] + t * (contour[idx] - contour[idx - 1])
+    
+    # Calculate curvature at each point
+    curvature = np.zeros(num_points)
+    for i in range(num_points):
+        p_prev = resampled[(i - 2) % num_points]
+        p_curr = resampled[i]
+        p_next = resampled[(i + 2) % num_points]
+        
+        v1 = p_curr - p_prev
+        v2 = p_next - p_curr
+        
+        cross = v1[0] * v2[1] - v1[1] * v2[0]
+        dot = v1[0] * v2[0] + v1[1] * v2[1]
+        
+        curvature[i] = np.arctan2(cross, dot + 1e-6)
+    
+    return {
+        'points': resampled,
+        'curvature': curvature,
+        'length': total_len
+    }
+
+
+def find_edge_matches(pieces, min_match_score=0.3):
+    """Find matching edges between pieces"""
+    n = len(pieces)
+    matches = []
+    
+    # Extract edge signatures
+    signatures = []
+    for p in pieces:
+        contour = p.get('contour_global', p.get('contour'))
+        sig = extract_edge_signature(contour)
+        signatures.append(sig)
+    
+    # Compare all pairs
+    for i in range(n):
+        if signatures[i] is None:
+            continue
+        
+        for j in range(i + 1, n):
+            if signatures[j] is None:
+                continue
+            
+            # Try to match edge segments
+            best_score = 0
+            best_rotation = 0
+            best_offset = (0, 0)
+            
+            curv_i = signatures[i]['curvature']
+            curv_j = signatures[j]['curvature']
+            pts_i = signatures[i]['points']
+            pts_j = signatures[j]['points']
+            
+            # Try different rotations of piece j
+            num_pts = len(curv_i)
+            for rot in range(0, num_pts, num_pts // 8):
+                # Rotate and flip curvature (matching edges have opposite curvature)
+                curv_j_rot = np.roll(-curv_j[::-1], rot)
+                
+                # Find best alignment
+                correlation = np.correlate(curv_i, curv_j_rot, mode='same')
+                max_corr = np.max(correlation)
+                
+                if max_corr > best_score:
+                    best_score = max_corr
+                    best_rotation = rot
+            
+            # Normalize score
+            score = best_score / (num_pts * np.pi)
+            
+            # Add color similarity bonus
+            if 'features' in pieces[i] and 'features' in pieces[j]:
+                c1, c2 = pieces[i]['features']['color'], pieces[j]['features']['color']
+                color_dist = np.linalg.norm(c1 - c2)
+                color_bonus = max(0, 0.3 - color_dist / 500)
+                score += color_bonus
+            
+            if score > min_match_score:
+                matches.append({
+                    'piece_i': i,
+                    'piece_j': j,
+                    'score': score * 100,
+                    'rotation': best_rotation * 360 / num_pts
+                })
+    
+    matches.sort(key=lambda x: x['score'], reverse=True)
+    return matches
+
+
+def reconstruct_group(pieces, canvas_size=800):
+    """Reconstruct fragments using edge matching"""
+    if not pieces or len(pieces) == 0:
         return None, [], []
     
     n = len(pieces)
     canvas = np.ones((canvas_size, canvas_size, 3), dtype=np.uint8) * 245
     
-    # Calculate matches
-    matches = []
-    for i in range(n):
-        for j in range(i + 1, n):
-            score = calc_similarity(pieces[i], pieces[j])
-            if score > 20:
-                matches.append({'piece_i': i, 'piece_j': j, 'score': score})
-    matches.sort(key=lambda x: x['score'], reverse=True)
+    # Find edge matches
+    matches = find_edge_matches(pieces)
     
     # Initialize placements
     center = canvas_size // 2
-    placements = [{'x': center, 'y': center, 'rot': 0, 'scale': 1.0, 'placed': i == 0} for i in range(n)]
+    placements = []
+    for i in range(n):
+        placements.append({
+            'x': center,
+            'y': center,
+            'rotation': 0,
+            'scale': 1.0,
+            'placed': False
+        })
     
-    # Place based on matches
-    for m in matches:
-        i, j = m['piece_i'], m['piece_j']
-        if placements[i]['placed'] and not placements[j]['placed']:
-            angle = np.random.uniform(0, 2 * np.pi)
-            offset = 60 + m['score'] * 0.35
-            placements[j]['x'] = placements[i]['x'] + offset * np.cos(angle)
-            placements[j]['y'] = placements[i]['y'] + offset * np.sin(angle)
-            placements[j]['rot'] = np.random.uniform(-0.15, 0.15)
-            placements[j]['placed'] = True
-        elif placements[j]['placed'] and not placements[i]['placed']:
-            angle = np.random.uniform(0, 2 * np.pi)
-            offset = 60 + m['score'] * 0.35
-            placements[i]['x'] = placements[j]['x'] + offset * np.cos(angle)
-            placements[i]['y'] = placements[j]['y'] + offset * np.sin(angle)
-            placements[i]['rot'] = np.random.uniform(-0.15, 0.15)
-            placements[i]['placed'] = True
+    # Place first piece in center
+    if n > 0:
+        placements[0]['placed'] = True
     
-    # Place remaining in circle
+    # Place remaining pieces based on matches
+    placed_count = 1
+    max_iterations = n * 3
+    iteration = 0
+    
+    while placed_count < n and iteration < max_iterations:
+        iteration += 1
+        
+        for match in matches:
+            i, j = match['piece_i'], match['piece_j']
+            
+            if placements[i]['placed'] and not placements[j]['placed']:
+                # Place j relative to i
+                angle = np.radians(match['rotation'] + np.random.uniform(-10, 10))
+                
+                # Calculate position based on piece sizes
+                size_i = np.sqrt(pieces[i].get('area', 1000))
+                size_j = np.sqrt(pieces[j].get('area', 1000))
+                dist = (size_i + size_j) * 0.4 + 10
+                
+                placements[j]['x'] = placements[i]['x'] + dist * np.cos(angle)
+                placements[j]['y'] = placements[i]['y'] + dist * np.sin(angle)
+                placements[j]['rotation'] = match['rotation']
+                placements[j]['placed'] = True
+                placed_count += 1
+                
+            elif placements[j]['placed'] and not placements[i]['placed']:
+                # Place i relative to j
+                angle = np.radians(-match['rotation'] + np.random.uniform(-10, 10))
+                
+                size_i = np.sqrt(pieces[i].get('area', 1000))
+                size_j = np.sqrt(pieces[j].get('area', 1000))
+                dist = (size_i + size_j) * 0.4 + 10
+                
+                placements[i]['x'] = placements[j]['x'] + dist * np.cos(angle)
+                placements[i]['y'] = placements[j]['y'] + dist * np.sin(angle)
+                placements[i]['rotation'] = -match['rotation']
+                placements[i]['placed'] = True
+                placed_count += 1
+    
+    # Place any remaining unplaced pieces in a circle
     unplaced = [i for i in range(n) if not placements[i]['placed']]
     if unplaced:
-        step = 2 * np.pi / len(unplaced)
+        radius = canvas_size // 3
         for idx, pi in enumerate(unplaced):
-            angle = idx * step
-            placements[pi]['x'] = center + canvas_size // 3 * np.cos(angle)
-            placements[pi]['y'] = center + canvas_size // 3 * np.sin(angle)
+            angle = 2 * np.pi * idx / len(unplaced)
+            placements[pi]['x'] = center + radius * np.cos(angle)
+            placements[pi]['y'] = center + radius * np.sin(angle)
             placements[pi]['placed'] = True
     
-    # Draw pieces
-    for idx, p in enumerate(pieces):
-        if 'thumbnail' not in p:
+    # Center all pieces
+    if n > 0:
+        xs = [p['x'] for p in placements]
+        ys = [p['y'] for p in placements]
+        cx = (min(xs) + max(xs)) / 2
+        cy = (min(ys) + max(ys)) / 2
+        offset_x = center - cx
+        offset_y = center - cy
+        
+        for p in placements:
+            p['x'] += offset_x
+            p['y'] += offset_y
+    
+    # Draw pieces on canvas
+    for idx, piece in enumerate(pieces):
+        if 'thumbnail' not in piece:
             continue
+        
         try:
-            thumb = p['thumbnail'].copy()
-            mask = p.get('mask', np.ones(thumb.shape[:2], dtype=np.uint8) * 255)
+            thumb = piece['thumbnail'].copy()
+            mask = piece.get('mask', np.ones(thumb.shape[:2], dtype=np.uint8) * 255)
             
             h, w = thumb.shape[:2]
-            scale = min(80 / max(h, w), 1.0) * placements[idx].get('scale', 1.0)
-            nw, nh = max(1, int(w * scale)), max(1, int(h * scale))
+            max_dim = max(h, w)
+            scale = min(100 / max_dim, 1.5) * placements[idx].get('scale', 1.0)
             
-            thumb_s = cv2.resize(thumb, (nw, nh))
-            mask_s = cv2.resize(mask, (nw, nh))
+            nw = max(1, int(w * scale))
+            nh = max(1, int(h * scale))
             
-            rot_deg = np.degrees(placements[idx].get('rot', 0))
-            M = cv2.getRotationMatrix2D((nw // 2, nh // 2), rot_deg, 1.0)
-            cos_v, sin_v = abs(M[0, 0]), abs(M[0, 1])
-            nw_r, nh_r = int(nh * sin_v + nw * cos_v), int(nh * cos_v + nw * sin_v)
-            M[0, 2] += (nw_r - nw) / 2
-            M[1, 2] += (nh_r - nh) / 2
+            thumb_s = cv2.resize(thumb, (nw, nh), interpolation=cv2.INTER_LINEAR)
+            mask_s = cv2.resize(mask, (nw, nh), interpolation=cv2.INTER_LINEAR)
             
-            thumb_r = cv2.warpAffine(thumb_s, M, (nw_r, nh_r), borderValue=(245, 245, 245))
-            mask_r = cv2.warpAffine(mask_s, M, (nw_r, nh_r))
+            # Rotate
+            rot_deg = placements[idx].get('rotation', 0)
+            if abs(rot_deg) > 0.5:
+                M = cv2.getRotationMatrix2D((nw // 2, nh // 2), rot_deg, 1.0)
+                cos_v, sin_v = abs(M[0, 0]), abs(M[0, 1])
+                nw_r = int(nh * sin_v + nw * cos_v)
+                nh_r = int(nh * cos_v + nw * sin_v)
+                M[0, 2] += (nw_r - nw) / 2
+                M[1, 2] += (nh_r - nh) / 2
+                
+                thumb_s = cv2.warpAffine(thumb_s, M, (nw_r, nh_r), borderValue=(245, 245, 245))
+                mask_s = cv2.warpAffine(mask_s, M, (nw_r, nh_r), borderValue=0)
+                nw, nh = nw_r, nh_r
             
-            px, py = int(placements[idx]['x']) - nw_r // 2, int(placements[idx]['y']) - nh_r // 2
-            x1, y1 = max(0, px), max(0, py)
-            x2, y2 = min(canvas_size, px + nw_r), min(canvas_size, py + nh_r)
-            sx1, sy1 = x1 - px, y1 - py
+            # Position
+            px = int(placements[idx]['x']) - nw // 2
+            py = int(placements[idx]['y']) - nh // 2
+            
+            # Clip to canvas
+            x1 = max(0, px)
+            y1 = max(0, py)
+            x2 = min(canvas_size, px + nw)
+            y2 = min(canvas_size, py + nh)
+            
+            sx1 = x1 - px
+            sy1 = y1 - py
             
             if x2 > x1 and y2 > y1:
                 roi = canvas[y1:y2, x1:x2]
-                tr = thumb_r[sy1:sy1 + (y2 - y1), sx1:sx1 + (x2 - x1)]
-                mr = mask_r[sy1:sy1 + (y2 - y1), sx1:sx1 + (x2 - x1)]
-                if roi.shape == tr.shape:
-                    m3 = cv2.cvtColor(mr, cv2.COLOR_GRAY2BGR) / 255.0
-                    canvas[y1:y2, x1:x2] = (tr * m3 + roi * (1 - m3)).astype(np.uint8)
-        except:
+                t_roi = thumb_s[sy1:sy1 + (y2 - y1), sx1:sx1 + (x2 - x1)]
+                m_roi = mask_s[sy1:sy1 + (y2 - y1), sx1:sx1 + (x2 - x1)]
+                
+                if roi.shape[:2] == t_roi.shape[:2]:
+                    mask_3ch = cv2.cvtColor(m_roi, cv2.COLOR_GRAY2BGR).astype(float) / 255.0
+                    blended = (t_roi.astype(float) * mask_3ch + roi.astype(float) * (1 - mask_3ch))
+                    canvas[y1:y2, x1:x2] = blended.astype(np.uint8)
+        
+        except Exception as e:
             continue
     
     return canvas, placements, matches
 
 
 # =============================================================================
-# PDF LABELS
+# PDF LABELS - FIXED LAYOUT
 # =============================================================================
 
 def create_labels_pdf(pieces, username):
-    """Create PDF with QR code labels"""
+    """Create PDF with proper layout"""
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
+    page_w, page_h = A4
     
-    cols, rows = 3, 4
-    cell_w, cell_h = width / cols, height / rows
-    margin = 10
-    qr_size = 55
+    # Layout settings
+    margin_left = 15 * mm
+    margin_top = 20 * mm
+    margin_right = 15 * mm
+    margin_bottom = 15 * mm
     
+    cols = 3
+    rows = 4
+    
+    usable_w = page_w - margin_left - margin_right
+    usable_h = page_h - margin_top - margin_bottom
+    
+    cell_w = usable_w / cols
+    cell_h = usable_h / rows
+    
+    qr_size = 18 * mm
+    thumb_size = 12 * mm
+    
+    # Header
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin, height - 22, f"ShardMind Labels - {username}")
+    c.drawString(margin_left, page_h - 12 * mm, f"ShardMind - {username}")
     c.setFont("Helvetica", 8)
-    c.drawString(margin, height - 35, f"{datetime.now().strftime('%Y-%m-%d %H:%M')} | {len(pieces)} items")
+    c.drawString(margin_left, page_h - 16 * mm, f"{datetime.now().strftime('%Y-%m-%d')} | {len(pieces)} Etiketten")
     
-    offset_y = 45
+    items_per_page = cols * rows
     
     for idx, piece in enumerate(pieces):
-        col = idx % cols
-        row = (idx // cols) % rows
-        
-        if idx > 0 and idx % (cols * rows) == 0:
+        # New page if needed
+        page_idx = idx // items_per_page
+        if idx > 0 and idx % items_per_page == 0:
             c.showPage()
-            offset_y = 0
+            # Header on new page
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(margin_left, page_h - 12 * mm, f"ShardMind - {username}")
+            c.setFont("Helvetica", 8)
+            c.drawString(margin_left, page_h - 16 * mm, f"Seite {page_idx + 1}")
         
-        x = col * cell_w + margin
-        y = height - (row + 1) * cell_h - offset_y + margin
+        # Position in grid
+        pos_on_page = idx % items_per_page
+        col = pos_on_page % cols
+        row = pos_on_page // cols
+        
+        # Cell position (top-left corner)
+        cell_x = margin_left + col * cell_w
+        cell_y = page_h - margin_top - (row + 1) * cell_h
+        
+        # Padding inside cell
+        pad = 3 * mm
         
         # QR Code
         piece_id = piece.get('id', gen_id())
         url = f"{BASE_URL}/?piece={piece_id}"
-        qr = gen_qr(url, 5)
-        qr_buf = io.BytesIO()
-        qr.save(qr_buf, format='PNG')
-        qr_buf.seek(0)
+        
         try:
-            c.drawImage(ImageReader(qr_buf), x, y, width=qr_size, height=qr_size)
+            qr = gen_qr(url, 4)
+            qr_buf = io.BytesIO()
+            qr.save(qr_buf, format='PNG')
+            qr_buf.seek(0)
+            c.drawImage(ImageReader(qr_buf), cell_x + pad, cell_y + cell_h - pad - qr_size, 
+                       width=qr_size, height=qr_size)
         except:
             pass
         
@@ -1037,30 +1252,41 @@ def create_labels_pdf(pieces, username):
             try:
                 thumb_rgb = cv2.cvtColor(piece['thumbnail'], cv2.COLOR_BGR2RGB)
                 pil = Image.fromarray(thumb_rgb)
-                pil.thumbnail((35, 35))
+                pil.thumbnail((100, 100))
                 tb = io.BytesIO()
                 pil.save(tb, format='PNG')
                 tb.seek(0)
-                c.drawImage(ImageReader(tb), x + qr_size + 5, y + 18, width=32, height=32)
+                c.drawImage(ImageReader(tb), cell_x + pad + qr_size + 2*mm, 
+                           cell_y + cell_h - pad - thumb_size, 
+                           width=thumb_size, height=thumb_size)
             except:
                 pass
         
         # Text
-        tx = x + qr_size + 5
-        ty = y + qr_size - 3
+        text_x = cell_x + pad
+        text_y = cell_y + cell_h - pad - qr_size - 4*mm
         
         c.setFont("Helvetica-Bold", 7)
-        c.drawString(tx, ty, piece_id[:15])
+        c.drawString(text_x, text_y, piece_id[:16])
         
         c.setFont("Helvetica", 6)
-        c.drawString(tx, ty - 8, piece.get('name', '')[:18])
-        c.drawString(tx, ty - 15, piece.get('excavation', '')[:18])
+        text_y -= 3 * mm
+        name = piece.get('name', '-')[:25]
+        c.drawString(text_x, text_y, name)
         
-        # Border
-        c.setStrokeColorRGB(0.8, 0.8, 0.8)
+        text_y -= 2.5 * mm
+        proj = piece.get('excavation', '-')[:25]
+        c.drawString(text_x, text_y, proj)
+        
+        # Cell border (dashed)
+        c.setStrokeColorRGB(0.7, 0.7, 0.7)
         c.setDash(2, 2)
-        c.rect(x - 2, y - 3, cell_w - 6, cell_h - 8)
+        c.rect(cell_x, cell_y, cell_w, cell_h)
         c.setDash()
+    
+    # Footer
+    c.setFont("Helvetica", 6)
+    c.drawString(margin_left, 8 * mm, f"ShardMind v{APP_VERSION} | {BASE_URL}")
     
     c.save()
     buffer.seek(0)
@@ -1072,14 +1298,14 @@ def create_labels_pdf(pieces, username):
 # =============================================================================
 
 def login_page():
-    """Login/Register page"""
     st.markdown(f"# 🏺 {t('app_title')}")
     st.caption(t('app_tagline'))
     
     col1, col2, col3 = st.columns([2, 1, 1])
     with col3:
-        lang = st.selectbox("🌍", ['de', 'en'], format_func=lambda x: '🇩🇪 Deutsch' if x == 'de' else '🇬🇧 English',
-                           index=0 if st.session_state.get('language', 'de') == 'de' else 1, key='lang_login')
+        lang = st.selectbox("🌍", ['de', 'en'], 
+                           format_func=lambda x: '🇩🇪 Deutsch' if x == 'de' else '🇬🇧 English',
+                           index=0 if st.session_state.get('language', 'de') == 'de' else 1)
         if lang != st.session_state.get('language', 'de'):
             st.session_state.language = lang
             st.rerun()
@@ -1087,7 +1313,7 @@ def login_page():
     tab1, tab2 = st.tabs([t('login'), t('register')])
     
     with tab1:
-        with st.form("login_form"):
+        with st.form("login"):
             user = st.text_input(t('username'))
             pw = st.text_input(t('password'), type='password')
             if st.form_submit_button(t('login_btn'), use_container_width=True):
@@ -1099,15 +1325,14 @@ def login_page():
                     st.error(t('login_error'))
     
     with tab2:
-        with st.form("register_form"):
-            new_user = st.text_input(t('username'), key='reg_user')
-            new_pw = st.text_input(t('password'), type='password', key='reg_pw')
-            confirm_pw = st.text_input(t('password_confirm'), type='password')
-            
+        with st.form("register"):
+            new_user = st.text_input(t('username'), key='ru')
+            new_pw = st.text_input(t('password'), type='password', key='rp')
+            confirm = st.text_input(t('password_confirm'), type='password')
             st.info(f"ℹ️ {t('account_info')}")
             
             if st.form_submit_button(t('register_btn'), use_container_width=True):
-                if new_pw != confirm_pw:
+                if new_pw != confirm:
                     st.error(t('register_error_password'))
                 else:
                     ok, msg = register_user(new_user, new_pw)
@@ -1118,13 +1343,9 @@ def login_page():
 
 
 def main():
-    st.set_page_config(
-        page_title=f"ShardMind v{APP_VERSION}",
-        page_icon="🏺",
-        layout="wide"
-    )
+    st.set_page_config(page_title=f"ShardMind v{APP_VERSION}", page_icon="🏺", layout="wide")
     
-    # Initialize session state
+    # Init session state
     defaults = {
         'language': 'de',
         'logged_in': False,
@@ -1132,14 +1353,11 @@ def main():
         'pieces': [],
         'cluster_names': {},
         'custom_labels': [],
-        'ai_provider': 'none',
-        'api_key': '',
     }
     for k, v in defaults.items():
         if k not in st.session_state:
             st.session_state[k] = v
     
-    # Login required
     if not st.session_state.logged_in:
         login_page()
         return
@@ -1147,83 +1365,50 @@ def main():
     username = st.session_state.username
     user_data = get_user_data(username)
     
-    # Check URL params for deep links
-    query_params = st.query_params
-    search_id = query_params.get('piece', None)
+    # URL params
+    search_id = st.query_params.get('piece', None)
     
     # === SIDEBAR ===
     with st.sidebar:
         st.markdown(f"## 🏺 {t('app_title')}")
-        st.caption(f"v{APP_VERSION} | {t('app_subtitle')}")
+        st.caption(f"v{APP_VERSION}")
         
-        # User info
         col1, col2 = st.columns([3, 1])
         with col1:
             st.success(f"👤 {username}")
         with col2:
-            if st.button(t('logout_btn'), help="Logout"):
+            if st.button(t('logout_btn')):
                 st.session_state.logged_in = False
                 st.session_state.pieces = []
                 st.rerun()
         
-        # Language
-        lang = st.selectbox(
-            t('language'),
-            ['de', 'en'],
-            format_func=lambda x: '🇩🇪 Deutsch' if x == 'de' else '🇬🇧 English',
-            index=0 if st.session_state.language == 'de' else 1,
-            key='lang_main'
-        )
+        lang = st.selectbox(t('language'), ['de', 'en'],
+                           format_func=lambda x: '🇩🇪 Deutsch' if x == 'de' else '🇬🇧 English',
+                           index=0 if st.session_state.language == 'de' else 1, key='lang_m')
         if lang != st.session_state.language:
             st.session_state.language = lang
             st.rerun()
         
         st.divider()
         
-        # AI Settings
-        with st.expander(t('ai_settings'), expanded=False):
-            provider = st.selectbox(
-                t('ai_provider'),
-                ['none', 'gemini', 'claude'],
-                format_func=lambda x: {'none': t('ai_none'), 'gemini': 'Google Gemini', 'claude': 'Anthropic Claude'}[x],
-                key='ai_prov'
-            )
-            st.session_state.ai_provider = provider
-            
-            if provider != 'none':
-                api_key = st.text_input(t('api_key'), type='password', key='api_k')
-                st.session_state.api_key = api_key
+        files = st.file_uploader(t('upload_photos'), type=['png', 'jpg', 'jpeg'], 
+                                 accept_multiple_files=True, help=t('upload_hint'))
         
-        st.divider()
+        min_area = st.slider(t('min_size'), 50, 1000, 150)
+        threshold = st.slider(t('cluster_sens'), 10, 80, 40)
         
-        # Upload
-        files = st.file_uploader(
-            t('upload_photos'),
-            type=['png', 'jpg', 'jpeg'],
-            accept_multiple_files=True,
-            help=t('upload_hint')
-        )
-        
-        # Detection settings
-        min_area = st.slider(t('min_size'), 50, 1000, 150, help=t('min_size_help'))
-        threshold = st.slider(t('cluster_sens'), 10, 80, 40, help=t('cluster_help'))
-        
-        mode = st.selectbox(
-            t('detection_mode'),
-            ['auto', 'light_bg', 'dark_bg', 'high_contrast'],
-            format_func=lambda x: {
-                'auto': t('mode_auto'),
-                'light_bg': t('mode_light_bg'),
-                'dark_bg': t('mode_dark_bg'),
-                'high_contrast': t('mode_high_contrast')
-            }[x]
-        )
+        mode = st.selectbox(t('detection_mode'), ['auto', 'light_bg', 'dark_bg', 'high_contrast'],
+                           format_func=lambda x: {
+                               'auto': t('mode_auto'),
+                               'light_bg': t('mode_light_bg'),
+                               'dark_bg': t('mode_dark_bg'),
+                               'high_contrast': t('mode_high_contrast')
+                           }[x])
         
         project = st.text_input(t('project'), value=f"Project_{datetime.now().strftime('%Y')}")
         
         st.divider()
         
-        # Analyze button
         if st.button(t('analyze_btn'), type='primary', use_container_width=True):
             if files:
                 with st.spinner(t('analyzing')):
@@ -1236,7 +1421,6 @@ def main():
                         all_pieces.extend(pieces)
                         progress.progress((i + 1) / len(files))
                     
-                    # Extract features
                     valid = []
                     for p in all_pieces:
                         feat = get_features(p)
@@ -1253,19 +1437,16 @@ def main():
         
         if st.button(t('clear_btn'), use_container_width=True):
             st.session_state.pieces = []
-            st.session_state.cluster_names = {}
             if 'recon_image' in st.session_state:
                 del st.session_state.recon_image
             st.rerun()
         
         st.divider()
-        
-        # Stats
         col1, col2 = st.columns(2)
         col1.metric(t('fragments'), len(user_data.get('pieces', {})))
         col2.metric(t('groups'), len(user_data.get('clusters', {})))
     
-    # === PROCESS PIECES ===
+    # === PROCESS ===
     active = [p for p in st.session_state.pieces if not p.get('deleted')]
     
     if len(active) > 1:
@@ -1279,30 +1460,21 @@ def main():
     cluster_ids = set(p.get('cluster', -1) for p in active) if active else set()
     n_clusters = len([c for c in cluster_ids if c >= 0])
     
-    # === METRICS ===
     if active:
-        col1, col2, col3 = st.columns(3)
-        col1.metric(f"🏺 {t('fragments')}", len(active))
-        col2.metric(f"📦 {t('groups')}", n_clusters)
-        col3.metric("🗺️", project[:20])
+        c1, c2, c3 = st.columns(3)
+        c1.metric(f"🏺 {t('fragments')}", len(active))
+        c2.metric(f"📦 {t('groups')}", n_clusters)
+        c3.metric("🗺️", project[:20])
     
     # === TABS ===
-    tabs = st.tabs([
-        t('tab_start'),
-        t('tab_gallery'),
-        t('tab_groups'),
-        t('tab_reconstruction'),
-        t('tab_database'),
-        t('tab_labels'),
-        t('tab_help')
-    ])
+    tabs = st.tabs([t('tab_start'), t('tab_gallery'), t('tab_groups'), 
+                    t('tab_reconstruction'), t('tab_database'), t('tab_labels'), t('tab_help')])
     
-    # --- TAB 0: START ---
+    # TAB 0: START
     with tabs[0]:
         st.header(f"🏺 {t('app_title')}")
         st.write(t('app_tagline'))
         
-        # Deep link search result
         if search_id:
             st.info(f"🔍 **{search_id}**")
             found = None
@@ -1315,25 +1487,24 @@ def main():
             
             if found:
                 st.success(t('search_found'))
-                col1, col2 = st.columns([1, 2])
-                with col1:
+                c1, c2 = st.columns([1, 2])
+                with c1:
                     if 'thumbnail' in found:
                         st.image(cv2.cvtColor(found['thumbnail'], cv2.COLOR_BGR2RGB))
-                with col2:
+                with c2:
                     st.write(f"**ID:** `{found['id']}`")
                     st.write(f"**Name:** {found.get('name', '-')}")
                     st.write(f"**Material:** {found.get('material', '-')}")
-                    st.write(f"**Projekt:** {found.get('excavation', '-')}")
             else:
                 st.warning(f"{t('search_not_found')}: {search_id}")
             st.divider()
         
-        # Manual search
+        # Search
         st.subheader(t('search_title'))
-        col1, col2 = st.columns([3, 1])
-        with col1:
+        c1, c2 = st.columns([3, 1])
+        with c1:
             search_input = st.text_input("ID", placeholder="SM-XXXXXXXX", label_visibility="collapsed")
-        with col2:
+        with c2:
             if st.button(t('search_btn'), use_container_width=True):
                 if search_input:
                     st.query_params['piece'] = search_input.strip().upper()
@@ -1341,78 +1512,66 @@ def main():
         
         st.divider()
         
-        # Demo images
+        # Demo
         st.subheader(t('demo_title'))
-        st.write(t('demo_desc'))
+        st.write(t('demo_hint'))
         
-        col1, col2 = st.columns(2)
-        with col1:
+        c1, c2 = st.columns(2)
+        with c1:
             st.markdown(f"**🏺 {t('demo_pottery')}**")
             demo1 = generate_demo_pottery(6)
             st.image(cv2.cvtColor(demo1, cv2.COLOR_BGR2RGB), use_container_width=True)
-            st.download_button(t('demo_download'), get_demo_bytes(demo1), "demo_pottery.png", "image/png", use_container_width=True, key="dl1")
+            st.download_button(t('demo_download'), get_demo_bytes(demo1), "demo_pottery.png", "image/png", 
+                             use_container_width=True, key="d1")
         
-        with col2:
+        with c2:
             st.markdown(f"**🍽️ {t('demo_plate')}**")
             demo2 = generate_demo_plate(5)
             st.image(cv2.cvtColor(demo2, cv2.COLOR_BGR2RGB), use_container_width=True)
-            st.download_button(t('demo_download'), get_demo_bytes(demo2), "demo_plate.png", "image/png", use_container_width=True, key="dl2")
-        
-        st.info(f"💡 {t('demo_hint')}")
+            st.download_button(t('demo_download'), get_demo_bytes(demo2), "demo_plate.png", "image/png",
+                             use_container_width=True, key="d2")
     
-    # --- TAB 1: GALLERY ---
+    # TAB 1: GALLERY
     with tabs[1]:
         st.header(t('detected_fragments'))
-        
         if active:
-            # Use st.image instead of HTML for Android compatibility
             cols = st.columns(5)
             for i, p in enumerate(active):
                 with cols[i % 5]:
-                    # Convert to RGB for display
                     thumb_rgb = cv2.cvtColor(p['thumbnail'], cv2.COLOR_BGR2RGB)
-                    
-                    # Add colored border using numpy
                     color_hex = cluster_color(p.get('cluster', -1))
-                    # Convert hex to BGR
                     r, g, b = int(color_hex[1:3], 16), int(color_hex[3:5], 16), int(color_hex[5:7], 16)
-                    
-                    # Add border
                     bordered = cv2.copyMakeBorder(thumb_rgb, 4, 4, 4, 4, cv2.BORDER_CONSTANT, value=(r, g, b))
-                    
                     st.image(bordered, use_container_width=True)
-                    st.caption(f"**{p['id'][:11]}**\n{p.get('name', '')[:15]}")
+                    st.caption(f"**{p['id'][:11]}**\n{p.get('name', '')[:12]}")
         else:
             st.info(t('upload_first'))
     
-    # --- TAB 2: GROUPS ---
+    # TAB 2: GROUPS
     with tabs[2]:
         st.header(t('groups_title'))
-        
         if active:
-            sorted_clusters = sorted([c for c in cluster_ids if c >= 0])
-            
-            if not sorted_clusters:
+            sorted_c = sorted([c for c in cluster_ids if c >= 0])
+            if not sorted_c:
                 st.warning(t('no_groups'))
             else:
-                for cid in sorted_clusters:
+                for cid in sorted_c:
                     cp = [p for p in active if p.get('cluster') == cid]
                     mats = [p.get('material', 'Unknown') for p in cp]
-                    common_mat = max(set(mats), key=mats.count) if mats else 'Unknown'
-                    default_name = st.session_state.cluster_names.get(cid, f"{common_mat}_Gruppe_{cid + 1}")
+                    common = max(set(mats), key=mats.count) if mats else 'Unknown'
+                    default_name = st.session_state.cluster_names.get(cid, f"{common}_Gruppe_{cid + 1}")
                     
                     with st.expander(f"📦 {default_name} ({len(cp)} {t('pieces')})", expanded=True):
                         name = st.text_input(t('group_name'), value=default_name, key=f"gn_{cid}")
                         st.session_state.cluster_names[cid] = name
                         
-                        # Show thumbnails using st.image (Android compatible)
                         pcols = st.columns(min(6, len(cp)))
                         for i, p in enumerate(cp[:6]):
                             with pcols[i]:
                                 st.image(cv2.cvtColor(p['thumbnail'], cv2.COLOR_BGR2RGB), use_container_width=True)
                                 st.caption(p['id'][:8])
                         
-                        if st.button(t('save_btn'), key=f"save_{cid}"):
+                        if st.button(t('save_btn'), key=f"sv_{cid}"):
                             key = f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                             user_data['clusters'][key] = {
                                 'name': name,
@@ -1420,15 +1579,15 @@ def main():
                                 'piece_ids': [p['id'] for p in cp]
                             }
                             for p in cp:
-                                p_copy = {k: v for k, v in p.items() if k != 'features'}
-                                user_data['pieces'][p['id']] = p_copy
+                                pc = {k: v for k, v in p.items() if k not in ['features', 'contour_global']}
+                                user_data['pieces'][p['id']] = pc
                             save_user_data(username, user_data)
                             st.success(t('saved'))
                             st.rerun()
         else:
             st.info(t('upload_first'))
     
-    # --- TAB 3: RECONSTRUCTION ---
+    # TAB 3: RECONSTRUCTION
     with tabs[3]:
         st.header(t('reconstruction_title'))
         
@@ -1443,14 +1602,13 @@ def main():
             
             rp = [p for p in active if p.get('cluster') == sel_id]
             
-            # Preview
             st.write(f"**{len(rp)} {t('pieces')}**")
             pcols = st.columns(min(8, len(rp)))
             for i, p in enumerate(rp[:8]):
                 with pcols[i]:
                     st.image(cv2.cvtColor(p['thumbnail'], cv2.COLOR_BGR2RGB), use_container_width=True)
             
-            canvas_size = st.slider(t('canvas_size'), 400, 1000, 700, 50)
+            canvas_size = st.slider(t('canvas_size'), 500, 1200, 800, 50)
             
             if st.button(t('calculate_btn'), type='primary', use_container_width=True):
                 with st.spinner(t('analyzing')):
@@ -1461,23 +1619,24 @@ def main():
                         st.success(f"✓ {len(matches)} {t('matches_found')}")
             
             if 'recon_image' in st.session_state and st.session_state.recon_image is not None:
-                col1, col2 = st.columns([2, 1])
-                with col1:
+                c1, c2 = st.columns([2, 1])
+                with c1:
                     rgb = cv2.cvtColor(st.session_state.recon_image, cv2.COLOR_BGR2RGB)
                     st.image(rgb, use_container_width=True)
                     
                     buf = io.BytesIO()
                     Image.fromarray(rgb).save(buf, format='PNG')
-                    st.download_button(t('export_btn'), buf.getvalue(), f"reconstruction.png", "image/png", use_container_width=True)
+                    st.download_button(t('export_btn'), buf.getvalue(), "reconstruction.png", "image/png", 
+                                      use_container_width=True)
                 
-                with col2:
+                with c2:
                     st.markdown(f"**{t('edge_matches')}**")
-                    for i, m in enumerate(st.session_state.get('recon_matches', [])[:5]):
-                        st.write(f"• {m['piece_i'] + 1} ↔ {m['piece_j'] + 1}: {m['score']:.0f}%")
+                    for m in st.session_state.get('recon_matches', [])[:8]:
+                        st.write(f"• Teil {m['piece_i']+1} ↔ {m['piece_j']+1}: {m['score']:.0f}%")
         else:
             st.info(t('upload_first'))
     
-    # --- TAB 4: DATABASE ---
+    # TAB 4: DATABASE
     with tabs[4]:
         st.header(t('database_title'))
         
@@ -1486,7 +1645,6 @@ def main():
         
         if db_pieces:
             st.write(f"**{len(db_pieces)} {t('fragments_saved')}**")
-            
             dcols = st.columns(6)
             for i, (pid, p) in enumerate(list(db_pieces.items())[:18]):
                 with dcols[i % 6]:
@@ -1502,15 +1660,13 @@ def main():
         else:
             st.info(t('db_empty'))
     
-    # --- TAB 5: LABELS ---
+    # TAB 5: LABELS
     with tabs[5]:
         st.header(t('labels_title'))
         
-        source = st.radio(
-            t('label_source'),
-            [t('label_session'), t('label_database'), t('label_custom')],
-            horizontal=True
-        )
+        source = st.radio(t('label_source'), 
+                         [t('label_session'), t('label_database'), t('label_custom')],
+                         horizontal=True)
         
         label_pieces = []
         
@@ -1519,37 +1675,32 @@ def main():
         elif source == t('label_database'):
             label_pieces = list(user_data.get('pieces', {}).values())
         else:
-            # Custom labels
             st.subheader(t('label_custom'))
             
-            with st.form("custom_label_form"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    custom_id = st.text_input(t('custom_label_id'), placeholder="SM-CUSTOM01")
-                    custom_name = st.text_input(t('custom_label_name'), placeholder="Rekonstruierter Teller")
-                with col2:
-                    custom_desc = st.text_input(t('custom_label_desc'), placeholder="5 Teile zusammengesetzt")
-                    custom_project = st.text_input(t('custom_label_project'), value=project)
+            with st.form("custom_form"):
+                c1, c2 = st.columns(2)
+                with c1:
+                    cid = st.text_input("ID", placeholder="SM-CUSTOM01")
+                    cname = st.text_input(t('custom_label_name'))
+                with c2:
+                    cdesc = st.text_input(t('custom_label_desc'))
+                    cproj = st.text_input(t('project'), value=project)
                 
                 if st.form_submit_button(t('add_custom_label'), use_container_width=True):
-                    new_label = {
-                        'id': custom_id if custom_id else gen_id(),
-                        'name': custom_name or "Custom",
-                        'description': custom_desc,
-                        'excavation': custom_project,
-                        'created': datetime.now().isoformat()
+                    new_lbl = {
+                        'id': cid if cid else gen_id(),
+                        'name': cname or "Custom",
+                        'description': cdesc,
+                        'excavation': cproj
                     }
-                    if 'custom_labels' not in st.session_state:
-                        st.session_state.custom_labels = []
-                    st.session_state.custom_labels.append(new_label)
+                    st.session_state.custom_labels.append(new_lbl)
                     st.success(t('saved'))
                     st.rerun()
             
-            # Show custom labels
-            if st.session_state.get('custom_labels'):
-                st.subheader(t('custom_labels_list'))
-                for i, lbl in enumerate(st.session_state.custom_labels):
-                    st.write(f"• **{lbl['id']}** - {lbl['name']}")
+            if st.session_state.custom_labels:
+                st.write(f"**{t('custom_labels_list')}:**")
+                for lbl in st.session_state.custom_labels:
+                    st.write(f"• {lbl['id']} - {lbl['name']}")
                 
                 if st.button(t('clear_custom')):
                     st.session_state.custom_labels = []
@@ -1560,7 +1711,6 @@ def main():
         if label_pieces:
             st.write(f"**{len(label_pieces)} Labels**")
             
-            # Preview
             if source != t('label_custom'):
                 pcols = st.columns(min(6, len(label_pieces)))
                 for i, p in enumerate(label_pieces[:6]):
@@ -1572,17 +1722,13 @@ def main():
             if st.button(t('create_pdf'), type='primary', use_container_width=True):
                 with st.spinner("..."):
                     pdf = create_labels_pdf(label_pieces, username)
-                    st.download_button(
-                        "📥 PDF",
-                        pdf.getvalue(),
-                        f"shardmind_labels_{datetime.now().strftime('%Y%m%d')}.pdf",
-                        "application/pdf",
-                        use_container_width=True
-                    )
+                    st.download_button("📥 PDF", pdf.getvalue(),
+                                      f"labels_{datetime.now().strftime('%Y%m%d')}.pdf",
+                                      "application/pdf", use_container_width=True)
         else:
             st.info(t('upload_first'))
     
-    # --- TAB 6: HELP ---
+    # TAB 6: HELP
     with tabs[6]:
         st.header(t('help_title'))
         st.markdown(HELP_DE if st.session_state.language == 'de' else HELP_EN)
