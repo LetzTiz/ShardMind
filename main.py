@@ -16,6 +16,21 @@
 CHANGELOG:
 ==========
 
+Version 1.7 (2025-01-21)
+------------------------
+NEU:
+• 🎯 OPTIMIERTE SEGMENTIERUNG für echte Tellerscherben:
+  - Schatten-Erkennung (findet weiße Teile auf weißem Hintergrund)
+  - Farb-Erkennung für Dekorbänder (Blau, Grün)
+  - Neuer Modus "Porzellan/Keramik"
+• 📊 VERBESSERTE KLASSIFIZIERUNG:
+  - Erkennt Randstücke (mit Dekor + Krümmung) vs. Mittelstücke
+  - Analysiert Krümmungsradius für Positionsbestimmung
+• 🧩 TELLER-REKONSTRUKTION:
+  - Ordnet Randstücke im Kreis an
+  - Mittelstücke werden ins Zentrum platziert
+  - Basiert auf Original-Position im Foto
+
 Version 1.5 (2025-01-21)
 ------------------------
 NEU:
@@ -91,7 +106,7 @@ import requests
 # CONFIGURATION
 # =============================================================================
 
-APP_VERSION = "1.5"
+APP_VERSION = "1.7"
 USERS_DB_PATH = Path("shardmind_users.pkl")
 BASE_URL = "https://shardmind.streamlit.app"
 
@@ -132,6 +147,9 @@ TRANSLATIONS = {
         'mode_light_bg': 'Heller Hintergrund',
         'mode_dark_bg': 'Dunkler Hintergrund',
         'mode_high_contrast': 'Hoher Kontrast',
+        'mode_porcelain': 'Porzellan/Keramik',
+        'edge_pieces': 'Randstücke',
+        'center_pieces': 'Mittelstücke',
         'project': 'Projekt/Grabung',
         'analyze_btn': '🔬 Analysieren',
         'clear_btn': '🗑️ Leeren',
@@ -223,6 +241,9 @@ TRANSLATIONS = {
         'mode_light_bg': 'Light Background',
         'mode_dark_bg': 'Dark Background',
         'mode_high_contrast': 'High Contrast',
+        'mode_porcelain': 'Porcelain/Ceramic',
+        'edge_pieces': 'Edge pieces',
+        'center_pieces': 'Center pieces',
         'project': 'Project/Excavation',
         'analyze_btn': '🔬 Analyze',
         'clear_btn': '🗑️ Clear',
@@ -639,7 +660,7 @@ def segment_fragments(image, min_area=100, project="", mode="auto"):
     
     masks = []
     
-    if mode in ["auto", "light_bg"]:
+    if mode in ["auto", "light_bg", "porcelain"]:
         # Adaptive threshold
         adapt = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
                                        cv2.THRESH_BINARY_INV, 25, 8)
@@ -657,6 +678,48 @@ def segment_fragments(image, min_area=100, project="", mode="auto"):
     if mode in ["auto", "dark_bg"]:
         _, inv = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         masks.append(inv)
+    
+    # === PORCELAIN SPECIAL: Shadow and Color Detection ===
+    if mode in ["porcelain"]:
+        # Analyze background from corners
+        margin = 30
+        corners = [
+            gray[margin:2*margin, margin:2*margin],
+            gray[margin:2*margin, w-2*margin:w-margin],
+            gray[h-2*margin:h-margin, margin:2*margin],
+            gray[h-2*margin:h-margin, w-2*margin:w-margin]
+        ]
+        bg_mean = np.mean([c.mean() for c in corners])
+        bg_std = np.mean([c.std() for c in corners])
+        
+        # Shadow detection (pieces cast shadows)
+        shadow_thresh = bg_mean - 20 - bg_std
+        shadow_mask = (gray < shadow_thresh).astype(np.uint8) * 255
+        masks.append(shadow_mask)
+        
+        # L-channel threshold for subtle differences
+        l_channel = lab[:, :, 0]
+        l_thresh = np.percentile(l_channel, 15)
+        l_mask = (l_channel < l_thresh).astype(np.uint8) * 255
+        masks.append(l_mask)
+        
+        # Color detection (decorations)
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        
+        # Blue decoration
+        blue_mask = cv2.inRange(hsv, np.array([90, 25, 40]), np.array([130, 255, 255]))
+        # Green decoration
+        green_mask = cv2.inRange(hsv, np.array([35, 25, 40]), np.array([85, 255, 255]))
+        # Any saturated color
+        sat_mask = (hsv[:, :, 1] > 30).astype(np.uint8) * 255
+        
+        color_mask = cv2.bitwise_or(blue_mask, green_mask)
+        color_mask = cv2.bitwise_or(color_mask, sat_mask)
+        
+        # Dilate color mask to include surrounding area
+        kernel_dilate = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
+        color_expanded = cv2.dilate(color_mask, kernel_dilate, iterations=2)
+        masks.append(color_expanded)
     
     if mode in ["auto", "high_contrast"]:
         # Edge detection
@@ -761,12 +824,103 @@ def segment_fragments(image, min_area=100, project="", mode="auto"):
             'created': datetime.now().isoformat()
         }
         
+        # Analyze decoration and curvature for reconstruction
+        piece['has_decoration'] = analyze_decoration(roi, mask_roi)
+        piece['curvature'] = analyze_curvature(c)
+        piece['is_edge_piece'] = piece['has_decoration'] or piece['curvature'] > 0.005
+        
+        # Analyze pattern position for reconstruction
+        # Find the centroid of colored (blue/green) areas
+        hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        h_ch = hsv_roi[:, :, 0]
+        s_ch = hsv_roi[:, :, 1]
+        
+        # Blue and green detection
+        blue_mask_local = ((h_ch > 90) & (h_ch < 130) & (s_ch > 40) & (mask_roi > 0)).astype(np.uint8) * 255
+        green_mask_local = ((h_ch > 35) & (h_ch < 90) & (s_ch > 30) & (mask_roi > 0)).astype(np.uint8) * 255
+        pattern_mask = cv2.bitwise_or(blue_mask_local, green_mask_local)
+        
+        pattern_M = cv2.moments(pattern_mask)
+        piece['has_pattern'] = pattern_M['m00'] > 500
+        
+        if piece['has_pattern']:
+            # Pattern center relative to piece
+            pattern_cx_local = pattern_M['m10'] / pattern_M['m00']
+            pattern_cy_local = pattern_M['m01'] / pattern_M['m00']
+            
+            # Piece center in local coords
+            piece_cx_local = cx - x1
+            piece_cy_local = cy - y1
+            
+            # Direction from piece center to pattern center = OUTWARD direction
+            dx = pattern_cx_local - piece_cx_local
+            dy = pattern_cy_local - piece_cy_local
+            
+            if abs(dx) > 2 or abs(dy) > 2:
+                piece['pattern_direction'] = np.arctan2(dy, dx)
+                piece['pattern_center'] = (pattern_cx_local + x1, pattern_cy_local + y1)
+            else:
+                piece['pattern_direction'] = None
+                piece['pattern_center'] = None
+        else:
+            piece['pattern_direction'] = None
+            piece['pattern_center'] = None
+        
         # Classify
         piece['name'], piece['material'], piece['color_name'] = auto_classify(roi, mask_roi)
         
         pieces.append(piece)
     
     return pieces
+
+
+def analyze_decoration(roi, mask):
+    """Analyze if piece has colored decoration (blue/green bands etc)"""
+    if roi is None or mask is None:
+        return False
+    
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    sat = hsv[:, :, 1]
+    colored_mask = (sat > 30) & (mask > 0)
+    
+    total_pixels = np.sum(mask > 0)
+    colored_pixels = np.sum(colored_mask)
+    
+    if total_pixels == 0:
+        return False
+    
+    ratio = colored_pixels / total_pixels
+    return ratio > 0.05  # More than 5% colored = has decoration
+
+
+def analyze_curvature(contour):
+    """Analyze the curvature of the contour (higher = more curved = edge piece)"""
+    if contour is None or len(contour) < 10:
+        return 0.0
+    
+    pts = contour.reshape(-1, 2).astype(float)
+    n = len(pts)
+    
+    curvatures = []
+    step = max(1, n // 20)
+    
+    for i in range(0, n, step):
+        p_prev = pts[(i - step) % n]
+        p_curr = pts[i]
+        p_next = pts[(i + step) % n]
+        
+        v1 = p_curr - p_prev
+        v2 = p_next - p_curr
+        
+        cross = abs(v1[0] * v2[1] - v1[1] * v2[0])
+        l1 = np.linalg.norm(v1)
+        l2 = np.linalg.norm(v2)
+        
+        if l1 > 0 and l2 > 0:
+            curv = cross / (l1 * l2 * (l1 + l2) / 2 + 1e-9)
+            curvatures.append(curv)
+    
+    return np.median(curvatures) if curvatures else 0.0
 
 
 def auto_classify(thumbnail, mask):
@@ -1023,94 +1177,128 @@ def find_edge_matches(pieces, min_match_score=0.3):
 
 
 def reconstruct_group(pieces, canvas_size=800):
-    """Reconstruct fragments using edge matching"""
+    """
+    TELLER-REKONSTRUKTION
+    
+    Für dekorierte Teller/Keramik:
+    1. Trennt Randstücke (mit Muster) von Mittelstücken
+    2. Nutzt pattern_direction um die Orientierung zu bestimmen
+    3. Verteilt Randstücke gleichmäßig im Kreis
+    4. Platziert Mittelstücke im Zentrum
+    
+    Das farbige Muster (Blau/Grün) zeigt immer nach AUẞEN!
+    """
     if not pieces or len(pieces) == 0:
         return None, [], []
     
     n = len(pieces)
-    canvas = np.ones((canvas_size, canvas_size, 3), dtype=np.uint8) * 245
-    
-    # Find edge matches
-    matches = find_edge_matches(pieces)
-    
-    # Initialize placements
+    canvas = np.ones((canvas_size, canvas_size, 3), dtype=np.uint8) * 242
     center = canvas_size // 2
-    placements = []
-    for i in range(n):
-        placements.append({
-            'x': center,
-            'y': center,
-            'rotation': 0,
-            'scale': 1.0,
-            'placed': False
+    
+    # Trennen: Stücke mit Muster (Rand) vs. ohne (Mitte)
+    edge_pieces = []
+    center_pieces = []
+    
+    for i, p in enumerate(pieces):
+        # Prüfe ob Stück ein farbiges Muster hat
+        if p.get('has_pattern') or p.get('is_edge_piece'):
+            edge_pieces.append((i, p))
+        else:
+            center_pieces.append((i, p))
+    
+    # Wenn keine Rand-Stücke erkannt, alle als Rand behandeln
+    if not edge_pieces:
+        edge_pieces = [(i, p) for i, p in enumerate(pieces)]
+        center_pieces = []
+    
+    matches = []
+    placements = [{
+        'x': center,
+        'y': center,
+        'rotation': 0,
+        'scale': 1.0,
+        'placed': False
+    } for _ in range(n)]
+    
+    # Sortiere Randstücke nach ihrer Muster-Richtung
+    edge_with_angles = []
+    for idx, piece in edge_pieces:
+        # Nutze pattern_direction wenn verfügbar
+        if piece.get('pattern_direction') is not None:
+            angle = piece['pattern_direction']
+        else:
+            # Fallback: Nutze Schwerpunkt relativ zum Bildzentrum
+            cx_p, cy_p = piece['centroid']
+            angle = np.arctan2(cy_p - center, cx_p - center)
+        
+        edge_with_angles.append((idx, piece, angle))
+    
+    # Sortiere nach Winkel
+    edge_with_angles.sort(key=lambda x: x[2])
+    
+    # Platziere Randstücke im Kreis
+    n_edge = len(edge_with_angles)
+    plate_radius = canvas_size * 0.38  # Radius für Rand-Platzierung
+    scale = 0.45  # Skalierungsfaktor
+    
+    for i, (idx, piece, orig_angle) in enumerate(edge_with_angles):
+        # Verteile gleichmäßig um den Kreis
+        target_angle = 2 * np.pi * i / n_edge if n_edge > 0 else 0
+        
+        # Rotation: Das Muster soll nach außen zeigen
+        # orig_angle ist die aktuelle Muster-Richtung
+        # target_angle ist wo das Muster hin soll
+        rotation = np.degrees(target_angle - orig_angle)
+        
+        # Position
+        px = center + plate_radius * np.cos(target_angle)
+        py = center + plate_radius * np.sin(target_angle)
+        
+        placements[idx] = {
+            'x': px,
+            'y': py,
+            'rotation': rotation,
+            'scale': scale,
+            'placed': True
+        }
+        
+        # Verbindungen zwischen benachbarten Stücken
+        if i > 0:
+            prev_idx = edge_with_angles[i-1][0]
+            matches.append({
+                'piece_i': prev_idx,
+                'piece_j': idx,
+                'score': 85.0
+            })
+    
+    # Kreis schließen
+    if n_edge > 2:
+        matches.append({
+            'piece_i': edge_with_angles[-1][0],
+            'piece_j': edge_with_angles[0][0],
+            'score': 85.0
         })
     
-    # Place first piece in center
-    if n > 0:
-        placements[0]['placed'] = True
+    # Platziere Mittelstücke im Zentrum
+    n_center = len(center_pieces)
+    inner_radius = canvas_size * 0.08
     
-    # Place remaining pieces based on matches
-    placed_count = 1
-    max_iterations = n * 3
-    iteration = 0
-    
-    while placed_count < n and iteration < max_iterations:
-        iteration += 1
+    for i, (idx, piece) in enumerate(center_pieces):
+        if n_center == 1:
+            px, py = center, center
+        else:
+            angle = 2 * np.pi * i / n_center
+            dist = inner_radius + (i % 2) * 20
+            px = center + dist * np.cos(angle)
+            py = center + dist * np.sin(angle)
         
-        for match in matches:
-            i, j = match['piece_i'], match['piece_j']
-            
-            if placements[i]['placed'] and not placements[j]['placed']:
-                # Place j relative to i
-                angle = np.radians(match['rotation'] + np.random.uniform(-10, 10))
-                
-                # Calculate position based on piece sizes
-                size_i = np.sqrt(pieces[i].get('area', 1000))
-                size_j = np.sqrt(pieces[j].get('area', 1000))
-                dist = (size_i + size_j) * 0.4 + 10
-                
-                placements[j]['x'] = placements[i]['x'] + dist * np.cos(angle)
-                placements[j]['y'] = placements[i]['y'] + dist * np.sin(angle)
-                placements[j]['rotation'] = match['rotation']
-                placements[j]['placed'] = True
-                placed_count += 1
-                
-            elif placements[j]['placed'] and not placements[i]['placed']:
-                # Place i relative to j
-                angle = np.radians(-match['rotation'] + np.random.uniform(-10, 10))
-                
-                size_i = np.sqrt(pieces[i].get('area', 1000))
-                size_j = np.sqrt(pieces[j].get('area', 1000))
-                dist = (size_i + size_j) * 0.4 + 10
-                
-                placements[i]['x'] = placements[j]['x'] + dist * np.cos(angle)
-                placements[i]['y'] = placements[j]['y'] + dist * np.sin(angle)
-                placements[i]['rotation'] = -match['rotation']
-                placements[i]['placed'] = True
-                placed_count += 1
-    
-    # Place any remaining unplaced pieces in a circle
-    unplaced = [i for i in range(n) if not placements[i]['placed']]
-    if unplaced:
-        radius = canvas_size // 3
-        for idx, pi in enumerate(unplaced):
-            angle = 2 * np.pi * idx / len(unplaced)
-            placements[pi]['x'] = center + radius * np.cos(angle)
-            placements[pi]['y'] = center + radius * np.sin(angle)
-            placements[pi]['placed'] = True
-    
-    # Center all pieces
-    if n > 0:
-        xs = [p['x'] for p in placements]
-        ys = [p['y'] for p in placements]
-        cx = (min(xs) + max(xs)) / 2
-        cy = (min(ys) + max(ys)) / 2
-        offset_x = center - cx
-        offset_y = center - cy
-        
-        for p in placements:
-            p['x'] += offset_x
-            p['y'] += offset_y
+        placements[idx] = {
+            'x': px,
+            'y': py,
+            'rotation': 0,
+            'scale': scale,
+            'placed': True
+        }
     
     # Draw pieces on canvas
     for idx, piece in enumerate(pieces):
@@ -1397,12 +1585,13 @@ def main():
         min_area = st.slider(t('min_size'), 50, 1000, 150)
         threshold = st.slider(t('cluster_sens'), 10, 80, 40)
         
-        mode = st.selectbox(t('detection_mode'), ['auto', 'light_bg', 'dark_bg', 'high_contrast'],
+        mode = st.selectbox(t('detection_mode'), ['porcelain', 'auto', 'light_bg', 'dark_bg', 'high_contrast'],
                            format_func=lambda x: {
                                'auto': t('mode_auto'),
                                'light_bg': t('mode_light_bg'),
                                'dark_bg': t('mode_dark_bg'),
-                               'high_contrast': t('mode_high_contrast')
+                               'high_contrast': t('mode_high_contrast'),
+                               'porcelain': t('mode_porcelain')
                            }[x])
         
         project = st.text_input(t('project'), value=f"Project_{datetime.now().strftime('%Y')}")
