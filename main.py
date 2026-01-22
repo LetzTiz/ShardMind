@@ -1,14 +1,14 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
-║   ███████╗██╗   ██╗ █████╗ ██████╗ ██████╗ ███╗   ███╗██╗███╗   ██╗██████╗    ║
-║   ██╔════╝██║   ██║██╔══██╗██╔══██╗██╔══██╗████╗ ████║██║████╗  ██║██╔══██╗   ║
-║   ███████╗███████║███████║██████╔╝██║   ██║██╔████╔██║██║██╔██╗ ██║██║  ██║   ║
-║   ╚════██║██╔══██║██╔══██║██╔══██╗██║   ██║██║╚██╔╝██║██║██║╚██╗██║██║  ██║   ║
-║   ███████║██║   ██║██║  ██║██║  ██║██████╔╝██║ ╚═╝ ██║██║██║ ╚████║██████╔╝   ║
-║   ╚══════╝╚═╝   ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝    ║
+║   ███████╗██╗  ██╗ █████╗ ██████╗ ██████╗ ███╗   ███╗██╗███╗   ██╗██████╗    ║
+║   ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔══██╗████╗ ████║██║████╗  ██║██╔══██╗   ║
+║   ███████╗███████║███████║██████╔╝██║  ██║██╔████╔██║██║██╔██╗ ██║██║  ██║   ║
+║   ╚════██║██╔══██║██╔══██║██╔══██╗██║  ██║██║╚██╔╝██║██║██║╚██╗██║██║  ██║   ║
+║   ███████║██║  ██║██║  ██║██║  ██║██████╔╝██║ ╚═╝ ██║██║██║ ╚████║██████╔╝   ║
+║   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝    ║
 ║                                                                               ║
-║   Archäologische Fragmentanalyse & Rekonstruktion                             ║
+║   Archäologische Fragmentanalyse & Rekonstruktion                            ║
 ║   Archaeological Fragment Analysis & Reconstruction                           ║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -16,25 +16,73 @@
 CHANGELOG:
 ==========
 
-Version 1.8 (2025-01-22)
-------------------------
-FIX:
-• 🛠️ KORRIGIERTE TELLER-REKONSTRUKTION (Circle-Fit)
-  - Fragmente werden nicht mehr gleichmäßig verteilt ("Blütenblätter"),
-    sondern basierend auf ihrer Winkelbreite (Angle Span) sequenziell platziert.
-  - Nutzt Circle-Fitting auf blauen Farbbändern zur Berechnung des Krümmungsradius.
-  - Schließt Lücken zwischen Scherben automatisch.
-
 Version 1.7 (2025-01-21)
 ------------------------
 NEU:
 • 🎯 KOMPLETT NEUER REKONSTRUKTIONS-ALGORITHMUS!
   - Kreis-Fitting: Findet automatisch das Tellerzentrum aus dem blauen Dekorband
   - Jedes Fragment wird so platziert, dass sein Muster auf dem Rekonstruktionskreis liegt
+  - Funktioniert auch wenn Fragmente durch Schatten verbunden sind
+  - Keine manuelle Rotation nötig - geometrisch korrekte Platzierung
+• 📊 VERBESSERTE SEGMENTIERUNG:
+  - Multi-Channel Edge Detection (RGB separat)
+  - Lokale Varianz für Hintergrund-Erkennung
+  - Schatten-tolerante Kontur-Extraktion
+  - Erkennung von farbigen Dekorbändern (Blau, Grün)
+• 🔬 MUSTER-ANALYSE:
+  - Automatische Erkennung von pattern_direction
+  - Berechnung des Tellerradius aus Dekorkrümmung
+  - Unterscheidung Rand- vs. Mittelstücke
+• 📚 Vollständige Algorithmus-Dokumentation für Präsentation
 
 Version 1.5 (2025-01-21)
 ------------------------
-• 🧩 Kantenpassung & PDF-Layout Updates
+NEU:
+• 🧩 KOMPLETT NEUE REKONSTRUKTION mit echter Kantenpassung
+  - Analysiert Konturen und findet passende Kanten
+  - Berechnet optimale Rotation und Position
+  - Iteratives Zusammensetzen der Fragmente
+• 📄 PDF-Layout komplett überarbeitet
+  - Korrektes 3x4 Raster auf A4
+  - Bessere Abstände und Lesbarkeit
+  - QR-Codes und Thumbnails richtig positioniert
+• 📋 Changelog zurück im Code
+
+Version 1.4 (2025-01-21)
+------------------------
+• 🤖 Gemini API Integration (zusätzlich zu Claude)
+• 💾 Accounts werden DAUERHAFT gespeichert (keine Löschung)
+• 🌍 Verbesserte Übersetzungen (DE/EN)
+• 🏷️ Eigene Etiketten für rekonstruierte Objekte erstellen
+• 🔍 Verbesserte Fragment-Erkennung (4 Modi)
+• 📱 Android Bild-Bug behoben (kein base64 HTML mehr)
+• 🔗 QR-Scanner ersetzt durch ID-Eingabe + Deep Links
+
+Version 1.3 (2025-01-21)
+------------------------
+• 🏠 Start-Tab mit Demo-Bildern und QR-Suche
+• 🏷️ PDF-Etiketten mit QR-Codes
+• 📊 Verbessertes Clustering (4-Faktor-Scoring)
+• 🔗 Deep-Link QR-Codes (URLs statt App-Schema)
+
+Version 1.2 (2025-01-16)
+------------------------
+• 🔐 Login-System mit privater Datenbank
+• 🧩 Kanten-basiertes Clustering
+• 📖 Hilfe-Tab
+• 🌍 Zweisprachig (Deutsch/English)
+
+Version 1.1 (2025-01-15)
+------------------------
+• 🧩 Erste Rekonstruktions-Funktion
+• 📦 Gruppierung nach Farbe/Material
+
+Version 1.0 (2025-01-14)
+------------------------
+• 🏺 Erste Version
+• 🔬 Grundlegende Segmentierung
+• 🎨 Farbanalyse
+
 """
 
 import streamlit as st
@@ -62,7 +110,7 @@ import requests
 # CONFIGURATION
 # =============================================================================
 
-APP_VERSION = "1.8"
+APP_VERSION = "1.7"
 USERS_DB_PATH = Path("shardmind_users.pkl")
 BASE_URL = "https://shardmind.streamlit.app"
 
@@ -460,910 +508,1409 @@ def generate_demo_plate(num=5):
     
     # Break angles
     angles = np.linspace(0, 2*np.pi, num + 1)[:-1]
-    angles += np.random.uniform(-0.4, 0.4, num)
+    angles += np.random.uniform(-0.2, 0.2, num)
     angles = np.sort(angles)
+    
+    plate_color = (250, 248, 245)  # Off-white
+    rim_color = (165, 155, 140)    # Decorative rim
     
     for i in range(num):
         a1 = angles[i]
         a2 = angles[(i + 1) % num]
-        if a2 < a1: a2 += 2 * np.pi
+        if a2 < a1:
+            a2 += 2 * np.pi
         
-        # Mask
-        mask = np.zeros((800, 800), dtype=np.uint8)
-        pts = [(center_x, center_y)]
+        # Create piece
+        piece_mask = np.zeros((800, 800), dtype=np.uint8)
+        
+        pts = []
+        # Inner arc
         for a in np.linspace(a1, a2, 15):
-            x = int(center_x + (outer_r + 20) * np.cos(a))
-            y = int(center_y + (outer_r + 20) * np.sin(a))
-            pts.append((x, y))
-        cv2.fillPoly(mask, [np.array(pts)], 255)
-        mask = cv2.bitwise_and(mask, original)
+            x = int(center_x + inner_r * np.cos(a))
+            y = int(center_y + inner_r * np.sin(a))
+            pts.append([x, y])
         
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if not contours: continue
-        cnt = max(contours, key=cv2.contourArea)
+        # Outer arc (reverse)
+        for a in np.linspace(a2, a1, 25):
+            x = int(center_x + outer_r * np.cos(a))
+            y = int(center_y + outer_r * np.sin(a))
+            pts.append([x, y])
+        
+        pts = np.array(pts, dtype=np.int32)
+        cv2.fillPoly(piece_mask, [pts], 255)
+        
+        # Find contour
+        contours, _ = cv2.findContours(piece_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not contours:
+            continue
+        
+        contour = max(contours, key=cv2.contourArea)
         
         # Offset
-        offset_a = (a1 + a2) / 2
-        dist = 90
-        ox = int(dist * np.cos(offset_a))
-        oy = int(dist * np.sin(offset_a))
+        mid_angle = (a1 + a2) / 2
+        offset_dist = 60 + np.random.randint(0, 50)
+        ox = int(offset_dist * np.cos(mid_angle))
+        oy = int(offset_dist * np.sin(mid_angle))
         
-        shifted_cnt = cnt.copy()
-        shifted_cnt[:, :, 0] += ox
-        shifted_cnt[:, :, 1] += oy
+        shifted = contour.copy()
+        shifted[:, :, 0] += ox
+        shifted[:, :, 1] += oy
         
-        # Draw - White Porcelain style
-        cv2.fillPoly(img, [shifted_cnt], (245, 245, 250))
-        cv2.polylines(img, [shifted_cnt], True, (200, 200, 210), 1)
+        # Draw
+        cv2.fillPoly(img, [shifted], plate_color)
+        cv2.polylines(img, [shifted], True, (200, 195, 190), 2)
         
-        # Blue Pattern on Rim
-        # We need to draw the blue arc on the shifted piece
-        # This simulates the "blue rim" for detection
-        
-        # Create a local mask for the piece to draw texture only on piece
-        piece_draw_mask = np.zeros((800, 800), dtype=np.uint8)
-        cv2.fillPoly(piece_draw_mask, [shifted_cnt], 255)
-        
-        # Draw blue arcs
-        temp_img = np.zeros((800, 800, 3), dtype=np.uint8)
-        # Shifted center
-        scx, scy = center_x + ox, center_y + oy
-        
-        # Blue rim
-        cv2.circle(temp_img, (scx, scy), outer_r - 10, (180, 100, 20), 8) # Blue in BGR
-        cv2.circle(temp_img, (scx, scy), outer_r - 25, (180, 100, 20), 2)
-        
-        # Mask texture
-        locs = np.where(piece_draw_mask > 0)
-        img[locs] = cv2.addWeighted(img[locs], 0.7, temp_img[locs], 0.3, 0)[0]
-        
+        # Rim decoration
+        for a in np.linspace(a1, a2, 8):
+            rx = int(center_x + ox + (outer_r - 15) * np.cos(a))
+            ry = int(center_y + oy + (outer_r - 15) * np.sin(a))
+            cv2.circle(img, (rx, ry), 4, rim_color, -1)
+    
     return img
 
 
+def get_demo_bytes(img):
+    buf = io.BytesIO()
+    Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)).save(buf, format='PNG')
+    return buf.getvalue()
+
+
 # =============================================================================
-# DB & AUTH
+# USER MANAGEMENT
 # =============================================================================
 
-def init_db():
-    if not USERS_DB_PATH.exists():
-        with open(USERS_DB_PATH, 'wb') as f:
-            pickle.dump({}, f)
+def hash_password(pw):
+    return hashlib.sha256(pw.encode()).hexdigest()
 
-def load_users():
-    init_db()
-    with open(USERS_DB_PATH, 'rb') as f:
-        return pickle.load(f)
+def load_users_db():
+    if USERS_DB_PATH.exists():
+        try:
+            with open(USERS_DB_PATH, 'rb') as f:
+                return pickle.load(f)
+        except:
+            pass
+    return {'users': {}, 'version': 2}
 
-def save_users(users):
+def save_users_db(db):
+    db['version'] = 2
+    db['last_save'] = datetime.now().isoformat()
     with open(USERS_DB_PATH, 'wb') as f:
-        pickle.dump(users, f)
-
-def hash_pw(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def check_login(username, password):
-    users = load_users()
-    if username in users and users[username]['password'] == hash_pw(password):
-        return True
-    return False
+        pickle.dump(db, f)
 
 def register_user(username, password):
-    users = load_users()
-    if username in users:
-        return False
-    users[username] = {
-        'password': hash_pw(password),
-        'created': datetime.now(),
-        'fragments': [],
-        'groups': [],
-        'custom_labels': []
+    db = load_users_db()
+    if username in db['users']:
+        return False, 'register_error_exists'
+    if len(password) < 4:
+        return False, 'register_error_short'
+    
+    db['users'][username] = {
+        'pw_hash': hash_password(password),
+        'created': datetime.now().isoformat(),
+        'data': {'pieces': {}, 'clusters': {}}
     }
-    save_users(users)
-    return True
+    save_users_db(db)
+    return True, 'register_success'
+
+def authenticate(username, password):
+    db = load_users_db()
+    if username not in db['users']:
+        return False
+    return db['users'][username]['pw_hash'] == hash_password(password)
+
+def get_user_data(username):
+    db = load_users_db()
+    if username in db['users']:
+        d = db['users'][username].get('data', {})
+        if 'pieces' not in d:
+            d['pieces'] = {}
+        if 'clusters' not in d:
+            d['clusters'] = {}
+        return d
+    return {'pieces': {}, 'clusters': {}}
+
+def save_user_data(username, data):
+    db = load_users_db()
+    if username in db['users']:
+        db['users'][username]['data'] = data
+        save_users_db(db)
+
 
 # =============================================================================
-# IMAGE PROCESSING
+# ID & QR CODE
 # =============================================================================
 
-def segment_fragments(image, mode='auto'):
-    """Advanced segmentation with shadow removal and multi-channel edge detection"""
-    
-    # 1. Resize for speed but keep quality
+def gen_id():
+    return f"SM-{uuid.uuid4().hex[:8].upper()}"
+
+def gen_qr(data, size=10):
+    qr = qrcode.QRCode(version=1, box_size=size, border=2)
+    qr.add_data(data)
+    qr.make(fit=True)
+    return qr.make_image(fill_color="black", back_color="white")
+
+
+# =============================================================================
+# FRAGMENT DETECTION
+# =============================================================================
+
+def segment_fragments(image, min_area=100, project="", mode="auto"):
+    """Improved fragment detection"""
     h, w = image.shape[:2]
-    scale = 1.0
-    if max(h, w) > 1500:
-        scale = 1500 / max(h, w)
-        image = cv2.resize(image, None, fx=scale, fy=scale)
     
-    # 2. Denoise
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
-    
-    # 3. Detect Background
     gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
+    lab = cv2.cvtColor(blurred, cv2.COLOR_BGR2Lab)
     
-    if mode == 'mode_dark_bg':
-        # Dark background -> Threshold
-        _, mask = cv2.threshold(gray, 40, 255, cv2.THRESH_BINARY)
-    elif mode == 'mode_high_contrast':
+    masks = []
+    
+    if mode in ["auto", "light_bg", "porcelain"]:
+        # Adaptive threshold
+        adapt = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                       cv2.THRESH_BINARY_INV, 25, 8)
+        masks.append(adapt)
+        
         # Otsu
-        _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    else:
-        # Light background (standard lab setup)
-        # Use localized variance or simple adaptive threshold
-        mask = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                     cv2.THRESH_BINARY_INV, 21, 5)
+        _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        masks.append(otsu)
         
-        # Refine: Remove shadows
-        # Convert to LAB, check L channel
-        lab = cv2.cvtColor(blurred, cv2.COLOR_BGR2LAB)
-        l_channel = lab[:, :, 0]
-        _, shadow_mask = cv2.threshold(l_channel, 210, 255, cv2.THRESH_BINARY_INV) # Exclude very bright
-        
-    # 4. Clean Mask
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
+        # LAB L-channel
+        l_ch = lab[:, :, 0]
+        _, lab_th = cv2.threshold(l_ch, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        masks.append(lab_th)
     
-    # 5. Find Contours
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if mode in ["auto", "dark_bg"]:
+        _, inv = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        masks.append(inv)
     
-    fragments = []
-    min_area = (h * w) * 0.001  # 0.1% of image
-    
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
-        if area < min_area:
-            continue
-            
-        x, y, fw, fh = cv2.boundingRect(cnt)
-        
-        # Expand ROI slightly
-        pad = 10
-        x1 = max(0, x - pad)
-        y1 = max(0, y - pad)
-        x2 = min(w, x + fw + pad)
-        y2 = min(h, y + fh + pad)
-        
-        roi = image[y1:y2, x1:x2]
-        roi_mask = np.zeros((y2-y1, x2-x1), dtype=np.uint8)
-        
-        # Shift contour for mask
-        cnt_shifted = cnt - [x1, y1]
-        cv2.fillPoly(roi_mask, [cnt_shifted], 255)
-        
-        # Extract features
-        avg_color = cv2.mean(roi, mask=roi_mask)[:3]
-        
-        fragments.append({
-            'id': str(uuid.uuid4())[:8],
-            'contour': cnt, # Original coords
-            'bbox': (x, y, fw, fh),
-            'area': area,
-            'thumbnail': roi,
-            'mask': roi_mask,
-            'avg_color': avg_color,
-            'source_image_idx': 0 # Placeholder
-        })
-        
-    return fragments
-
-def cluster_fragments(fragments, n_clusters=None, sensitivity=1.0):
-    if not fragments:
-        return {}
-    
-    # Feature extraction: Color (LAB) + Texture + Size
-    features = []
-    for f in fragments:
-        # Color
-        b, g, r = f['avg_color']
-        lab = cv2.cvtColor(np.uint8([[[b, g, r]]]), cv2.COLOR_BGR2LAB)[0][0]
-        
-        # Size (log scale)
-        size_feat = np.log(f['area']) * 10
-        
-        feat = [
-            float(lab[0]) * 1.0,  # L
-            float(lab[1]) * 1.5,  # A (Color important)
-            float(lab[2]) * 1.5,  # B
-            size_feat * 0.5
+    # === PORCELAIN SPECIAL: Shadow and Color Detection ===
+    if mode in ["porcelain"]:
+        # Analyze background from corners
+        margin = 30
+        corners = [
+            gray[margin:2*margin, margin:2*margin],
+            gray[margin:2*margin, w-2*margin:w-margin],
+            gray[h-2*margin:h-margin, margin:2*margin],
+            gray[h-2*margin:h-margin, w-2*margin:w-margin]
         ]
-        features.append(feat)
+        bg_mean = np.mean([c.mean() for c in corners])
+        bg_std = np.mean([c.std() for c in corners])
+        
+        # Shadow detection (pieces cast shadows)
+        shadow_thresh = bg_mean - 20 - bg_std
+        shadow_mask = (gray < shadow_thresh).astype(np.uint8) * 255
+        masks.append(shadow_mask)
+        
+        # L-channel threshold for subtle differences
+        l_channel = lab[:, :, 0]
+        l_thresh = np.percentile(l_channel, 15)
+        l_mask = (l_channel < l_thresh).astype(np.uint8) * 255
+        masks.append(l_mask)
+        
+        # Color detection (decorations)
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        
+        # Blue decoration
+        blue_mask = cv2.inRange(hsv, np.array([90, 25, 40]), np.array([130, 255, 255]))
+        # Green decoration
+        green_mask = cv2.inRange(hsv, np.array([35, 25, 40]), np.array([85, 255, 255]))
+        # Any saturated color
+        sat_mask = (hsv[:, :, 1] > 30).astype(np.uint8) * 255
+        
+        color_mask = cv2.bitwise_or(blue_mask, green_mask)
+        color_mask = cv2.bitwise_or(color_mask, sat_mask)
+        
+        # Dilate color mask to include surrounding area
+        kernel_dilate = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
+        color_expanded = cv2.dilate(color_mask, kernel_dilate, iterations=2)
+        masks.append(color_expanded)
     
-    X = np.array(features)
+    if mode in ["auto", "high_contrast"]:
+        # Edge detection
+        edges = cv2.Canny(gray, 30, 100)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+        edges = cv2.dilate(edges, kernel, iterations=3)
+        
+        contours_e, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        edge_mask = np.zeros_like(gray)
+        cv2.drawContours(edge_mask, contours_e, -1, 255, -1)
+        masks.append(edge_mask)
+        
+        # Background subtraction
+        corners = [image[0:30, 0:30], image[0:30, w-30:w], 
+                   image[h-30:h, 0:30], image[h-30:h, w-30:w]]
+        bg_colors = np.vstack([c.reshape(-1, 3) for c in corners])
+        bg_mean = np.mean(bg_colors, axis=0)
+        bg_std = np.std(bg_colors, axis=0) + 15
+        
+        diff = np.abs(image.astype(float) - bg_mean)
+        fg_mask = np.any(diff > bg_std * 2, axis=2).astype(np.uint8) * 255
+        masks.append(fg_mask)
     
-    # Normalize
-    if len(X) > 1:
-        X = (X - X.mean(axis=0)) / (X.std(axis=0) + 1e-5)
+    # Combine
+    combined = np.zeros_like(gray)
+    for m in masks:
+        combined = cv2.bitwise_or(combined, m)
     
-    # Clustering
-    if n_clusters is None:
-        # Distance threshold
-        dist_threshold = 2.0 * (1.0 / sensitivity)
-        clusterer = AgglomerativeClustering(
-            n_clusters=None, 
-            distance_threshold=dist_threshold,
-            metric='euclidean',
-            linkage='ward'
-        )
+    # Cleanup
+    kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
+    kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    
+    cleaned = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel_close, iterations=3)
+    cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel_open, iterations=2)
+    
+    # Remove border
+    border = 10
+    cleaned[:border, :] = 0
+    cleaned[-border:, :] = 0
+    cleaned[:, :border] = 0
+    cleaned[:, -border:] = 0
+    
+    # Find contours
+    contours, _ = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    pieces = []
+    max_area = h * w * 0.6
+    
+    for c in contours:
+        area = cv2.contourArea(c)
+        
+        if area < min_area or area > max_area:
+            continue
+        
+        x, y, bw, bh = cv2.boundingRect(c)
+        aspect = bw / (bh + 1e-6)
+        if aspect < 0.15 or aspect > 7:
+            continue
+        
+        hull = cv2.convexHull(c)
+        hull_area = cv2.contourArea(hull)
+        if hull_area > 0:
+            solidity = area / hull_area
+            if solidity < 0.35:
+                continue
+        
+        # Extract ROI
+        margin = 10
+        x1, y1 = max(0, x - margin), max(0, y - margin)
+        x2, y2 = min(w, x + bw + margin), min(h, y + bh + margin)
+        
+        roi = image[y1:y2, x1:x2].copy()
+        
+        # Mask
+        piece_mask = np.zeros((h, w), dtype=np.uint8)
+        cv2.drawContours(piece_mask, [c], -1, 255, -1)
+        mask_roi = piece_mask[y1:y2, x1:x2].copy()
+        
+        # Relative contour
+        contour_rel = c.copy()
+        contour_rel[:, :, 0] -= x1
+        contour_rel[:, :, 1] -= y1
+        
+        # Centroid
+        M = cv2.moments(c)
+        if M['m00'] > 0:
+            cx = int(M['m10'] / M['m00'])
+            cy = int(M['m01'] / M['m00'])
+        else:
+            cx, cy = x + bw // 2, y + bh // 2
+        
+        piece = {
+            'id': gen_id(),
+            'contour': contour_rel,
+            'contour_global': c,
+            'thumbnail': roi,
+            'mask': mask_roi,
+            'area': area,
+            'centroid': (cx, cy),
+            'bbox': (x, y, bw, bh),
+            'excavation': project,
+            'created': datetime.now().isoformat()
+        }
+        
+        # Analyze decoration and curvature for reconstruction
+        piece['has_decoration'] = analyze_decoration(roi, mask_roi)
+        piece['curvature'] = analyze_curvature(c)
+        piece['is_edge_piece'] = piece['has_decoration'] or piece['curvature'] > 0.005
+        
+        # Analyze pattern position for reconstruction
+        # Find the centroid of colored (blue/green) areas
+        hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        h_ch = hsv_roi[:, :, 0]
+        s_ch = hsv_roi[:, :, 1]
+        
+        # Blue and green detection
+        blue_mask_local = ((h_ch > 90) & (h_ch < 130) & (s_ch > 40) & (mask_roi > 0)).astype(np.uint8) * 255
+        green_mask_local = ((h_ch > 35) & (h_ch < 90) & (s_ch > 30) & (mask_roi > 0)).astype(np.uint8) * 255
+        pattern_mask = cv2.bitwise_or(blue_mask_local, green_mask_local)
+        
+        pattern_M = cv2.moments(pattern_mask)
+        piece['has_pattern'] = pattern_M['m00'] > 500
+        
+        if piece['has_pattern']:
+            # Pattern center relative to piece
+            pattern_cx_local = pattern_M['m10'] / pattern_M['m00']
+            pattern_cy_local = pattern_M['m01'] / pattern_M['m00']
+            
+            # Piece center in local coords
+            piece_cx_local = cx - x1
+            piece_cy_local = cy - y1
+            
+            # Direction from piece center to pattern center = OUTWARD direction
+            dx = pattern_cx_local - piece_cx_local
+            dy = pattern_cy_local - piece_cy_local
+            
+            if abs(dx) > 2 or abs(dy) > 2:
+                piece['pattern_direction'] = np.arctan2(dy, dx)
+                piece['pattern_center'] = (pattern_cx_local + x1, pattern_cy_local + y1)
+            else:
+                piece['pattern_direction'] = None
+                piece['pattern_center'] = None
+        else:
+            piece['pattern_direction'] = None
+            piece['pattern_center'] = None
+        
+        # Classify
+        piece['name'], piece['material'], piece['color_name'] = auto_classify(roi, mask_roi)
+        
+        pieces.append(piece)
+    
+    return pieces
+
+
+def analyze_decoration(roi, mask):
+    """Analyze if piece has colored decoration (blue/green bands etc)"""
+    if roi is None or mask is None:
+        return False
+    
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    sat = hsv[:, :, 1]
+    colored_mask = (sat > 30) & (mask > 0)
+    
+    total_pixels = np.sum(mask > 0)
+    colored_pixels = np.sum(colored_mask)
+    
+    if total_pixels == 0:
+        return False
+    
+    ratio = colored_pixels / total_pixels
+    return ratio > 0.05  # More than 5% colored = has decoration
+
+
+def analyze_curvature(contour):
+    """Analyze the curvature of the contour (higher = more curved = edge piece)"""
+    if contour is None or len(contour) < 10:
+        return 0.0
+    
+    pts = contour.reshape(-1, 2).astype(float)
+    n = len(pts)
+    
+    curvatures = []
+    step = max(1, n // 20)
+    
+    for i in range(0, n, step):
+        p_prev = pts[(i - step) % n]
+        p_curr = pts[i]
+        p_next = pts[(i + step) % n]
+        
+        v1 = p_curr - p_prev
+        v2 = p_next - p_curr
+        
+        cross = abs(v1[0] * v2[1] - v1[1] * v2[0])
+        l1 = np.linalg.norm(v1)
+        l2 = np.linalg.norm(v2)
+        
+        if l1 > 0 and l2 > 0:
+            curv = cross / (l1 * l2 * (l1 + l2) / 2 + 1e-9)
+            curvatures.append(curv)
+    
+    return np.median(curvatures) if curvatures else 0.0
+
+
+def auto_classify(thumbnail, mask):
+    """Auto-classify material and color"""
+    hsv = cv2.cvtColor(thumbnail, cv2.COLOR_BGR2HSV)
+    mean_hsv = cv2.mean(hsv, mask=mask)
+    h, s, v = mean_hsv[:3]
+    
+    if s < 25:
+        if v > 180:
+            color = "Weiß"
+        elif v > 100:
+            color = "Grau"
+        else:
+            color = "Schwarz"
+    elif h < 10 or h > 170:
+        color = "Rot"
+    elif h < 25:
+        color = "Orange"
+    elif h < 40:
+        color = "Braun"
+    elif h < 80:
+        color = "Grün"
+    elif h < 130:
+        color = "Blau"
     else:
-        clusterer = AgglomerativeClustering(n_clusters=n_clusters)
-        
-    labels = clusterer.fit_predict(X)
+        color = "Violett"
     
-    groups = {}
-    for i, label in enumerate(labels):
-        if label not in groups:
-            groups[label] = []
-        groups[label].append(fragments[i])
+    if s < 20 and v > 200:
+        material = "Porzellan"
+    elif 10 < h < 35 and s > 30:
+        material = "Keramik"
+    elif s < 25 and v < 100:
+        material = "Metall"
+    else:
+        material = "Keramik"
+    
+    return f"{material}_{color}", material, color
+
+
+def get_features(piece):
+    """Extract features for clustering"""
+    try:
+        lab = cv2.cvtColor(piece['thumbnail'], cv2.COLOR_BGR2Lab)
+        lab_mean, lab_std = cv2.meanStdDev(lab, mask=piece['mask'])
         
-    return groups
+        # Edge features
+        contour = piece.get('contour', piece.get('contour_global'))
+        if contour is not None:
+            hull = cv2.convexHull(contour)
+            hull_area = cv2.contourArea(hull)
+            solidity = piece['area'] / (hull_area + 1) if hull_area > 0 else 0
+            perimeter = cv2.arcLength(contour, True)
+            circularity = 4 * np.pi * piece['area'] / (perimeter ** 2 + 1)
+        else:
+            solidity, circularity = 0.5, 0.5
+        
+        return {
+            'color': np.concatenate([lab_mean.flatten(), lab_std.flatten()]),
+            'solidity': solidity,
+            'circularity': circularity
+        }
+    except:
+        return None
+
 
 # =============================================================================
-# RECONSTRUCTION LOGIC - MODIFIED FOR V1.8
+# CLUSTERING
 # =============================================================================
 
-def reconstruct_group(pieces, canvas_size=900):
+def calc_similarity(p1, p2):
+    """Calculate similarity between two pieces"""
+    score = 0
+    
+    # Color
+    if 'features' in p1 and 'features' in p2:
+        c1, c2 = p1['features']['color'], p2['features']['color']
+        dist = np.linalg.norm(c1 - c2)
+        score += max(0, 100 - dist * 2) * 0.4
+    
+    # Material
+    if p1.get('material') == p2.get('material'):
+        score += 30
+    
+    # Size
+    a1, a2 = p1.get('area', 0), p2.get('area', 0)
+    if a1 > 0 and a2 > 0:
+        ratio = min(a1, a2) / max(a1, a2)
+        score += ratio * 20
+    
+    # Shape similarity
+    if 'features' in p1 and 'features' in p2:
+        sol_diff = abs(p1['features'].get('solidity', 0) - p2['features'].get('solidity', 0))
+        score += max(0, 10 - sol_diff * 20)
+    
+    return score
+
+
+def cluster_pieces(pieces, threshold=35):
+    """Cluster pieces by similarity"""
+    n = len(pieces)
+    if n < 2:
+        return [0] if n == 1 else []
+    
+    sim = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i + 1, n):
+            s = calc_similarity(pieces[i], pieces[j])
+            sim[i, j] = sim[j, i] = s
+    
+    dist = 100 - sim
+    np.fill_diagonal(dist, 0)
+    
+    try:
+        cl = AgglomerativeClustering(
+            n_clusters=None,
+            distance_threshold=100 - threshold,
+            metric='precomputed',
+            linkage='average'
+        )
+        return cl.fit_predict(dist)
+    except:
+        return [0] * n
+
+
+def cluster_color(cid):
+    if cid < 0:
+        return "#B0B0B0"
+    colors = ["#E74C3C", "#3498DB", "#2ECC71", "#F39C12", "#9B59B6", "#1ABC9C", "#E67E22", "#34495E"]
+    return colors[cid % len(colors)]
+
+
+# =============================================================================
+# RECONSTRUCTION - NEW EDGE-BASED ALGORITHM
+# =============================================================================
+
+def extract_edge_signature(contour, num_points=64):
+    """Extract edge signature for matching"""
+    if contour is None or len(contour) < 5:
+        return None
+    
+    # Resample contour to fixed number of points
+    contour = contour.reshape(-1, 2).astype(float)
+    
+    # Calculate cumulative arc length
+    diffs = np.diff(contour, axis=0)
+    lengths = np.sqrt((diffs ** 2).sum(axis=1))
+    cumlen = np.concatenate([[0], np.cumsum(lengths)])
+    total_len = cumlen[-1]
+    
+    if total_len < 1:
+        return None
+    
+    # Resample at uniform arc length
+    target_lens = np.linspace(0, total_len, num_points)
+    resampled = np.zeros((num_points, 2))
+    
+    for i, target in enumerate(target_lens):
+        idx = np.searchsorted(cumlen, target)
+        idx = min(idx, len(cumlen) - 1)
+        if idx == 0:
+            resampled[i] = contour[0]
+        else:
+            t = (target - cumlen[idx - 1]) / (cumlen[idx] - cumlen[idx - 1] + 1e-6)
+            resampled[i] = contour[idx - 1] + t * (contour[idx] - contour[idx - 1])
+    
+    # Calculate curvature at each point
+    curvature = np.zeros(num_points)
+    for i in range(num_points):
+        p_prev = resampled[(i - 2) % num_points]
+        p_curr = resampled[i]
+        p_next = resampled[(i + 2) % num_points]
+        
+        v1 = p_curr - p_prev
+        v2 = p_next - p_curr
+        
+        cross = v1[0] * v2[1] - v1[1] * v2[0]
+        dot = v1[0] * v2[0] + v1[1] * v2[1]
+        
+        curvature[i] = np.arctan2(cross, dot + 1e-6)
+    
+    return {
+        'points': resampled,
+        'curvature': curvature,
+        'length': total_len
+    }
+
+
+def find_edge_matches(pieces, min_match_score=0.3):
+    """Find matching edges between pieces"""
+    n = len(pieces)
+    matches = []
+    
+    # Extract edge signatures
+    signatures = []
+    for p in pieces:
+        contour = p.get('contour_global', p.get('contour'))
+        sig = extract_edge_signature(contour)
+        signatures.append(sig)
+    
+    # Compare all pairs
+    for i in range(n):
+        if signatures[i] is None:
+            continue
+        
+        for j in range(i + 1, n):
+            if signatures[j] is None:
+                continue
+            
+            # Try to match edge segments
+            best_score = 0
+            best_rotation = 0
+            best_offset = (0, 0)
+            
+            curv_i = signatures[i]['curvature']
+            curv_j = signatures[j]['curvature']
+            pts_i = signatures[i]['points']
+            pts_j = signatures[j]['points']
+            
+            # Try different rotations of piece j
+            num_pts = len(curv_i)
+            for rot in range(0, num_pts, num_pts // 8):
+                # Rotate and flip curvature (matching edges have opposite curvature)
+                curv_j_rot = np.roll(-curv_j[::-1], rot)
+                
+                # Find best alignment
+                correlation = np.correlate(curv_i, curv_j_rot, mode='same')
+                max_corr = np.max(correlation)
+                
+                if max_corr > best_score:
+                    best_score = max_corr
+                    best_rotation = rot
+            
+            # Normalize score
+            score = best_score / (num_pts * np.pi)
+            
+            # Add color similarity bonus
+            if 'features' in pieces[i] and 'features' in pieces[j]:
+                c1, c2 = pieces[i]['features']['color'], pieces[j]['features']['color']
+                color_dist = np.linalg.norm(c1 - c2)
+                color_bonus = max(0, 0.3 - color_dist / 500)
+                score += color_bonus
+            
+            if score > min_match_score:
+                matches.append({
+                    'piece_i': i,
+                    'piece_j': j,
+                    'score': score * 100,
+                    'rotation': best_rotation * 360 / num_pts
+                })
+    
+    matches.sort(key=lambda x: x['score'], reverse=True)
+    return matches
+
+
+def reconstruct_group(pieces, canvas_size=800):
     """
-    VERBESSERTE TELLER-REKONSTRUKTION
+    TELLER-REKONSTRUKTION - Verbesserte Version mit Kreis-Fitting
     
-    Platziert Fragmente basierend auf ihrer tatsächlichen Position und
-    Winkelbreite aus dem Originalbild (Circle-Fitting auf blaue Dekorbänder).
+    Algorithmus:
+    1. Sammle alle blauen/farbigen Punkte aus allen Fragmenten
+    2. Fitte einen Kreis um das Tellerzentrum zu finden
+    3. Platziere jedes Fragment so, dass sein Teil des Musters
+       auf dem Rekonstruktionskreis liegt
+    
+    Das blaue Band definiert die Position automatisch!
     """
     if not pieces or len(pieces) == 0:
         return None, [], []
     
     n = len(pieces)
-    canvas = np.ones((canvas_size, canvas_size, 3), dtype=np.uint8) * 248
-    center = canvas_size // 2
+    canvas = np.ones((canvas_size, canvas_size, 3), dtype=np.uint8) * 245
+    canvas_center = canvas_size // 2
+    target_radius = canvas_size * 0.42
     
-    matches = []
-    placements = [{
-        'x': center,
-        'y': center,
-        'rotation': 0,
-        'scale': 1.0,
-        'placed': False
-    } for _ in range(n)]
+    # Sammle alle blauen Punkte aus allen Fragmenten
+    all_blue_points = []
     
-    # Analysiere jedes Fragment für Rekonstruktion
-    analyzed_pieces = []
-    
-    for idx, piece in enumerate(pieces):
-        # Hole das Originalbild-ROI und Maske
-        thumbnail = piece.get('thumbnail')
-        mask = piece.get('mask')
-        if thumbnail is None:
+    for p in pieces:
+        if 'thumbnail' not in p:
             continue
         
-        # Erkenne blaue Pixel im Fragment
-        hsv = cv2.cvtColor(thumbnail, cv2.COLOR_BGR2HSV) if len(thumbnail.shape) == 3 else None
-        if hsv is not None:
-            h_ch = hsv[:, :, 0]
-            s_ch = hsv[:, :, 1]
-            blue_mask = ((h_ch > 90) & (h_ch < 130) & (s_ch > 35)).astype(np.uint8) * 255
-            
-            # Wende Fragment-Maske an
-            if mask is not None and mask.shape == blue_mask.shape:
-                blue_mask = cv2.bitwise_and(blue_mask, mask)
-            
-            blue_pts = np.column_stack(np.where(blue_mask > 0))[:, ::-1]
-            
-            if len(blue_pts) > 50:
-                # Circle-Fit für dieses Fragment
-                x_b = blue_pts[:, 0].astype(float)
-                y_b = blue_pts[:, 1].astype(float)
-                try:
-                    A = np.column_stack([x_b, y_b, np.ones_like(x_b)])
-                    b = x_b**2 + y_b**2
-                    result, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
-                    local_cx = result[0] / 2
-                    local_cy = result[1] / 2
-                    local_r = np.sqrt(result[2] + local_cx**2 + local_cy**2)
-                    
-                    if local_r > 20:
-                        # Berechne Winkel der blauen Pixel
-                        angles = np.arctan2(y_b - local_cy, x_b - local_cx)
-                        
-                        # Winkelspanne
-                        angles_sorted = np.sort(angles)
-                        gaps = np.diff(angles_sorted)
-                        gaps = np.append(gaps, angles_sorted[0] + 2*np.pi - angles_sorted[-1])
-                        max_gap_idx = np.argmax(gaps)
-                        
-                        if max_gap_idx == len(gaps) - 1:
-                            angle_min = angles_sorted[0]
-                            angle_max = angles_sorted[-1]
-                        else:
-                            angle_min = angles_sorted[(max_gap_idx + 1) % len(angles_sorted)]
-                            angle_max = angles_sorted[max_gap_idx]
-                        
-                        angle_span = angle_max - angle_min
-                        if angle_span < 0:
-                            angle_span += 2 * np.pi
-                        if angle_span > np.pi:
-                            angle_span = 2 * np.pi - angle_span
-                        
-                        # Mittlerer Winkel
-                        blue_center = blue_pts.mean(axis=0)
-                        original_angle = np.arctan2(blue_center[1] - local_cy, blue_center[0] - local_cx)
-                        
-                        analyzed_pieces.append({
-                            'idx': idx,
-                            'piece': piece,
-                            'thumbnail': thumbnail,
-                            'mask': mask,
-                            'local_center': (local_cx, local_cy),
-                            'local_radius': local_r,
-                            'blue_center': blue_center,
-                            'original_angle': original_angle,
-                            'angle_span': angle_span,
-                            'area': piece.get('area', thumbnail.shape[0] * thumbnail.shape[1])
-                        })
-                        continue
-                except:
-                    pass
+        thumb = p['thumbnail']
+        mask = p.get('mask')
+        offset = p.get('offset', (0, 0))
         
-        # Fallback für Fragmente ohne Blauband
-        analyzed_pieces.append({
-            'idx': idx,
-            'piece': piece,
-            'thumbnail': thumbnail,
-            'mask': mask,
-            'local_center': None,
-            'is_center_piece': True,
-            'area': piece.get('area', thumbnail.shape[0] * thumbnail.shape[1])
-        })
-    
-    # Trenne Rand- und Mittelstücke
-    edge_pieces = [p for p in analyzed_pieces if p.get('local_center') is not None]
-    center_pieces = [p for p in analyzed_pieces if p.get('is_center_piece', False)]
-    
-    if not edge_pieces:
-        edge_pieces = analyzed_pieces
-        center_pieces = []
-    
-    # Sortiere nach Original-Winkel
-    edge_pieces.sort(key=lambda p: p.get('original_angle', 0))
-    
-    # Berechne Gesamtwinkel und durchschnittlichen Radius
-    if edge_pieces:
-        total_span = sum(p.get('angle_span', 0.3) for p in edge_pieces)
-        avg_radius = np.mean([p['local_radius'] for p in edge_pieces if 'local_radius' in p])
+        if thumb is None:
+            continue
         
-        # Ziel-Radius auf Canvas
-        target_radius = canvas_size * 0.35
-        scale = target_radius / avg_radius if avg_radius > 0 else 0.5
+        # Konvertiere zu HSV
+        hsv = cv2.cvtColor(thumb, cv2.COLOR_BGR2HSV)
+        h_ch = hsv[:, :, 0]
+        s_ch = hsv[:, :, 1]
         
-        # Berechne Lücke pro Fragment
-        if total_span < 2 * np.pi:
-            gap_per_frag = (2 * np.pi - total_span) / max(len(edge_pieces), 1)
+        # Finde blaue Pixel (Dekorband)
+        blue_mask = ((h_ch > 90) & (h_ch < 130) & (s_ch > 35))
+        
+        # Wende Fragment-Maske an falls vorhanden
+        if mask is not None and mask.shape == blue_mask.shape:
+            blue_mask = blue_mask & (mask > 0)
+        
+        # Extrahiere Koordinaten in globalen Bildkoordinaten
+        local_pts = np.column_stack(np.where(blue_mask))[:, ::-1]  # [x, y]
+        if len(local_pts) > 0:
+            global_pts = local_pts + np.array([offset[0], offset[1]])
+            all_blue_points.extend(global_pts.tolist())
+    
+    all_blue_points = np.array(all_blue_points) if all_blue_points else np.array([])
+    
+    # Fit circle to blue points
+    plate_cx, plate_cy, plate_r = None, None, None
+    
+    if len(all_blue_points) > 50:
+        x = all_blue_points[:, 0].astype(float)
+        y = all_blue_points[:, 1].astype(float)
+        A = np.column_stack([x, y, np.ones_like(x)])
+        b = x**2 + y**2
+        try:
+            result, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+            plate_cx = result[0] / 2
+            plate_cy = result[1] / 2
+            plate_r = np.sqrt(max(0, result[2] + plate_cx**2 + plate_cy**2))
+        except:
+            pass
+    
+    # Fallback wenn kein Kreis gefunden
+    if plate_cx is None or plate_r < 10:
+        # Nutze Schwerpunkte der Fragmente
+        centroids = [p['centroid'] for p in pieces if 'centroid' in p]
+        if centroids:
+            plate_cx = np.mean([c[0] for c in centroids])
+            plate_cy = np.mean([c[1] for c in centroids])
+            plate_r = 200
         else:
-            gap_per_frag = 0
-            scale_factor = (2 * np.pi * 0.95) / total_span
-            for p in edge_pieces:
-                if 'angle_span' in p:
-                    p['angle_span'] *= scale_factor
-            gap_per_frag = 0.02
-        
-        # Platziere Fragmente SEQUENZIELL
-        current_angle = -np.pi
-        
-        for p in edge_pieces:
-            idx = p['idx']
-            thumbnail = p['thumbnail']
-            mask = p['mask']
-            angle_span = p.get('angle_span', 0.3)
-            
-            h, w = thumbnail.shape[:2]
-            nw = max(1, int(w * scale))
-            nh = max(1, int(h * scale))
-            
-            thumb_s = cv2.resize(thumbnail, (nw, nh))
-            mask_s = cv2.resize(mask, (nw, nh)) if mask is not None else np.ones((nh, nw), dtype=np.uint8) * 255
-            
-            # Zielwinkel ist Mitte dieses Fragments
-            target_angle = current_angle + angle_span / 2
-            
-            # Berechne Rotation
-            if 'blue_center' in p and 'local_center' in p:
-                bcx_s = p['blue_center'][0] * scale
-                bcy_s = p['blue_center'][1] * scale
-                lcx_s = p['local_center'][0] * scale
-                lcy_s = p['local_center'][1] * scale
-                
-                # Aktuelle "nach außen" Richtung
-                current_outward = np.arctan2(bcy_s - lcy_s, bcx_s - lcx_s)
-                rot_deg = np.degrees(target_angle - current_outward)
-            else:
-                rot_deg = 0
-                lcx_s = nw / 2
-                lcy_s = nh / 2
-            
-            # Rotiere
-            if abs(rot_deg) > 0.5:
-                M = cv2.getRotationMatrix2D((nw // 2, nh // 2), rot_deg, 1.0)
-                cos_v, sin_v = abs(M[0, 0]), abs(M[0, 1])
-                nw_r = int(nh * sin_v + nw * cos_v) + 20
-                nh_r = int(nh * cos_v + nw * sin_v) + 20
-                M[0, 2] += (nw_r - nw) / 2
-                M[1, 2] += (nh_r - nh) / 2
-                
-                thumb_s = cv2.warpAffine(thumb_s, M, (nw_r, nh_r), borderValue=(248, 248, 248))
-                mask_s = cv2.warpAffine(mask_s, M, (nw_r, nh_r), borderValue=0)
-                
-                # Transformiere Zentrum
-                lcx_rot = M[0, 0] * lcx_s + M[0, 1] * lcy_s + M[0, 2]
-                lcy_rot = M[1, 0] * lcx_s + M[1, 1] * lcy_s + M[1, 2]
-                nw, nh = nw_r, nh_r
-            else:
-                lcx_rot = lcx_s
-                lcy_rot = lcy_s
-            
-            # Radialer Offset basierend auf Fragmentgröße
-            frag_height = max(nw, nh)
-            inward_offset = frag_height * 0.3
-            fragment_radius = target_radius - inward_offset
-            
-            # Position berechnen
-            target_x = center + fragment_radius * np.cos(target_angle)
-            target_y = center + fragment_radius * np.sin(target_angle)
-            
-            px = int(target_x - lcx_rot)
-            py = int(target_y - lcy_rot)
-            
-            placements[idx] = {
-                'x': px + nw // 2,
-                'y': py + nh // 2,
-                'rotation': rot_deg,
-                'scale': scale,
-                'placed': True,
-                'thumb_s': thumb_s,
-                'mask_s': mask_s,
-                'area': p.get('area', 0)
-            }
-            
-            # Nächstes Fragment
-            current_angle += angle_span + gap_per_frag
-            
-            # Match zum vorherigen
-            if len([p for p in placements if p.get('placed')]) > 1:
-                prev_placed = [i for i, pl in enumerate(placements) if pl.get('placed') and i != idx]
-                if prev_placed:
-                    matches.append({
-                        'piece_i': prev_placed[-1],
-                        'piece_j': idx,
-                        'score': 80.0
-                    })
+            plate_cx, plate_cy, plate_r = canvas_center, canvas_center, 200
     
-    # Platziere Mittelstücke
-    n_center = len(center_pieces)
-    inner_radius = canvas_size * 0.08
+    # Skalierungsfaktor
+    scale = target_radius / plate_r if plate_r > 0 else 0.5
+    scale = np.clip(scale, 0.2, 2.0)  # Begrenzen
     
-    for i, p in enumerate(center_pieces):
-        idx = p['idx']
-        thumbnail = p['thumbnail']
-        mask = p['mask']
+    # Placements und Matches initialisieren
+    placements = [{
+        'x': canvas_center,
+        'y': canvas_center,
+        'rotation': 0,
+        'scale': scale,
+        'placed': False
+    } for _ in range(n)]
+    matches = []
+    
+    # Platziere jedes Fragment
+    for idx, piece in enumerate(pieces):
+        if 'thumbnail' not in piece:
+            continue
         
-        h, w = thumbnail.shape[:2]
-        scale_c = min(80 / max(h, w), 1.0)
-        nw = max(1, int(w * scale_c))
-        nh = max(1, int(h * scale_c))
+        offset = piece.get('offset', (0, 0))
         
-        thumb_s = cv2.resize(thumbnail, (nw, nh))
-        mask_s = cv2.resize(mask, (nw, nh)) if mask is not None else np.ones((nh, nw), dtype=np.uint8) * 255
+        # Position: Das Tellerzentrum (plate_cx, plate_cy) soll auf canvas_center abgebildet werden
+        # Fragment-Position = canvas_center - (plate_center - fragment_offset) * scale
+        rel_cx = (plate_cx - offset[0]) * scale
+        rel_cy = (plate_cy - offset[1]) * scale
         
-        if n_center == 1:
-            px, py = center, center
-        else:
-            angle = 2 * np.pi * i / n_center
-            px = int(center + inner_radius * np.cos(angle))
-            py = int(center + inner_radius * np.sin(angle))
+        px = canvas_center - rel_cx
+        py = canvas_center - rel_cy
         
         placements[idx] = {
             'x': px,
             'y': py,
             'rotation': 0,
-            'scale': scale_c,
-            'placed': True,
-            'thumb_s': thumb_s,
-            'mask_s': mask_s,
-            'area': p.get('area', 0)
+            'scale': scale,
+            'placed': True
         }
     
-    # Zeichne auf Canvas (sortiert nach Fläche für Tiefe)
-    placed_items = [(idx, pl) for idx, pl in enumerate(placements) if pl.get('placed') and 'thumb_s' in pl]
-    placed_items.sort(key=lambda x: x[1].get('area', 0))
-    
-    # Zeichne Tellerbasis
-    cv2.circle(canvas, (center, center), int(canvas_size * 0.45), (252, 252, 254), -1)
-    cv2.circle(canvas, (center, center), int(canvas_size * 0.45), (220, 220, 225), 2)
-    
-    for idx, pl in placed_items:
-        thumb_s = pl['thumb_s']
-        mask_s = pl['mask_s']
+    # Zeichne Fragmente
+    for idx, piece in enumerate(pieces):
+        if 'thumbnail' not in piece or not placements[idx]['placed']:
+            continue
         
-        nh, nw = thumb_s.shape[:2]
-        px = int(pl['x']) - nw // 2
-        py = int(pl['y']) - nh // 2
-        
-        x1 = max(0, px)
-        y1 = max(0, py)
-        x2 = min(canvas_size, px + nw)
-        y2 = min(canvas_size, py + nh)
-        
-        sx1 = x1 - px
-        sy1 = y1 - py
-        
-        if x2 > x1 and y2 > y1:
-            roi = canvas[y1:y2, x1:x2]
-            t_roi = thumb_s[sy1:sy1 + (y2 - y1), sx1:sx1 + (x2 - x1)]
-            m_roi = mask_s[sy1:sy1 + (y2 - y1), sx1:sx1 + (x2 - x1)]
+        try:
+            thumb = piece['thumbnail'].copy()
+            mask = piece.get('mask', np.ones(thumb.shape[:2], dtype=np.uint8) * 255)
             
-            if roi.shape[:2] == t_roi.shape[:2]:
-                mask_3ch = cv2.cvtColor(m_roi, cv2.COLOR_GRAY2BGR).astype(float) / 255.0
-                blended = (t_roi.astype(float) * mask_3ch + roi.astype(float) * (1 - mask_3ch))
-                canvas[y1:y2, x1:x2] = blended.astype(np.uint8)
+            h, w = thumb.shape[:2]
+            piece_scale = placements[idx]['scale']
+            
+            nw = max(1, int(w * piece_scale))
+            nh = max(1, int(h * piece_scale))
+            
+            thumb_s = cv2.resize(thumb, (nw, nh))
+            mask_s = cv2.resize(mask, (nw, nh))
+            
+            # Position
+            px = int(placements[idx]['x'])
+            py = int(placements[idx]['y'])
+            
+            # Clip to canvas
+            dx1 = max(0, px)
+            dy1 = max(0, py)
+            dx2 = min(canvas_size, px + nw)
+            dy2 = min(canvas_size, py + nh)
+            
+            sx1 = dx1 - px
+            sy1 = dy1 - py
+            
+            if dx2 > dx1 and dy2 > dy1:
+                t_h, t_w = dy2 - dy1, dx2 - dx1
+                
+                if sy1 + t_h <= thumb_s.shape[0] and sx1 + t_w <= thumb_s.shape[1]:
+                    roi = canvas[dy1:dy2, dx1:dx2]
+                    t_roi = thumb_s[sy1:sy1 + t_h, sx1:sx1 + t_w]
+                    m_roi = mask_s[sy1:sy1 + t_h, sx1:sx1 + t_w]
+                    
+                    if roi.shape[:2] == t_roi.shape[:2]:
+                        alpha = cv2.cvtColor(m_roi, cv2.COLOR_GRAY2BGR).astype(float) / 255
+                        blended = t_roi.astype(float) * alpha + roi.astype(float) * (1 - alpha)
+                        canvas[dy1:dy2, dx1:dx2] = blended.astype(np.uint8)
+        
+        except Exception as e:
+            continue
     
-    # Innerer weißer Kreis
-    cv2.circle(canvas, (center, center), int(canvas_size * 0.15), (255, 255, 255), -1)
+    # Hilfskreis zeichnen (dezent)
+    cv2.circle(canvas, (canvas_center, canvas_center), int(target_radius), (230, 225, 220), 2)
     
     return canvas, placements, matches
 
 
 # =============================================================================
-# PDF GENERATION
+# PDF LABELS - FIXED LAYOUT
 # =============================================================================
 
-def create_labels_pdf(labels):
+def create_labels_pdf(pieces, username):
+    """Create PDF with proper layout"""
     buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
+    c = canvas.Canvas(buffer, pagesize=A4)
+    page_w, page_h = A4
     
-    # Layout configuration
-    margin_x = 10 * mm
-    margin_y = 10 * mm
+    # Layout settings
+    margin_left = 15 * mm
+    margin_top = 20 * mm
+    margin_right = 15 * mm
+    margin_bottom = 15 * mm
+    
     cols = 3
     rows = 4
-    cell_w = (width - 2 * margin_x) / cols
-    cell_h = (height - 2 * margin_y) / rows
     
-    for i, label in enumerate(labels):
-        if i > 0 and i % (cols * rows) == 0:
-            p.showPage()
-            
-        idx_on_page = i % (cols * rows)
-        row = idx_on_page // cols
-        col = idx_on_page % cols
+    usable_w = page_w - margin_left - margin_right
+    usable_h = page_h - margin_top - margin_bottom
+    
+    cell_w = usable_w / cols
+    cell_h = usable_h / rows
+    
+    qr_size = 18 * mm
+    thumb_size = 12 * mm
+    
+    # Header
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(margin_left, page_h - 12 * mm, f"ShardMind - {username}")
+    c.setFont("Helvetica", 8)
+    c.drawString(margin_left, page_h - 16 * mm, f"{datetime.now().strftime('%Y-%m-%d')} | {len(pieces)} Etiketten")
+    
+    items_per_page = cols * rows
+    
+    for idx, piece in enumerate(pieces):
+        # New page if needed
+        page_idx = idx // items_per_page
+        if idx > 0 and idx % items_per_page == 0:
+            c.showPage()
+            # Header on new page
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(margin_left, page_h - 12 * mm, f"ShardMind - {username}")
+            c.setFont("Helvetica", 8)
+            c.drawString(margin_left, page_h - 16 * mm, f"Seite {page_idx + 1}")
         
-        x = margin_x + col * cell_w
-        y = height - margin_y - (row + 1) * cell_h
+        # Position in grid
+        pos_on_page = idx % items_per_page
+        col = pos_on_page % cols
+        row = pos_on_page // cols
         
-        # Border for label
-        p.setStrokeColorRGB(0.8, 0.8, 0.8)
-        p.rect(x + 2*mm, y + 2*mm, cell_w - 4*mm, cell_h - 4*mm)
+        # Cell position (top-left corner)
+        cell_x = margin_left + col * cell_w
+        cell_y = page_h - margin_top - (row + 1) * cell_h
         
-        # Content
-        p.setFillColorRGB(0, 0, 0)
-        p.setFont("Helvetica-Bold", 12)
-        p.drawString(x + 5*mm, y + cell_h - 10*mm, label['name'][:20])
+        # Padding inside cell
+        pad = 3 * mm
         
-        p.setFont("Helvetica", 10)
-        p.drawString(x + 5*mm, y + cell_h - 15*mm, f"Date: {datetime.now().strftime('%Y-%m-%d')}")
-        p.drawString(x + 5*mm, y + cell_h - 20*mm, f"ID: {label.get('id', 'N/A')}")
+        # QR Code
+        piece_id = piece.get('id', gen_id())
+        url = f"{BASE_URL}/?piece={piece_id}"
         
-        # Description wrapped
-        desc = label.get('desc', '')
-        p.setFont("Helvetica", 8)
-        text_y = y + cell_h - 30*mm
-        for line in [desc[i:i+30] for i in range(0, len(desc), 30)][:3]:
-            p.drawString(x + 5*mm, text_y, line)
-            text_y -= 4*mm
-            
-        # QR Code - Deep Link
-        qr_data = f"{BASE_URL}?id={label.get('id', '0')}"
-        qr = qrcode.QRCode(box_size=10, border=1)
-        qr.add_data(qr_data)
-        qr.make(fit=True)
-        img_qr = qr.make_image(fill_color="black", back_color="white")
+        try:
+            qr = gen_qr(url, 4)
+            qr_buf = io.BytesIO()
+            qr.save(qr_buf, format='PNG')
+            qr_buf.seek(0)
+            c.drawImage(ImageReader(qr_buf), cell_x + pad, cell_y + cell_h - pad - qr_size, 
+                       width=qr_size, height=qr_size)
+        except:
+            pass
         
-        # Save QR to temp buffer to draw
-        qr_buf = io.BytesIO()
-        img_qr.save(qr_buf, format='PNG')
-        qr_buf.seek(0)
+        # Thumbnail
+        if 'thumbnail' in piece:
+            try:
+                thumb_rgb = cv2.cvtColor(piece['thumbnail'], cv2.COLOR_BGR2RGB)
+                pil = Image.fromarray(thumb_rgb)
+                pil.thumbnail((100, 100))
+                tb = io.BytesIO()
+                pil.save(tb, format='PNG')
+                tb.seek(0)
+                c.drawImage(ImageReader(tb), cell_x + pad + qr_size + 2*mm, 
+                           cell_y + cell_h - pad - thumb_size, 
+                           width=thumb_size, height=thumb_size)
+            except:
+                pass
         
-        p.drawImage(ImageReader(qr_buf), x + cell_w - 25*mm, y + 5*mm, width=20*mm, height=20*mm)
+        # Text
+        text_x = cell_x + pad
+        text_y = cell_y + cell_h - pad - qr_size - 4*mm
         
-    p.save()
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(text_x, text_y, piece_id[:16])
+        
+        c.setFont("Helvetica", 6)
+        text_y -= 3 * mm
+        name = piece.get('name', '-')[:25]
+        c.drawString(text_x, text_y, name)
+        
+        text_y -= 2.5 * mm
+        proj = piece.get('excavation', '-')[:25]
+        c.drawString(text_x, text_y, proj)
+        
+        # Cell border (dashed)
+        c.setStrokeColorRGB(0.7, 0.7, 0.7)
+        c.setDash(2, 2)
+        c.rect(cell_x, cell_y, cell_w, cell_h)
+        c.setDash()
+    
+    # Footer
+    c.setFont("Helvetica", 6)
+    c.drawString(margin_left, 8 * mm, f"ShardMind v{APP_VERSION} | {BASE_URL}")
+    
+    c.save()
     buffer.seek(0)
     return buffer
 
+
 # =============================================================================
-# MAIN APP
+# STREAMLIT APP
 # =============================================================================
 
-def main():
-    st.set_page_config(page_title="ShardMind", page_icon="🏺", layout="wide")
+def login_page():
+    st.markdown(f"# 🏺 {t('app_title')}")
+    st.caption(t('app_tagline'))
     
-    # --- Session State ---
-    if 'logged_in' not in st.session_state: st.session_state.logged_in = False
-    if 'username' not in st.session_state: st.session_state.username = ""
-    if 'fragments' not in st.session_state: st.session_state.fragments = []
-    if 'groups' not in st.session_state: st.session_state.groups = {}
-    if 'language' not in st.session_state: st.session_state.language = 'de'
-    if 'custom_labels' not in st.session_state: st.session_state.custom_labels = []
-
-    # --- Sidebar ---
-    with st.sidebar:
-        st.title(f"🏺 {t('app_title')} v{APP_VERSION}")
-        
-        # Language Switch
-        lang = st.radio("Language / Sprache", ['de', 'en'], 
-                        index=0 if st.session_state.language == 'de' else 1,
-                        horizontal=True)
-        st.session_state.language = lang
-        
-        if not st.session_state.logged_in:
-            tab1, tab2 = st.tabs([t('login'), t('register')])
-            
-            with tab1:
-                u = st.text_input(t('username'), key="l_u")
-                p = st.text_input(t('password'), type="password", key="l_p")
-                if st.button(t('login_btn')):
-                    if check_login(u, p):
-                        st.session_state.logged_in = True
-                        st.session_state.username = u
-                        # Load user data
-                        users = load_users()
-                        user_data = users[u]
-                        st.session_state.custom_labels = user_data.get('custom_labels', [])
-                        st.success(f"Welcome {u}")
-                        st.rerun()
-                    else:
-                        st.error(t('login_error'))
-                        
-            with tab2:
-                ru = st.text_input(t('username'), key="r_u")
-                rp = st.text_input(t('password'), type="password", key="r_p")
-                rp2 = st.text_input(t('password_confirm'), type="password", key="r_p2")
-                if st.button(t('register_btn')):
-                    if rp != rp2:
-                        st.error(t('register_error_password'))
-                    elif len(rp) < 4:
-                        st.error(t('register_error_short'))
-                    elif register_user(ru, rp):
-                        st.success(t('register_success'))
-                    else:
-                        st.error(t('register_error_exists'))
-                        
-            st.info(t('account_info'))
-            st.markdown("---")
-            
-        else:
-            st.write(f"👤 **{st.session_state.username}**")
-            if st.button(t('logout_btn')):
-                st.session_state.logged_in = False
-                st.rerun()
-                
-            st.markdown("---")
-            
-            # --- Analysis Settings ---
-            st.subheader(t('settings'))
-            
-            uploaded_files = st.file_uploader(t('upload_photos'), type=['jpg', 'png', 'jpeg'], accept_multiple_files=True)
-            
-            detection_mode = st.selectbox(t('detection_mode'), 
-                                        ['mode_auto', 'mode_light_bg', 'mode_dark_bg', 'mode_high_contrast'],
-                                        format_func=lambda x: t(x))
-            
-            cluster_sens = st.slider(t('cluster_sens'), 0.1, 2.0, 1.0)
-            
-            if st.button(t('analyze_btn'), type="primary"):
-                if uploaded_files:
-                    all_frags = []
-                    
-                    progress = st.progress(0)
-                    for i, up_file in enumerate(uploaded_files):
-                        file_bytes = np.asarray(bytearray(up_file.read()), dtype=np.uint8)
-                        img = cv2.imdecode(file_bytes, 1)
-                        if img is not None:
-                            frags = segment_fragments(img, detection_mode)
-                            all_frags.extend(frags)
-                        progress.progress((i + 1) / len(uploaded_files))
-                    
-                    st.session_state.fragments = all_frags
-                    
-                    # Cluster immediately
-                    groups = cluster_fragments(all_frags, sensitivity=cluster_sens)
-                    st.session_state.groups = groups
-                    
-                    st.success(f"{len(all_frags)} {t('success_fragments')}")
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col3:
+        lang = st.selectbox("🌍", ['de', 'en'], 
+                           format_func=lambda x: '🇩🇪 Deutsch' if x == 'de' else '🇬🇧 English',
+                           index=0 if st.session_state.get('language', 'de') == 'de' else 1)
+        if lang != st.session_state.get('language', 'de'):
+            st.session_state.language = lang
+            st.rerun()
+    
+    tab1, tab2 = st.tabs([t('login'), t('register')])
+    
+    with tab1:
+        with st.form("login"):
+            user = st.text_input(t('username'))
+            pw = st.text_input(t('password'), type='password')
+            if st.form_submit_button(t('login_btn'), use_container_width=True):
+                if authenticate(user, pw):
+                    st.session_state.logged_in = True
+                    st.session_state.username = user
                     st.rerun()
                 else:
-                    st.warning(t('upload_first'))
-                    
-            if st.button(t('clear_btn')):
-                st.session_state.fragments = []
-                st.session_state.groups = {}
-                st.rerun()
+                    st.error(t('login_error'))
+    
+    with tab2:
+        with st.form("register"):
+            new_user = st.text_input(t('username'), key='ru')
+            new_pw = st.text_input(t('password'), type='password', key='rp')
+            confirm = st.text_input(t('password_confirm'), type='password')
+            st.info(f"ℹ️ {t('account_info')}")
+            
+            if st.form_submit_button(t('register_btn'), use_container_width=True):
+                if new_pw != confirm:
+                    st.error(t('register_error_password'))
+                else:
+                    ok, msg = register_user(new_user, new_pw)
+                    if ok:
+                        st.success(t(msg))
+                    else:
+                        st.error(t(msg))
 
-    # --- Main Content ---
-    if st.session_state.logged_in:
-        tabs = st.tabs([
-            t('tab_start'), 
-            t('tab_gallery'), 
-            t('tab_groups'), 
-            t('tab_reconstruction'), 
-            t('tab_labels'),
-            t('tab_help')
-        ])
+
+def main():
+    st.set_page_config(page_title=f"ShardMind v{APP_VERSION}", page_icon="🏺", layout="wide")
+    
+    # Init session state
+    defaults = {
+        'language': 'de',
+        'logged_in': False,
+        'username': '',
+        'pieces': [],
+        'cluster_names': {},
+        'custom_labels': [],
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+    
+    if not st.session_state.logged_in:
+        login_page()
+        return
+    
+    username = st.session_state.username
+    user_data = get_user_data(username)
+    
+    # URL params
+    search_id = st.query_params.get('piece', None)
+    
+    # === SIDEBAR ===
+    with st.sidebar:
+        st.markdown(f"## 🏺 {t('app_title')}")
+        st.caption(f"v{APP_VERSION}")
         
-        # 1. Start Tab (Demo)
-        with tabs[0]:
-            st.header(t('demo_title'))
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.subheader(t('demo_plate'))
-                if st.button("🖼️ Generate Plate Demo"):
-                    img = generate_demo_plate()
-                    # Save to fake buffer for download
-                    is_success, buffer = cv2.imencode(".jpg", img)
-                    if is_success:
-                        st.image(img, channels="BGR", use_column_width=True)
-                        st.download_button(
-                            label=t('demo_download'),
-                            data=buffer.tobytes(),
-                            file_name="demo_plate.jpg",
-                            mime="image/jpeg"
-                        )
-            
-            with col2:
-                st.subheader(t('demo_pottery'))
-                if st.button("🏺 Generate Pottery Demo"):
-                    img = generate_demo_pottery()
-                    is_success, buffer = cv2.imencode(".jpg", img)
-                    if is_success:
-                        st.image(img, channels="BGR", use_column_width=True)
-                        st.download_button(
-                            label=t('demo_download'),
-                            data=buffer.tobytes(),
-                            file_name="demo_pottery.jpg",
-                            mime="image/jpeg"
-                        )
-            
-            st.info(t('demo_hint'))
-            
-            # Deep Link Handler
-            query_params = st.query_params
-            if "id" in query_params:
-                st.success(f"{t('search_found')} ID: {query_params['id']}")
-
-        # 2. Gallery
-        with tabs[1]:
-            st.header(t('detected_fragments'))
-            if st.session_state.fragments:
-                cols = st.columns(5)
-                for i, frag in enumerate(st.session_state.fragments):
-                    with cols[i % 5]:
-                        st.image(frag['thumbnail'], channels="BGR")
-                        st.caption(f"ID: {frag['id']}")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.success(f"👤 {username}")
+        with col2:
+            if st.button(t('logout_btn')):
+                st.session_state.logged_in = False
+                st.session_state.pieces = []
+                st.rerun()
+        
+        lang = st.selectbox(t('language'), ['de', 'en'],
+                           format_func=lambda x: '🇩🇪 Deutsch' if x == 'de' else '🇬🇧 English',
+                           index=0 if st.session_state.language == 'de' else 1, key='lang_m')
+        if lang != st.session_state.language:
+            st.session_state.language = lang
+            st.rerun()
+        
+        st.divider()
+        
+        files = st.file_uploader(t('upload_photos'), type=['png', 'jpg', 'jpeg'], 
+                                 accept_multiple_files=True, help=t('upload_hint'))
+        
+        min_area = st.slider(t('min_size'), 50, 1000, 150)
+        threshold = st.slider(t('cluster_sens'), 10, 80, 40)
+        
+        mode = st.selectbox(t('detection_mode'), ['porcelain', 'auto', 'light_bg', 'dark_bg', 'high_contrast'],
+                           format_func=lambda x: {
+                               'auto': t('mode_auto'),
+                               'light_bg': t('mode_light_bg'),
+                               'dark_bg': t('mode_dark_bg'),
+                               'high_contrast': t('mode_high_contrast'),
+                               'porcelain': t('mode_porcelain')
+                           }[x])
+        
+        project = st.text_input(t('project'), value=f"Project_{datetime.now().strftime('%Y')}")
+        
+        st.divider()
+        
+        if st.button(t('analyze_btn'), type='primary', use_container_width=True):
+            if files:
+                with st.spinner(t('analyzing')):
+                    all_pieces = []
+                    progress = st.progress(0)
+                    
+                    for i, f in enumerate(files):
+                        img = cv2.imdecode(np.asarray(bytearray(f.read()), dtype=np.uint8), cv2.IMREAD_COLOR)
+                        pieces = segment_fragments(img, min_area, project, mode)
+                        all_pieces.extend(pieces)
+                        progress.progress((i + 1) / len(files))
+                    
+                    valid = []
+                    for p in all_pieces:
+                        feat = get_features(p)
+                        if feat:
+                            p['features'] = feat
+                            valid.append(p)
+                    
+                    st.session_state.pieces = valid
+                    st.session_state.cluster_names = {}
+                    st.success(f"✓ {len(valid)} {t('success_fragments')}")
+                    st.rerun()
             else:
-                st.info(t('upload_first'))
-
-        # 3. Groups
-        with tabs[2]:
-            st.header(t('groups_title'))
-            groups = st.session_state.groups
-            if groups:
-                for label, group_frags in groups.items():
-                    with st.expander(f"{t('groups')} {label} ({len(group_frags)} {t('pieces')})", expanded=True):
-                        cols = st.columns(6)
-                        for i, f in enumerate(group_frags):
-                            with cols[i % 6]:
-                                st.image(f['thumbnail'], channels="BGR")
-            else:
-                st.info(t('no_groups'))
-
-        # 4. Reconstruction
-        with tabs[3]:
-            st.header(t('reconstruction_title'))
+                st.warning(t('upload_first'))
+        
+        if st.button(t('clear_btn'), use_container_width=True):
+            st.session_state.pieces = []
+            if 'recon_image' in st.session_state:
+                del st.session_state.recon_image
+            st.rerun()
+        
+        st.divider()
+        col1, col2 = st.columns(2)
+        col1.metric(t('fragments'), len(user_data.get('pieces', {})))
+        col2.metric(t('groups'), len(user_data.get('clusters', {})))
+    
+    # === PROCESS ===
+    active = [p for p in st.session_state.pieces if not p.get('deleted')]
+    
+    if len(active) > 1:
+        labels = cluster_pieces(active, threshold)
+        for i, p in enumerate(active):
+            p['cluster'] = labels[i]
+    elif active:
+        for p in active:
+            p['cluster'] = 0
+    
+    cluster_ids = set(p.get('cluster', -1) for p in active) if active else set()
+    n_clusters = len([c for c in cluster_ids if c >= 0])
+    
+    if active:
+        c1, c2, c3 = st.columns(3)
+        c1.metric(f"🏺 {t('fragments')}", len(active))
+        c2.metric(f"📦 {t('groups')}", n_clusters)
+        c3.metric("🗺️", project[:20])
+    
+    # === TABS ===
+    tabs = st.tabs([t('tab_start'), t('tab_gallery'), t('tab_groups'), 
+                    t('tab_reconstruction'), t('tab_database'), t('tab_labels'), t('tab_help')])
+    
+    # TAB 0: START
+    with tabs[0]:
+        st.header(f"🏺 {t('app_title')}")
+        st.write(t('app_tagline'))
+        
+        if search_id:
+            st.info(f"🔍 **{search_id}**")
+            found = None
+            for p in active:
+                if p['id'] == search_id:
+                    found = p
+                    break
+            if not found and search_id in user_data.get('pieces', {}):
+                found = user_data['pieces'][search_id]
             
-            groups = st.session_state.groups
-            if groups:
-                selected_group_id = st.selectbox(t('select_group'), list(groups.keys()))
-                group_pieces = groups[selected_group_id]
-                
-                if st.button(t('calculate_btn')):
-                    with st.spinner(t('analyzing')):
-                        # Call the modified reconstruction
-                        res_img, placements, matches = reconstruct_group(group_pieces)
-                        
-                        if res_img is not None:
-                            st.image(res_img, channels="BGR", use_column_width=True)
-                            
-                            # Info columns
-                            c1, c2 = st.columns(2)
-                            with c1:
-                                st.metric("Fragmente platziert", len([p for p in placements if p.get('placed')]))
-                            with c2:
-                                st.metric("Gefundene Anschlüsse", len(matches))
-                                
-                            # Download
-                            is_success, buffer = cv2.imencode(".png", res_img)
-                            if is_success:
-                                st.download_button(
-                                    label=t('export_btn'),
-                                    data=buffer.tobytes(),
-                                    file_name=f"recon_group_{selected_group_id}.png",
-                                    mime="image/png"
-                                )
-                                
-                            # Add to labels
-                            if st.button("🏷️ Label für diese Rekonstruktion erstellen"):
-                                st.session_state.custom_labels.append({
-                                    'id': str(uuid.uuid4())[:8],
-                                    'name': f"Group {selected_group_id}",
-                                    'desc': f"Reconstruction of {len(group_pieces)} fragments."
-                                })
-                                # Save user data
-                                users = load_users()
-                                if st.session_state.username in users:
-                                    users[st.session_state.username]['custom_labels'] = st.session_state.custom_labels
-                                    save_users(users)
-                                st.success(t('saved'))
+            if found:
+                st.success(t('search_found'))
+                c1, c2 = st.columns([1, 2])
+                with c1:
+                    if 'thumbnail' in found:
+                        st.image(cv2.cvtColor(found['thumbnail'], cv2.COLOR_BGR2RGB))
+                with c2:
+                    st.write(f"**ID:** `{found['id']}`")
+                    st.write(f"**Name:** {found.get('name', '-')}")
+                    st.write(f"**Material:** {found.get('material', '-')}")
             else:
+                st.warning(f"{t('search_not_found')}: {search_id}")
+            st.divider()
+        
+        # Search
+        st.subheader(t('search_title'))
+        c1, c2 = st.columns([3, 1])
+        with c1:
+            search_input = st.text_input("ID", placeholder="SM-XXXXXXXX", label_visibility="collapsed")
+        with c2:
+            if st.button(t('search_btn'), use_container_width=True):
+                if search_input:
+                    st.query_params['piece'] = search_input.strip().upper()
+                    st.rerun()
+        
+        st.divider()
+        
+        # Demo
+        st.subheader(t('demo_title'))
+        st.write(t('demo_hint'))
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f"**🏺 {t('demo_pottery')}**")
+            demo1 = generate_demo_pottery(6)
+            st.image(cv2.cvtColor(demo1, cv2.COLOR_BGR2RGB), use_container_width=True)
+            st.download_button(t('demo_download'), get_demo_bytes(demo1), "demo_pottery.png", "image/png", 
+                             use_container_width=True, key="d1")
+        
+        with c2:
+            st.markdown(f"**🍽️ {t('demo_plate')}**")
+            demo2 = generate_demo_plate(5)
+            st.image(cv2.cvtColor(demo2, cv2.COLOR_BGR2RGB), use_container_width=True)
+            st.download_button(t('demo_download'), get_demo_bytes(demo2), "demo_plate.png", "image/png",
+                             use_container_width=True, key="d2")
+    
+    # TAB 1: GALLERY
+    with tabs[1]:
+        st.header(t('detected_fragments'))
+        if active:
+            cols = st.columns(5)
+            for i, p in enumerate(active):
+                with cols[i % 5]:
+                    thumb_rgb = cv2.cvtColor(p['thumbnail'], cv2.COLOR_BGR2RGB)
+                    color_hex = cluster_color(p.get('cluster', -1))
+                    r, g, b = int(color_hex[1:3], 16), int(color_hex[3:5], 16), int(color_hex[5:7], 16)
+                    bordered = cv2.copyMakeBorder(thumb_rgb, 4, 4, 4, 4, cv2.BORDER_CONSTANT, value=(r, g, b))
+                    st.image(bordered, use_container_width=True)
+                    st.caption(f"**{p['id'][:11]}**\n{p.get('name', '')[:12]}")
+        else:
+            st.info(t('upload_first'))
+    
+    # TAB 2: GROUPS
+    with tabs[2]:
+        st.header(t('groups_title'))
+        if active:
+            sorted_c = sorted([c for c in cluster_ids if c >= 0])
+            if not sorted_c:
                 st.warning(t('no_groups'))
-
-        # 5. Labels
-        with tabs[4]:
-            st.header(t('labels_title'))
+            else:
+                for cid in sorted_c:
+                    cp = [p for p in active if p.get('cluster') == cid]
+                    mats = [p.get('material', 'Unknown') for p in cp]
+                    common = max(set(mats), key=mats.count) if mats else 'Unknown'
+                    default_name = st.session_state.cluster_names.get(cid, f"{common}_Gruppe_{cid + 1}")
+                    
+                    with st.expander(f"📦 {default_name} ({len(cp)} {t('pieces')})", expanded=True):
+                        name = st.text_input(t('group_name'), value=default_name, key=f"gn_{cid}")
+                        st.session_state.cluster_names[cid] = name
+                        
+                        pcols = st.columns(min(6, len(cp)))
+                        for i, p in enumerate(cp[:6]):
+                            with pcols[i]:
+                                st.image(cv2.cvtColor(p['thumbnail'], cv2.COLOR_BGR2RGB), use_container_width=True)
+                                st.caption(p['id'][:8])
+                        
+                        if st.button(t('save_btn'), key=f"sv_{cid}"):
+                            key = f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                            user_data['clusters'][key] = {
+                                'name': name,
+                                'created': datetime.now().isoformat(),
+                                'piece_ids': [p['id'] for p in cp]
+                            }
+                            for p in cp:
+                                pc = {k: v for k, v in p.items() if k not in ['features', 'contour_global']}
+                                user_data['pieces'][p['id']] = pc
+                            save_user_data(username, user_data)
+                            st.success(t('saved'))
+                            st.rerun()
+        else:
+            st.info(t('upload_first'))
+    
+    # TAB 3: RECONSTRUCTION
+    with tabs[3]:
+        st.header(t('reconstruction_title'))
+        
+        if active and n_clusters > 0:
+            opts = {
+                f"{st.session_state.cluster_names.get(c, f'Gruppe_{c+1}')} ({sum(1 for p in active if p.get('cluster') == c)} {t('pieces')})": c
+                for c in cluster_ids if c >= 0
+            }
             
-            c1, c2 = st.columns(2)
-            with c1:
-                name = st.text_input(t('custom_label_name'))
-            with c2:
-                desc = st.text_input(t('custom_label_desc'))
+            sel_name = st.selectbox(t('select_group'), list(opts.keys()))
+            sel_id = opts[sel_name]
+            
+            rp = [p for p in active if p.get('cluster') == sel_id]
+            
+            st.write(f"**{len(rp)} {t('pieces')}**")
+            pcols = st.columns(min(8, len(rp)))
+            for i, p in enumerate(rp[:8]):
+                with pcols[i]:
+                    st.image(cv2.cvtColor(p['thumbnail'], cv2.COLOR_BGR2RGB), use_container_width=True)
+            
+            canvas_size = st.slider(t('canvas_size'), 500, 1200, 800, 50)
+            
+            if st.button(t('calculate_btn'), type='primary', use_container_width=True):
+                with st.spinner(t('analyzing')):
+                    img, plc, matches = reconstruct_group(rp, canvas_size)
+                    if img is not None:
+                        st.session_state.recon_image = img
+                        st.session_state.recon_matches = matches
+                        st.success(f"✓ {len(matches)} {t('matches_found')}")
+            
+            if 'recon_image' in st.session_state and st.session_state.recon_image is not None:
+                c1, c2 = st.columns([2, 1])
+                with c1:
+                    rgb = cv2.cvtColor(st.session_state.recon_image, cv2.COLOR_BGR2RGB)
+                    st.image(rgb, use_container_width=True)
+                    
+                    buf = io.BytesIO()
+                    Image.fromarray(rgb).save(buf, format='PNG')
+                    st.download_button(t('export_btn'), buf.getvalue(), "reconstruction.png", "image/png", 
+                                      use_container_width=True)
                 
-            if st.button(t('add_custom_label')):
-                if name:
-                    st.session_state.custom_labels.append({
-                        'id': str(uuid.uuid4())[:8],
-                        'name': name,
-                        'desc': desc
-                    })
-                    users = load_users()
-                    if st.session_state.username in users:
-                        users[st.session_state.username]['custom_labels'] = st.session_state.custom_labels
-                        save_users(users)
+                with c2:
+                    st.markdown(f"**{t('edge_matches')}**")
+                    for m in st.session_state.get('recon_matches', [])[:8]:
+                        st.write(f"• Teil {m['piece_i']+1} ↔ {m['piece_j']+1}: {m['score']:.0f}%")
+        else:
+            st.info(t('upload_first'))
+    
+    # TAB 4: DATABASE
+    with tabs[4]:
+        st.header(t('database_title'))
+        
+        db_pieces = user_data.get('pieces', {})
+        db_clusters = user_data.get('clusters', {})
+        
+        if db_pieces:
+            st.write(f"**{len(db_pieces)} {t('fragments_saved')}**")
+            dcols = st.columns(6)
+            for i, (pid, p) in enumerate(list(db_pieces.items())[:18]):
+                with dcols[i % 6]:
+                    if 'thumbnail' in p:
+                        st.image(cv2.cvtColor(p['thumbnail'], cv2.COLOR_BGR2RGB), use_container_width=True)
+                    st.caption(pid[:11])
             
-            st.subheader(t('custom_labels_list'))
+            if db_clusters:
+                st.divider()
+                st.write(f"**{len(db_clusters)} {t('groups_saved')}**")
+                for k, v in db_clusters.items():
+                    st.write(f"• {v.get('name', k)} ({len(v.get('piece_ids', []))} {t('pieces')})")
+        else:
+            st.info(t('db_empty'))
+    
+    # TAB 5: LABELS
+    with tabs[5]:
+        st.header(t('labels_title'))
+        
+        source = st.radio(t('label_source'), 
+                         [t('label_session'), t('label_database'), t('label_custom')],
+                         horizontal=True)
+        
+        label_pieces = []
+        
+        if source == t('label_session'):
+            label_pieces = active
+        elif source == t('label_database'):
+            label_pieces = list(user_data.get('pieces', {}).values())
+        else:
+            st.subheader(t('label_custom'))
+            
+            with st.form("custom_form"):
+                c1, c2 = st.columns(2)
+                with c1:
+                    cid = st.text_input("ID", placeholder="SM-CUSTOM01")
+                    cname = st.text_input(t('custom_label_name'))
+                with c2:
+                    cdesc = st.text_input(t('custom_label_desc'))
+                    cproj = st.text_input(t('project'), value=project)
+                
+                if st.form_submit_button(t('add_custom_label'), use_container_width=True):
+                    new_lbl = {
+                        'id': cid if cid else gen_id(),
+                        'name': cname or "Custom",
+                        'description': cdesc,
+                        'excavation': cproj
+                    }
+                    st.session_state.custom_labels.append(new_lbl)
+                    st.success(t('saved'))
+                    st.rerun()
+            
             if st.session_state.custom_labels:
+                st.write(f"**{t('custom_labels_list')}:**")
                 for lbl in st.session_state.custom_labels:
-                    st.text(f"📄 {lbl['name']} (ID: {lbl['id']})")
-                    
-                if st.button(t('create_pdf')):
-                    pdf_data = create_labels_pdf(st.session_state.custom_labels)
-                    st.download_button(
-                        label="⬇️ Download PDF",
-                        data=pdf_data,
-                        file_name="labels.pdf",
-                        mime="application/pdf"
-                    )
-                    
+                    st.write(f"• {lbl['id']} - {lbl['name']}")
+                
                 if st.button(t('clear_custom')):
                     st.session_state.custom_labels = []
                     st.rerun()
+                
+                label_pieces = st.session_state.custom_labels
+        
+        if label_pieces:
+            st.write(f"**{len(label_pieces)} Labels**")
+            
+            if source != t('label_custom'):
+                pcols = st.columns(min(6, len(label_pieces)))
+                for i, p in enumerate(label_pieces[:6]):
+                    with pcols[i]:
+                        if 'thumbnail' in p:
+                            st.image(cv2.cvtColor(p['thumbnail'], cv2.COLOR_BGR2RGB), width=60)
+                        st.caption(p.get('id', '')[:8])
+            
+            if st.button(t('create_pdf'), type='primary', use_container_width=True):
+                with st.spinner("..."):
+                    pdf = create_labels_pdf(label_pieces, username)
+                    st.download_button("📥 PDF", pdf.getvalue(),
+                                      f"labels_{datetime.now().strftime('%Y%m%d')}.pdf",
+                                      "application/pdf", use_container_width=True)
+        else:
+            st.info(t('upload_first'))
+    
+    # TAB 6: HELP
+    with tabs[6]:
+        st.header(t('help_title'))
+        st.markdown(HELP_DE if st.session_state.language == 'de' else HELP_EN)
 
-        # 6. Help
-        with tabs[5]:
-            st.header(t('help_title'))
-            if st.session_state.language == 'de':
-                st.markdown(HELP_DE)
-            else:
-                st.markdown(HELP_EN)
-
-    else:
-        st.info("👋 Please Login to start analysis")
 
 if __name__ == "__main__":
     main()
