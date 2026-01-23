@@ -32,6 +32,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 import uuid
 import requests
 
@@ -39,8 +41,9 @@ import requests
 # CONFIGURATION
 # =============================================================================
 
-APP_VERSION = "1.8"
+APP_VERSION = "1.9"
 USERS_DB_PATH = Path("shardmind_users.pkl")
+COOKIE_CONSENT_PATH = Path("shardmind_cookies.pkl")
 BASE_URL = "https://shardmind.streamlit.app"
 
 # =============================================================================
@@ -48,6 +51,25 @@ BASE_URL = "https://shardmind.streamlit.app"
 # =============================================================================
 
 CHANGELOG = {
+    '1.9': {
+        'date': '2025-01-23',
+        'title': 'Datenschutz & Cookie-Consent',
+        'features': [
+            '🍪 COOKIE-BANNER mit Zustimmungs-Dialog',
+            '📜 DATENSCHUTZERKLÄRUNG (DSGVO-konform)',
+            '🔒 Cookie-Einstellungen jederzeit änderbar',
+            '📄 VERBESSERTE PDF-ETIKETTEN:',
+            '   - Bessere Schriftgrößen und Abstände',
+            '   - Zentrierte QR-Codes',
+            '   - Saubere Zellenaufteilung',
+            '   - Projekt-Info auf jedem Etikett',
+            '🌍 Datenschutz in DE und EN',
+        ],
+        'fixes': [
+            'PDF-Layout komplett überarbeitet',
+            'Bessere Lesbarkeit der Etiketten',
+        ]
+    },
     '1.8': {
         'date': '2025-01-23',
         'title': 'Verbesserte Fragment-Trennung',
@@ -154,6 +176,138 @@ CHANGELOG = {
 }
 
 # =============================================================================
+# PRIVACY POLICY / DATENSCHUTZERKLÄRUNG
+# =============================================================================
+
+PRIVACY_POLICY_DE = """
+# Datenschutzerklärung
+
+**Stand: Januar 2025**
+
+## 1. Verantwortlicher
+
+Verantwortlich für die Datenverarbeitung auf dieser Website ist der Betreiber von ShardMind.
+
+## 2. Welche Daten wir erheben
+
+### 2.1 Account-Daten
+Wenn Sie sich registrieren, speichern wir:
+- Benutzername (von Ihnen gewählt)
+- Passwort (verschlüsselt als Hash gespeichert)
+- Erstellungsdatum des Accounts
+
+### 2.2 Nutzungsdaten
+Bei der Nutzung der App speichern wir:
+- Hochgeladene Bilder (nur während der Sitzung, werden nicht dauerhaft gespeichert)
+- Analysierte Fragmente (wenn Sie diese in Ihrer Datenbank speichern)
+- Erstellte Gruppen und Rekonstruktionen
+
+### 2.3 Cookies und lokale Speicherung
+Wir verwenden:
+- **Notwendige Cookies**: Für die Funktionalität der App (Session-Management)
+- **Funktionale Cookies**: Zum Speichern Ihrer Einstellungen (Sprache, Cookie-Präferenzen)
+
+## 3. Zweck der Datenverarbeitung
+
+Wir verarbeiten Ihre Daten ausschließlich für:
+- Bereitstellung der App-Funktionalität
+- Speicherung Ihrer Fragmente und Analysen
+- Verbesserung der Benutzererfahrung
+
+## 4. Datenweitergabe
+
+Wir geben Ihre Daten **nicht** an Dritte weiter, außer:
+- Wenn Sie dies ausdrücklich wünschen
+- Wenn wir gesetzlich dazu verpflichtet sind
+
+## 5. Datenspeicherung
+
+- **Account-Daten**: Werden gespeichert, bis Sie Ihren Account löschen
+- **Session-Daten**: Werden nach Ende der Sitzung gelöscht
+- **Gespeicherte Fragmente**: Bleiben in Ihrer persönlichen Datenbank, bis Sie diese löschen
+
+## 6. Ihre Rechte
+
+Nach DSGVO haben Sie folgende Rechte:
+- **Auskunftsrecht**: Sie können erfahren, welche Daten wir über Sie speichern
+- **Berichtigungsrecht**: Sie können falsche Daten korrigieren lassen
+- **Löschungsrecht**: Sie können die Löschung Ihrer Daten verlangen
+- **Widerspruchsrecht**: Sie können der Datenverarbeitung widersprechen
+
+## 7. Kontakt
+
+Bei Fragen zum Datenschutz kontaktieren Sie uns bitte über die App.
+
+## 8. Änderungen
+
+Wir behalten uns vor, diese Datenschutzerklärung anzupassen. Die aktuelle Version finden Sie immer in der App.
+"""
+
+PRIVACY_POLICY_EN = """
+# Privacy Policy
+
+**Last updated: January 2025**
+
+## 1. Data Controller
+
+The operator of ShardMind is responsible for data processing on this website.
+
+## 2. Data We Collect
+
+### 2.1 Account Data
+When you register, we store:
+- Username (chosen by you)
+- Password (stored encrypted as hash)
+- Account creation date
+
+### 2.2 Usage Data
+When using the app, we store:
+- Uploaded images (only during session, not permanently stored)
+- Analyzed fragments (if you save them to your database)
+- Created groups and reconstructions
+
+### 2.3 Cookies and Local Storage
+We use:
+- **Necessary Cookies**: For app functionality (session management)
+- **Functional Cookies**: To save your settings (language, cookie preferences)
+
+## 3. Purpose of Data Processing
+
+We process your data exclusively for:
+- Providing app functionality
+- Storing your fragments and analyses
+- Improving user experience
+
+## 4. Data Sharing
+
+We do **not** share your data with third parties, except:
+- If you explicitly request it
+- If we are legally obligated to do so
+
+## 5. Data Storage
+
+- **Account Data**: Stored until you delete your account
+- **Session Data**: Deleted after the session ends
+- **Saved Fragments**: Remain in your personal database until you delete them
+
+## 6. Your Rights
+
+Under GDPR, you have the following rights:
+- **Right of Access**: You can learn what data we store about you
+- **Right to Rectification**: You can have incorrect data corrected
+- **Right to Erasure**: You can request deletion of your data
+- **Right to Object**: You can object to data processing
+
+## 7. Contact
+
+For privacy questions, please contact us through the app.
+
+## 8. Changes
+
+We reserve the right to update this privacy policy. The current version is always available in the app.
+"""
+
+# =============================================================================
 # TRANSLATIONS
 # =============================================================================
 
@@ -205,6 +359,7 @@ TRANSLATIONS = {
         'tab_database': '💾 Datenbank',
         'tab_labels': '🏷️ Etiketten',
         'tab_changelog': '📋 Changelog',
+        'tab_privacy': '🔒 Datenschutz',
         'tab_help': '❓ Hilfe',
         'detected_fragments': 'Erkannte Fragmente',
         'fragments': 'Fragmente',
@@ -257,6 +412,23 @@ TRANSLATIONS = {
         'changelog_current': 'Aktuelle Version',
         'changelog_features': 'Neue Funktionen',
         'changelog_fixes': 'Fehlerbehebungen',
+        'cookie_title': '🍪 Cookie-Einstellungen',
+        'cookie_banner_title': '🍪 Wir verwenden Cookies',
+        'cookie_banner_text': 'Diese App verwendet Cookies für die Funktionalität und zum Speichern Ihrer Einstellungen. Bitte wählen Sie Ihre Präferenzen.',
+        'cookie_necessary': 'Notwendige Cookies',
+        'cookie_necessary_desc': 'Erforderlich für die Grundfunktionen der App',
+        'cookie_functional': 'Funktionale Cookies',
+        'cookie_functional_desc': 'Speichern Ihre Einstellungen (Sprache, Präferenzen)',
+        'cookie_accept_all': '✅ Alle akzeptieren',
+        'cookie_accept_necessary': '⚙️ Nur notwendige',
+        'cookie_save': '💾 Einstellungen speichern',
+        'cookie_settings': '🍪 Cookie-Einstellungen',
+        'privacy_title': 'Datenschutzerklärung',
+        'privacy_settings': '🔒 Datenschutz-Einstellungen',
+        'delete_account': '🗑️ Account löschen',
+        'delete_account_confirm': 'Sind Sie sicher? Dies kann nicht rückgängig gemacht werden!',
+        'delete_account_btn': '❌ Ja, Account löschen',
+        'export_data': '📥 Meine Daten exportieren',
     },
     'en': {
         'app_title': 'ShardMind',
@@ -305,6 +477,7 @@ TRANSLATIONS = {
         'tab_database': '💾 Database',
         'tab_labels': '🏷️ Labels',
         'tab_changelog': '📋 Changelog',
+        'tab_privacy': '🔒 Privacy',
         'tab_help': '❓ Help',
         'detected_fragments': 'Detected Fragments',
         'fragments': 'Fragments',
@@ -357,6 +530,23 @@ TRANSLATIONS = {
         'changelog_current': 'Current Version',
         'changelog_features': 'New Features',
         'changelog_fixes': 'Bug Fixes',
+        'cookie_title': '🍪 Cookie Settings',
+        'cookie_banner_title': '🍪 We use Cookies',
+        'cookie_banner_text': 'This app uses cookies for functionality and to save your settings. Please choose your preferences.',
+        'cookie_necessary': 'Necessary Cookies',
+        'cookie_necessary_desc': 'Required for basic app functionality',
+        'cookie_functional': 'Functional Cookies',
+        'cookie_functional_desc': 'Save your settings (language, preferences)',
+        'cookie_accept_all': '✅ Accept All',
+        'cookie_accept_necessary': '⚙️ Necessary Only',
+        'cookie_save': '💾 Save Settings',
+        'cookie_settings': '🍪 Cookie Settings',
+        'privacy_title': 'Privacy Policy',
+        'privacy_settings': '🔒 Privacy Settings',
+        'delete_account': '🗑️ Delete Account',
+        'delete_account_confirm': 'Are you sure? This cannot be undone!',
+        'delete_account_btn': '❌ Yes, Delete Account',
+        'export_data': '📥 Export My Data',
     }
 }
 
@@ -398,6 +588,13 @@ Im Tab "🏷️ Etiketten":
 - PDF mit QR-Codes erstellen
 - Eigene Etiketten für rekonstruierte Objekte
 - QR-Codes verlinken direkt zur App
+
+## Datenschutz
+
+Im Tab "🔒 Datenschutz":
+- Datenschutzerklärung lesen
+- Cookie-Einstellungen ändern
+- Account und Daten löschen
 """
 
 HELP_EN = """
@@ -429,7 +626,105 @@ In "🏷️ Labels" tab:
 - Create PDF with QR codes
 - Custom labels for reconstructed objects
 - QR codes link directly to app
+
+## Privacy
+
+In "🔒 Privacy" tab:
+- Read privacy policy
+- Change cookie settings
+- Delete account and data
 """
+
+
+# =============================================================================
+# COOKIE CONSENT MANAGEMENT
+# =============================================================================
+
+def load_cookie_consent():
+    """Load cookie consent preferences"""
+    if COOKIE_CONSENT_PATH.exists():
+        try:
+            with open(COOKIE_CONSENT_PATH, 'rb') as f:
+                return pickle.load(f)
+        except:
+            pass
+    return {}
+
+def save_cookie_consent(consents):
+    """Save cookie consent preferences"""
+    with open(COOKIE_CONSENT_PATH, 'wb') as f:
+        pickle.dump(consents, f)
+
+def get_user_cookie_consent(username):
+    """Get cookie consent for specific user"""
+    consents = load_cookie_consent()
+    return consents.get(username, None)
+
+def set_user_cookie_consent(username, necessary=True, functional=True):
+    """Set cookie consent for specific user"""
+    consents = load_cookie_consent()
+    consents[username] = {
+        'necessary': necessary,
+        'functional': functional,
+        'timestamp': datetime.now().isoformat()
+    }
+    save_cookie_consent(consents)
+
+
+def show_cookie_banner():
+    """Display cookie consent banner"""
+    st.markdown("""
+    <style>
+    .cookie-banner {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .cookie-banner h3 {
+        color: white !important;
+        margin-bottom: 10px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    with st.container():
+        st.markdown(f"### {t('cookie_banner_title')}")
+        st.write(t('cookie_banner_text'))
+        
+        col1, col2, col3 = st.columns([1, 1, 1])
+        
+        with col1:
+            st.markdown(f"**{t('cookie_necessary')}**")
+            st.caption(t('cookie_necessary_desc'))
+            st.checkbox("", value=True, disabled=True, key="cookie_necessary_check")
+        
+        with col2:
+            st.markdown(f"**{t('cookie_functional')}**")
+            st.caption(t('cookie_functional_desc'))
+            functional = st.checkbox("", value=True, key="cookie_functional_check")
+        
+        st.divider()
+        
+        bcol1, bcol2 = st.columns(2)
+        
+        with bcol1:
+            if st.button(t('cookie_accept_all'), type="primary", use_container_width=True):
+                st.session_state.cookie_consent = {'necessary': True, 'functional': True}
+                st.session_state.show_cookie_banner = False
+                if st.session_state.get('username'):
+                    set_user_cookie_consent(st.session_state.username, True, True)
+                st.rerun()
+        
+        with bcol2:
+            if st.button(t('cookie_accept_necessary'), use_container_width=True):
+                st.session_state.cookie_consent = {'necessary': True, 'functional': False}
+                st.session_state.show_cookie_banner = False
+                if st.session_state.get('username'):
+                    set_user_cookie_consent(st.session_state.username, True, False)
+                st.rerun()
 
 
 # =============================================================================
@@ -441,21 +736,18 @@ def generate_demo_pottery(num=6):
     np.random.seed(42)
     img = np.ones((800, 800, 3), dtype=np.uint8) * 230
     
-    # Create a complete circle/pot shape first, then break it
     center_x, center_y = 400, 400
     radius = 150
     
-    # Create the original shape
     original = np.zeros((800, 800), dtype=np.uint8)
     cv2.circle(original, (center_x, center_y), radius, 255, -1)
     
-    # Break into pieces with irregular lines from center
     angles = np.linspace(0, 2*np.pi, num + 1)[:-1]
     angles += np.random.uniform(-0.3, 0.3, num)
     angles = np.sort(angles)
     
     colors = [
-        (55, 75, 130),   # Terracotta BGR
+        (55, 75, 130),
         (60, 80, 135),
         (50, 70, 125),
         (65, 85, 140),
@@ -471,10 +763,8 @@ def generate_demo_pottery(num=6):
         if a2 < a1:
             a2 += 2 * np.pi
         
-        # Create piece mask
         piece_mask = np.zeros((800, 800), dtype=np.uint8)
         
-        # Pie slice from center
         pts = [(center_x, center_y)]
         for a in np.linspace(a1, a2, 20):
             x = int(center_x + (radius + 10) * np.cos(a))
@@ -485,50 +775,41 @@ def generate_demo_pottery(num=6):
         pts = np.array(pts, dtype=np.int32)
         cv2.fillPoly(piece_mask, [pts], 255)
         
-        # Intersect with original shape
         piece_mask = cv2.bitwise_and(piece_mask, original)
         
-        # Add some irregularity to edges (break lines)
         kernel = np.ones((3, 3), np.uint8)
         piece_mask = cv2.erode(piece_mask, kernel, iterations=2)
         
         if cv2.countNonZero(piece_mask) < 500:
             continue
         
-        # Find contour
         contours, _ = cv2.findContours(piece_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if not contours:
             continue
         
         contour = max(contours, key=cv2.contourArea)
         
-        # Calculate offset position (spread pieces apart)
         M = cv2.moments(contour)
         if M['m00'] == 0:
             continue
         cx = int(M['m10'] / M['m00'])
         cy = int(M['m01'] / M['m00'])
         
-        # Offset from center
         offset_angle = (a1 + a2) / 2
         offset_dist = 80 + np.random.randint(0, 40)
         ox = int(offset_dist * np.cos(offset_angle))
         oy = int(offset_dist * np.sin(offset_angle))
         
-        # Shift contour
         shifted_contour = contour.copy()
         shifted_contour[:, :, 0] += ox
         shifted_contour[:, :, 1] += oy
         
-        # Draw on image
         color = colors[i % len(colors)]
         cv2.fillPoly(img, [shifted_contour], color)
         
-        # Add edge highlight
         edge_color = (max(0, color[0] - 25), max(0, color[1] - 25), max(0, color[2] - 25))
         cv2.polylines(img, [shifted_contour], True, edge_color, 2)
         
-        # Add texture
         x, y, w, h = cv2.boundingRect(shifted_contour)
         for _ in range(8):
             tx = x + np.random.randint(10, max(11, w - 10))
@@ -554,18 +835,16 @@ def generate_demo_plate(num=5):
     outer_r = 160
     inner_r = 30
     
-    # Create plate shape
     original = np.zeros((800, 800), dtype=np.uint8)
     cv2.circle(original, (center_x, center_y), outer_r, 255, -1)
-    cv2.circle(original, (center_x, center_y), inner_r, 0, -1)  # Hole in center
+    cv2.circle(original, (center_x, center_y), inner_r, 0, -1)
     
-    # Break angles
     angles = np.linspace(0, 2*np.pi, num + 1)[:-1]
     angles += np.random.uniform(-0.2, 0.2, num)
     angles = np.sort(angles)
     
-    plate_color = (250, 248, 245)  # Off-white
-    rim_color = (165, 155, 140)    # Decorative rim
+    plate_color = (250, 248, 245)
+    rim_color = (165, 155, 140)
     
     for i in range(num):
         a1 = angles[i]
@@ -573,17 +852,14 @@ def generate_demo_plate(num=5):
         if a2 < a1:
             a2 += 2 * np.pi
         
-        # Create piece
         piece_mask = np.zeros((800, 800), dtype=np.uint8)
         
         pts = []
-        # Inner arc
         for a in np.linspace(a1, a2, 15):
             x = int(center_x + inner_r * np.cos(a))
             y = int(center_y + inner_r * np.sin(a))
             pts.append([x, y])
         
-        # Outer arc (reverse)
         for a in np.linspace(a2, a1, 25):
             x = int(center_x + outer_r * np.cos(a))
             y = int(center_y + outer_r * np.sin(a))
@@ -592,14 +868,12 @@ def generate_demo_plate(num=5):
         pts = np.array(pts, dtype=np.int32)
         cv2.fillPoly(piece_mask, [pts], 255)
         
-        # Find contour
         contours, _ = cv2.findContours(piece_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if not contours:
             continue
         
         contour = max(contours, key=cv2.contourArea)
         
-        # Offset
         mid_angle = (a1 + a2) / 2
         offset_dist = 60 + np.random.randint(0, 50)
         ox = int(offset_dist * np.cos(mid_angle))
@@ -609,11 +883,9 @@ def generate_demo_plate(num=5):
         shifted[:, :, 0] += ox
         shifted[:, :, 1] += oy
         
-        # Draw
         cv2.fillPoly(img, [shifted], plate_color)
         cv2.polylines(img, [shifted], True, (200, 195, 190), 2)
         
-        # Rim decoration
         for a in np.linspace(a1, a2, 8):
             rx = int(center_x + ox + (outer_r - 15) * np.cos(a))
             ry = int(center_y + oy + (outer_r - 15) * np.sin(a))
@@ -688,6 +960,39 @@ def save_user_data(username, data):
         db['users'][username]['data'] = data
         save_users_db(db)
 
+def delete_user(username):
+    """Delete user account and all data"""
+    db = load_users_db()
+    if username in db['users']:
+        del db['users'][username]
+        save_users_db(db)
+        
+        # Also delete cookie consent
+        consents = load_cookie_consent()
+        if username in consents:
+            del consents[username]
+            save_cookie_consent(consents)
+        return True
+    return False
+
+def export_user_data(username):
+    """Export all user data as JSON-like dict"""
+    db = load_users_db()
+    if username in db['users']:
+        user = db['users'][username]
+        export = {
+            'username': username,
+            'created': user.get('created'),
+            'data': {
+                'pieces_count': len(user.get('data', {}).get('pieces', {})),
+                'clusters_count': len(user.get('data', {}).get('clusters', {})),
+                'pieces': list(user.get('data', {}).get('pieces', {}).keys()),
+                'clusters': list(user.get('data', {}).get('clusters', {}).keys()),
+            }
+        }
+        return export
+    return None
+
 
 # =============================================================================
 # ID & QR CODE
@@ -708,120 +1013,39 @@ def gen_qr(data, size=10):
 # =============================================================================
 
 def separate_touching_fragments(mask, min_area=100, separation_strength=0.5):
-    """
-    Trennt zusammenhängende Fragmente mit Watershed-Algorithmus.
-    
-    Der Algorithmus:
-    1. Berechnet die Distanztransformation (Abstand zum Rand)
-    2. Findet lokale Maxima als "sichere" Fragmentzentren
-    3. Verwendet Watershed um die Grenzen zu finden
-    4. Prüft Konvexitäts-Defekte für zusätzliche Trennungen
-    """
+    """Trennt zusammenhängende Fragmente mit Watershed-Algorithmus."""
     if mask is None or cv2.countNonZero(mask) == 0:
         return mask
     
-    # Distance Transform - Punkte weit vom Rand sind Fragment-Zentren
     dist = cv2.distanceTransform(mask, cv2.DIST_L2, 5)
     
-    # Normalisieren und Threshold basierend auf separation_strength
-    # Höhere strength = niedrigerer threshold = mehr Trennung
     dist_norm = cv2.normalize(dist, None, 0, 1.0, cv2.NORM_MINMAX)
-    threshold = 0.6 - (separation_strength * 0.4)  # 0.6 bis 0.2
+    threshold = 0.6 - (separation_strength * 0.4)
     
     _, sure_fg = cv2.threshold(dist_norm, threshold, 1.0, cv2.THRESH_BINARY)
     sure_fg = np.uint8(sure_fg * 255)
     
-    # Sure background (dilated mask)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     sure_bg = cv2.dilate(mask, kernel, iterations=3)
     
-    # Unknown region
     unknown = cv2.subtract(sure_bg, sure_fg)
     
-    # Marker labeling
     _, markers = cv2.connectedComponents(sure_fg)
     markers = markers + 1
     markers[unknown == 255] = 0
     
-    # Watershed
     mask_color = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
     markers = cv2.watershed(mask_color, markers)
     
-    # Create separated mask
     separated = np.zeros_like(mask)
     separated[markers > 1] = 255
-    separated[markers == -1] = 0  # Watershed boundaries
+    separated[markers == -1] = 0
     
     return separated
 
 
-def split_by_convexity_defects(contour, mask, min_defect_depth=15):
-    """
-    Prüft ob eine Kontur durch tiefe Einbuchtungen getrennt werden sollte.
-    Tiefe Einbuchtungen deuten auf zwei verbundene Fragmente hin.
-    """
-    if contour is None or len(contour) < 5:
-        return [contour]
-    
-    try:
-        hull = cv2.convexHull(contour, returnPoints=False)
-        if hull is None or len(hull) < 3:
-            return [contour]
-        
-        defects = cv2.convexityDefects(contour, hull)
-        if defects is None:
-            return [contour]
-        
-        # Finde tiefe Defekte (Einbuchtungen)
-        deep_defects = []
-        for i in range(defects.shape[0]):
-            s, e, f, d = defects[i, 0]
-            depth = d / 256.0  # Konvertiere zu Pixeln
-            if depth > min_defect_depth:
-                far_point = tuple(contour[f][0])
-                deep_defects.append({
-                    'start': tuple(contour[s][0]),
-                    'end': tuple(contour[e][0]),
-                    'far': far_point,
-                    'depth': depth
-                })
-        
-        # Wenn wir zwei gegenüberliegende tiefe Defekte haben,
-        # könnten dies zwei verbundene Fragmente sein
-        if len(deep_defects) >= 2:
-            # Sortiere nach Tiefe
-            deep_defects.sort(key=lambda x: x['depth'], reverse=True)
-            
-            # Nimm die zwei tiefsten
-            d1, d2 = deep_defects[0], deep_defects[1]
-            
-            # Prüfe ob sie auf gegenüberliegenden Seiten sind
-            # (vereinfachte Prüfung: Abstand der far-Punkte)
-            dist = np.sqrt((d1['far'][0] - d2['far'][0])**2 + 
-                          (d1['far'][1] - d2['far'][1])**2)
-            
-            # Wenn die Defekte weit genug auseinander sind, trenne
-            contour_len = cv2.arcLength(contour, True)
-            if dist > contour_len * 0.2:
-                # Erstelle Trennlinie
-                # (hier könnte man die Maske aufteilen, aber das ist komplex)
-                # Für jetzt markieren wir nur, dass getrennt werden sollte
-                return [contour]  # Vereinfacht: keine Trennung hier
-        
-        return [contour]
-    except:
-        return [contour]
-
-
 def segment_fragments(image, min_area=100, project="", mode="auto", separation_strength=0.5):
-    """
-    Verbesserte Fragment-Erkennung mit Schatten-Trennung.
-    
-    Neu in v1.8:
-    - Watershed-Algorithmus zur Trennung verbundener Fragmente
-    - Konvexitäts-Defekt-Analyse
-    - Einstellbare Trennungs-Empfindlichkeit
-    """
+    """Verbesserte Fragment-Erkennung mit Schatten-Trennung."""
     h, w = image.shape[:2]
     
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
@@ -831,16 +1055,13 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
     masks = []
     
     if mode in ["auto", "light_bg", "porcelain"]:
-        # Adaptive threshold
         adapt = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
                                        cv2.THRESH_BINARY_INV, 25, 8)
         masks.append(adapt)
         
-        # Otsu
         _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         masks.append(otsu)
         
-        # LAB L-channel
         l_ch = lab[:, :, 0]
         _, lab_th = cv2.threshold(l_ch, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         masks.append(lab_th)
@@ -849,9 +1070,7 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
         _, inv = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         masks.append(inv)
     
-    # === PORCELAIN SPECIAL: Shadow and Color Detection ===
     if mode in ["porcelain"]:
-        # Analyze background from corners
         margin = 30
         corners = [
             gray[margin:2*margin, margin:2*margin],
@@ -862,37 +1081,29 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
         bg_mean = np.mean([c.mean() for c in corners])
         bg_std = np.mean([c.std() for c in corners])
         
-        # Shadow detection (pieces cast shadows)
         shadow_thresh = bg_mean - 20 - bg_std
         shadow_mask = (gray < shadow_thresh).astype(np.uint8) * 255
         masks.append(shadow_mask)
         
-        # L-channel threshold for subtle differences
         l_channel = lab[:, :, 0]
         l_thresh = np.percentile(l_channel, 15)
         l_mask = (l_channel < l_thresh).astype(np.uint8) * 255
         masks.append(l_mask)
         
-        # Color detection (decorations)
         hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
         
-        # Blue decoration
         blue_mask = cv2.inRange(hsv, np.array([90, 25, 40]), np.array([130, 255, 255]))
-        # Green decoration
         green_mask = cv2.inRange(hsv, np.array([35, 25, 40]), np.array([85, 255, 255]))
-        # Any saturated color
         sat_mask = (hsv[:, :, 1] > 30).astype(np.uint8) * 255
         
         color_mask = cv2.bitwise_or(blue_mask, green_mask)
         color_mask = cv2.bitwise_or(color_mask, sat_mask)
         
-        # Dilate color mask to include surrounding area
         kernel_dilate = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
         color_expanded = cv2.dilate(color_mask, kernel_dilate, iterations=2)
         masks.append(color_expanded)
     
     if mode in ["auto", "high_contrast"]:
-        # Edge detection
         edges = cv2.Canny(gray, 30, 100)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
         edges = cv2.dilate(edges, kernel, iterations=3)
@@ -902,7 +1113,6 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
         cv2.drawContours(edge_mask, contours_e, -1, 255, -1)
         masks.append(edge_mask)
         
-        # Background subtraction
         corners = [image[0:30, 0:30], image[0:30, w-30:w], 
                    image[h-30:h, 0:30], image[h-30:h, w-30:w]]
         bg_colors = np.vstack([c.reshape(-1, 3) for c in corners])
@@ -913,35 +1123,28 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
         fg_mask = np.any(diff > bg_std * 2, axis=2).astype(np.uint8) * 255
         masks.append(fg_mask)
     
-    # Combine masks
     combined = np.zeros_like(gray)
     for m in masks:
         combined = cv2.bitwise_or(combined, m)
     
-    # Initial cleanup
     kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
     kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     
     cleaned = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel_close, iterations=2)
     cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel_open, iterations=1)
     
-    # === NEW: WATERSHED SEPARATION ===
-    # Trenne zusammenhängende Fragmente
     cleaned = separate_touching_fragments(cleaned, min_area, separation_strength)
     
-    # Additional cleanup after watershed
     kernel_clean = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel_clean, iterations=1)
     cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, kernel_clean, iterations=1)
     
-    # Remove border
     border = 10
     cleaned[:border, :] = 0
     cleaned[-border:, :] = 0
     cleaned[:, :border] = 0
     cleaned[:, -border:] = 0
     
-    # Find contours
     contours, _ = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     pieces = []
@@ -965,24 +1168,20 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
             if solidity < 0.35:
                 continue
         
-        # Extract ROI
         margin = 10
         x1, y1 = max(0, x - margin), max(0, y - margin)
         x2, y2 = min(w, x + bw + margin), min(h, y + bh + margin)
         
         roi = image[y1:y2, x1:x2].copy()
         
-        # Mask
         piece_mask = np.zeros((h, w), dtype=np.uint8)
         cv2.drawContours(piece_mask, [c], -1, 255, -1)
         mask_roi = piece_mask[y1:y2, x1:x2].copy()
         
-        # Relative contour
         contour_rel = c.copy()
         contour_rel[:, :, 0] -= x1
         contour_rel[:, :, 1] -= y1
         
-        # Centroid
         M = cv2.moments(c)
         if M['m00'] > 0:
             cx = int(M['m10'] / M['m00'])
@@ -1003,17 +1202,14 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
             'created': datetime.now().isoformat()
         }
         
-        # Analyze decoration and curvature for reconstruction
         piece['has_decoration'] = analyze_decoration(roi, mask_roi)
         piece['curvature'] = analyze_curvature(c)
         piece['is_edge_piece'] = piece['has_decoration'] or piece['curvature'] > 0.005
         
-        # Analyze pattern position for reconstruction
         hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
         h_ch = hsv_roi[:, :, 0]
         s_ch = hsv_roi[:, :, 1]
         
-        # Blue and green detection
         blue_mask_local = ((h_ch > 90) & (h_ch < 130) & (s_ch > 40) & (mask_roi > 0)).astype(np.uint8) * 255
         green_mask_local = ((h_ch > 35) & (h_ch < 90) & (s_ch > 30) & (mask_roi > 0)).astype(np.uint8) * 255
         pattern_mask = cv2.bitwise_or(blue_mask_local, green_mask_local)
@@ -1041,7 +1237,6 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
             piece['pattern_direction'] = None
             piece['pattern_center'] = None
         
-        # Classify
         piece['name'], piece['material'], piece['color_name'] = auto_classify(roi, mask_roi)
         
         pieces.append(piece)
@@ -1475,19 +1670,29 @@ def reconstruct_group(pieces, canvas_size=800):
 
 
 # =============================================================================
-# PDF LABELS
+# PDF LABELS - IMPROVED FORMATTING
 # =============================================================================
 
-def create_labels_pdf(pieces, username):
-    """Create PDF with proper layout"""
+def create_labels_pdf(pieces, username, project_name=""):
+    """
+    Create PDF with improved layout - v1.9
+    
+    Improvements:
+    - Better spacing and margins
+    - Centered QR codes
+    - Clear cell divisions
+    - Readable text sizes
+    - Project info on each label
+    """
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     page_w, page_h = A4
     
-    margin_left = 15 * mm
-    margin_top = 20 * mm
-    margin_right = 15 * mm
-    margin_bottom = 15 * mm
+    # Layout settings - optimized for readability
+    margin_left = 12 * mm
+    margin_top = 18 * mm
+    margin_right = 12 * mm
+    margin_bottom = 12 * mm
     
     cols = 3
     rows = 4
@@ -1498,83 +1703,147 @@ def create_labels_pdf(pieces, username):
     cell_w = usable_w / cols
     cell_h = usable_h / rows
     
-    qr_size = 18 * mm
-    thumb_size = 12 * mm
-    
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin_left, page_h - 12 * mm, f"ShardMind - {username}")
-    c.setFont("Helvetica", 8)
-    c.drawString(margin_left, page_h - 16 * mm, f"{datetime.now().strftime('%Y-%m-%d')} | {len(pieces)} Etiketten")
+    # Element sizes
+    qr_size = 22 * mm
+    thumb_size = 18 * mm
+    padding = 4 * mm
     
     items_per_page = cols * rows
+    total_pages = (len(pieces) + items_per_page - 1) // items_per_page
     
     for idx, piece in enumerate(pieces):
-        page_idx = idx // items_per_page
+        page_num = idx // items_per_page
+        
+        # New page check
         if idx > 0 and idx % items_per_page == 0:
             c.showPage()
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(margin_left, page_h - 12 * mm, f"ShardMind - {username}")
-            c.setFont("Helvetica", 8)
-            c.drawString(margin_left, page_h - 16 * mm, f"Seite {page_idx + 1}")
         
+        # Draw header on each page
+        if idx % items_per_page == 0:
+            # Header bar
+            c.setFillColorRGB(0.2, 0.3, 0.5)
+            c.rect(margin_left, page_h - 14 * mm, usable_w, 10 * mm, fill=True, stroke=False)
+            
+            # Header text
+            c.setFillColorRGB(1, 1, 1)
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(margin_left + 3 * mm, page_h - 11 * mm, f"🏺 ShardMind - {username}")
+            
+            c.setFont("Helvetica", 9)
+            date_str = datetime.now().strftime('%d.%m.%Y')
+            page_info = f"Seite {page_num + 1}/{total_pages} | {date_str} | {len(pieces)} Etiketten"
+            c.drawRightString(page_w - margin_right - 3 * mm, page_h - 11 * mm, page_info)
+            
+            c.setFillColorRGB(0, 0, 0)
+        
+        # Position in grid
         pos_on_page = idx % items_per_page
         col = pos_on_page % cols
         row = pos_on_page // cols
         
+        # Cell position
         cell_x = margin_left + col * cell_w
         cell_y = page_h - margin_top - (row + 1) * cell_h
         
-        pad = 3 * mm
+        # Draw cell background (alternating subtle colors)
+        if (col + row) % 2 == 0:
+            c.setFillColorRGB(0.98, 0.98, 0.98)
+        else:
+            c.setFillColorRGB(1, 1, 1)
+        c.rect(cell_x, cell_y, cell_w, cell_h, fill=True, stroke=False)
         
+        # Draw cell border
+        c.setStrokeColorRGB(0.75, 0.75, 0.75)
+        c.setLineWidth(0.5)
+        c.rect(cell_x, cell_y, cell_w, cell_h, fill=False, stroke=True)
+        
+        # === QR CODE (centered at top) ===
         piece_id = piece.get('id', gen_id())
         url = f"{BASE_URL}/?piece={piece_id}"
         
+        qr_x = cell_x + (cell_w - qr_size) / 2
+        qr_y = cell_y + cell_h - padding - qr_size
+        
         try:
-            qr = gen_qr(url, 4)
+            qr = gen_qr(url, 5)
             qr_buf = io.BytesIO()
             qr.save(qr_buf, format='PNG')
             qr_buf.seek(0)
-            c.drawImage(ImageReader(qr_buf), cell_x + pad, cell_y + cell_h - pad - qr_size, 
-                       width=qr_size, height=qr_size)
+            c.drawImage(ImageReader(qr_buf), qr_x, qr_y, width=qr_size, height=qr_size)
         except:
-            pass
+            # Fallback: draw placeholder
+            c.setStrokeColorRGB(0.8, 0.8, 0.8)
+            c.rect(qr_x, qr_y, qr_size, qr_size)
         
+        # === TEXT CONTENT ===
+        text_y = qr_y - 4 * mm
+        text_x = cell_x + padding
+        text_width = cell_w - 2 * padding
+        
+        # ID (bold, larger)
+        c.setFillColorRGB(0.1, 0.1, 0.1)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(cell_x + cell_w / 2, text_y, piece_id)
+        
+        # Name/Type
+        text_y -= 4 * mm
+        c.setFont("Helvetica", 7)
+        c.setFillColorRGB(0.3, 0.3, 0.3)
+        name = piece.get('name', 'Fragment')[:28]
+        c.drawCentredString(cell_x + cell_w / 2, text_y, name)
+        
+        # Material
+        text_y -= 3.5 * mm
+        material = piece.get('material', '')[:20]
+        if material:
+            c.drawCentredString(cell_x + cell_w / 2, text_y, f"Material: {material}")
+        
+        # Project/Excavation
+        text_y -= 3.5 * mm
+        proj = piece.get('excavation', project_name)[:25]
+        if proj:
+            c.setFont("Helvetica-Oblique", 6)
+            c.setFillColorRGB(0.5, 0.5, 0.5)
+            c.drawCentredString(cell_x + cell_w / 2, text_y, f"📍 {proj}")
+        
+        # Date
+        text_y -= 3 * mm
+        created = piece.get('created', '')
+        if created:
+            try:
+                dt = datetime.fromisoformat(created)
+                date_str = dt.strftime('%d.%m.%Y')
+            except:
+                date_str = datetime.now().strftime('%d.%m.%Y')
+        else:
+            date_str = datetime.now().strftime('%d.%m.%Y')
+        c.setFont("Helvetica", 5)
+        c.setFillColorRGB(0.6, 0.6, 0.6)
+        c.drawCentredString(cell_x + cell_w / 2, text_y, date_str)
+        
+        # === THUMBNAIL (if available, bottom corner) ===
         if 'thumbnail' in piece:
             try:
                 thumb_rgb = cv2.cvtColor(piece['thumbnail'], cv2.COLOR_BGR2RGB)
                 pil = Image.fromarray(thumb_rgb)
-                pil.thumbnail((100, 100))
+                pil.thumbnail((80, 80))
                 tb = io.BytesIO()
                 pil.save(tb, format='PNG')
                 tb.seek(0)
-                c.drawImage(ImageReader(tb), cell_x + pad + qr_size + 2*mm, 
-                           cell_y + cell_h - pad - thumb_size, 
-                           width=thumb_size, height=thumb_size)
+                
+                # Position thumbnail in bottom-right corner
+                thumb_x = cell_x + cell_w - padding - 12 * mm
+                thumb_y = cell_y + padding
+                c.drawImage(ImageReader(tb), thumb_x, thumb_y, 
+                           width=10 * mm, height=10 * mm, preserveAspectRatio=True)
             except:
                 pass
-        
-        text_x = cell_x + pad
-        text_y = cell_y + cell_h - pad - qr_size - 4*mm
-        
-        c.setFont("Helvetica-Bold", 7)
-        c.drawString(text_x, text_y, piece_id[:16])
-        
-        c.setFont("Helvetica", 6)
-        text_y -= 3 * mm
-        name = piece.get('name', '-')[:25]
-        c.drawString(text_x, text_y, name)
-        
-        text_y -= 2.5 * mm
-        proj = piece.get('excavation', '-')[:25]
-        c.drawString(text_x, text_y, proj)
-        
-        c.setStrokeColorRGB(0.7, 0.7, 0.7)
-        c.setDash(2, 2)
-        c.rect(cell_x, cell_y, cell_w, cell_h)
-        c.setDash()
     
+    # Footer on last page
     c.setFont("Helvetica", 6)
-    c.drawString(margin_left, 8 * mm, f"ShardMind v{APP_VERSION} | {BASE_URL}")
+    c.setFillColorRGB(0.5, 0.5, 0.5)
+    c.drawString(margin_left, 6 * mm, f"ShardMind v{APP_VERSION} | {BASE_URL}")
+    c.drawRightString(page_w - margin_right, 6 * mm, f"Generiert: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
     
     c.save()
     buffer.seek(0)
@@ -1598,6 +1867,11 @@ def login_page():
             st.session_state.language = lang
             st.rerun()
     
+    # Show cookie banner if not consented
+    if st.session_state.get('show_cookie_banner', True):
+        show_cookie_banner()
+        st.divider()
+    
     tab1, tab2 = st.tabs([t('login'), t('register')])
     
     with tab1:
@@ -1608,6 +1882,11 @@ def login_page():
                 if authenticate(user, pw):
                     st.session_state.logged_in = True
                     st.session_state.username = user
+                    # Check existing cookie consent
+                    consent = get_user_cookie_consent(user)
+                    if consent:
+                        st.session_state.cookie_consent = consent
+                        st.session_state.show_cookie_banner = False
                     st.rerun()
                 else:
                     st.error(t('login_error'))
@@ -1628,6 +1907,10 @@ def login_page():
                         st.success(t(msg))
                     else:
                         st.error(t(msg))
+    
+    # Privacy link at bottom
+    st.divider()
+    st.caption(f"[🔒 {t('privacy_title')}](#) | ShardMind v{APP_VERSION}")
 
 
 def main():
@@ -1641,6 +1924,8 @@ def main():
         'cluster_names': {},
         'custom_labels': [],
         'separation_strength': 0.5,
+        'show_cookie_banner': True,
+        'cookie_consent': None,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -1684,7 +1969,6 @@ def main():
         min_area = st.slider(t('min_size'), 50, 1000, 150)
         threshold = st.slider(t('cluster_sens'), 10, 80, 40)
         
-        # NEW: Separation strength slider
         separation_strength = st.slider(
             t('separation_sens'), 
             0.0, 1.0, 0.5, 0.1,
@@ -1765,10 +2049,10 @@ def main():
         c2.metric(f"📦 {t('groups')}", n_clusters)
         c3.metric("🗺️", project[:20])
     
-    # === TABS (now with Changelog) ===
+    # === TABS ===
     tabs = st.tabs([t('tab_start'), t('tab_gallery'), t('tab_groups'), 
                     t('tab_reconstruction'), t('tab_database'), t('tab_labels'), 
-                    t('tab_changelog'), t('tab_help')])
+                    t('tab_changelog'), t('tab_privacy'), t('tab_help')])
     
     # TAB 0: START
     with tabs[0]:
@@ -2019,18 +2303,17 @@ def main():
             
             if st.button(t('create_pdf'), type='primary', use_container_width=True):
                 with st.spinner("..."):
-                    pdf = create_labels_pdf(label_pieces, username)
+                    pdf = create_labels_pdf(label_pieces, username, project)
                     st.download_button("📥 PDF", pdf.getvalue(),
                                       f"labels_{datetime.now().strftime('%Y%m%d')}.pdf",
                                       "application/pdf", use_container_width=True)
         else:
             st.info(t('upload_first'))
     
-    # TAB 6: CHANGELOG (NEW!)
+    # TAB 6: CHANGELOG
     with tabs[6]:
         st.header(f"📋 {t('changelog_title')}")
         
-        # Current version highlight
         current = CHANGELOG.get(APP_VERSION, {})
         if current:
             st.success(f"### {t('changelog_current')}: v{APP_VERSION} - {current.get('title', '')}")
@@ -2048,7 +2331,6 @@ def main():
         
         st.divider()
         
-        # Previous versions
         st.subheader("📜 Ältere Versionen" if st.session_state.language == 'de' else "📜 Previous Versions")
         
         for version, data in sorted(CHANGELOG.items(), key=lambda x: x[0], reverse=True):
@@ -2066,8 +2348,68 @@ def main():
                     for fix in data['fixes']:
                         st.markdown(f"- {fix}")
     
-    # TAB 7: HELP
+    # TAB 7: PRIVACY & COOKIES
     with tabs[7]:
+        st.header(f"🔒 {t('privacy_title')}")
+        
+        # Cookie Settings
+        st.subheader(t('cookie_settings'))
+        
+        consent = st.session_state.get('cookie_consent', {})
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"**{t('cookie_necessary')}**")
+            st.caption(t('cookie_necessary_desc'))
+            st.checkbox("Aktiviert", value=True, disabled=True, key="priv_necessary")
+        
+        with col2:
+            st.markdown(f"**{t('cookie_functional')}**")
+            st.caption(t('cookie_functional_desc'))
+            functional = st.checkbox("Aktiviert", 
+                                    value=consent.get('functional', True) if consent else True,
+                                    key="priv_functional")
+        
+        if st.button(t('cookie_save'), use_container_width=True):
+            st.session_state.cookie_consent = {'necessary': True, 'functional': functional}
+            set_user_cookie_consent(username, True, functional)
+            st.success(t('saved'))
+        
+        st.divider()
+        
+        # Privacy Policy
+        st.subheader(f"📜 {t('privacy_title')}")
+        
+        if st.session_state.language == 'de':
+            st.markdown(PRIVACY_POLICY_DE)
+        else:
+            st.markdown(PRIVACY_POLICY_EN)
+        
+        st.divider()
+        
+        # Data Management
+        st.subheader(t('privacy_settings'))
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button(t('export_data'), use_container_width=True):
+                export = export_user_data(username)
+                if export:
+                    st.json(export)
+        
+        with col2:
+            with st.expander(t('delete_account'), expanded=False):
+                st.warning(t('delete_account_confirm'))
+                if st.button(t('delete_account_btn'), type="primary"):
+                    if delete_user(username):
+                        st.session_state.logged_in = False
+                        st.session_state.username = ''
+                        st.session_state.pieces = []
+                        st.rerun()
+    
+    # TAB 8: HELP
+    with tabs[8]:
         st.header(t('help_title'))
         st.markdown(HELP_DE if st.session_state.language == 'de' else HELP_EN)
 
