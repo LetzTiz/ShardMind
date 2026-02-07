@@ -15,6 +15,9 @@
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+    <!-- Three.js for 3D reconstruction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 
@@ -622,6 +625,145 @@
         .empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
         .empty-state p { font-size: 14px; }
 
+        /* === 3D RECONSTRUCTION VIEWER === */
+        .recon-mode-toggle {
+            display: flex; gap: 0; margin-bottom: 20px;
+            border: 1px solid var(--border); border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .recon-mode-btn {
+            flex: 1; padding: 10px 16px; border: none;
+            background: var(--bg-secondary); color: var(--text-secondary);
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            transition: var(--transition); font-family: 'DM Sans', sans-serif;
+        }
+        .recon-mode-btn:not(:last-child) { border-right: 1px solid var(--border); }
+        .recon-mode-btn.active {
+            background: var(--accent); color: #fff;
+        }
+        .recon-mode-btn:hover:not(.active) {
+            background: var(--bg-hover); color: var(--text-primary);
+        }
+
+        #three-container {
+            width: 100%; aspect-ratio: 1;
+            border-radius: var(--radius-lg);
+            overflow: hidden; position: relative;
+            background: #0a0b10;
+            border: 1px solid var(--border);
+            cursor: grab;
+        }
+        #three-container:active { cursor: grabbing; }
+        #three-container canvas { display: block; width: 100% !important; height: 100% !important; }
+
+        .three-controls {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 12px; margin-top: 16px;
+        }
+        .three-controls .slider-group {
+            background: var(--bg-card);
+            padding: 10px 14px; border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        .three-control-row {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+        }
+        .three-toggle {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 12px; cursor: pointer;
+            transition: var(--transition);
+        }
+        .three-toggle.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(201,149,107,0.1);
+        }
+
+        .plate-type-selector {
+            display: flex; gap: 8px; margin-bottom: 16px;
+        }
+        .plate-type-btn {
+            flex: 1; padding: 12px 8px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            text-align: center; cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-secondary);
+        }
+        .plate-type-btn.active {
+            border-color: var(--accent);
+            background: rgba(201,149,107,0.08);
+        }
+        .plate-type-btn:hover:not(.active) {
+            border-color: var(--text-muted);
+        }
+        .plate-type-icon { font-size: 28px; display: block; margin-bottom: 4px; }
+        .plate-type-name { font-size: 12px; font-weight: 600; }
+
+        .coverage-bar {
+            height: 8px; border-radius: 4px;
+            background: var(--bg-secondary);
+            overflow: hidden; margin-top: 8px;
+        }
+        .coverage-bar-fill {
+            height: 100%; border-radius: 4px;
+            background: linear-gradient(90deg, var(--accent-dark), var(--accent));
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stats-row-3d {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 10px; margin-top: 16px;
+        }
+        .stat-3d {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 10px;
+            text-align: center;
+        }
+        .stat-3d-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px; color: var(--accent);
+            font-weight: 600;
+        }
+        .stat-3d-lbl {
+            font-size: 11px; color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .assembly-progress {
+            position: absolute; bottom: 12px; left: 12px; right: 12px;
+            background: rgba(15,17,23,0.85); border-radius: var(--radius);
+            padding: 10px 14px; backdrop-filter: blur(8px);
+            z-index: 10; display: none;
+        }
+        .assembly-progress-text {
+            font-size: 12px; color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .assembly-bar {
+            height: 4px; border-radius: 2px;
+            background: var(--bg-secondary);
+        }
+        .assembly-bar-fill {
+            height: 100%; border-radius: 2px;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+
+        .three-hint {
+            position: absolute; top: 12px; right: 12px;
+            padding: 6px 12px; border-radius: 20px;
+            background: rgba(15,17,23,0.7);
+            backdrop-filter: blur(8px);
+            font-size: 11px; color: var(--text-muted);
+            z-index: 10; pointer-events: none;
+        }
+
         /* === DECORATION LINE DRAWING === */
         .deco-viewer {
             display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
@@ -1147,11 +1289,130 @@
 
         <!-- TAB: Reconstruction -->
         <div class="tab-content" id="tab-reconstruction">
-            <h2 class="section-header" id="recon-header">Rekonstruktion</h2>
-            <div id="recon-content">
-                <div class="empty-state">
-                    <div class="icon">🧩</div>
-                    <p id="recon-empty-text">Bitte zuerst Fotos hochladen und analysieren</p>
+            <h2 class="section-header" id="recon-header">🧩 Rekonstruktion</h2>
+            
+            <div class="recon-mode-toggle">
+                <button class="recon-mode-btn active" onclick="setReconMode('2d', this)">📐 2D-Ansicht</button>
+                <button class="recon-mode-btn" onclick="setReconMode('3d', this)">🔮 3D-Modell</button>
+            </div>
+
+            <!-- 2D Reconstruction (existing) -->
+            <div id="recon-2d-panel">
+                <div id="recon-content">
+                    <div class="empty-state">
+                        <div class="icon">🧩</div>
+                        <p id="recon-empty-text">Bitte zuerst Fotos hochladen und analysieren</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3D Reconstruction (new) -->
+            <div id="recon-3d-panel" style="display:none;">
+                <div id="recon-3d-empty" class="empty-state">
+                    <div class="icon">🔮</div>
+                    <p>Bitte zuerst Fotos hochladen und analysieren</p>
+                </div>
+
+                <div id="recon-3d-main" style="display:none;">
+                    <div class="feature-explanation">
+                        <p>
+                            <strong>3D-Rekonstruktion:</strong>
+                            <span id="txt-3d-explain">Die Fragmente werden auf ein parametrisches 3D-Tellermodell projiziert. Die Tellerform basiert auf dem Circle-Fitting der Dekorbänder. Wählen Sie den Gefäßtyp und passen Sie Tiefe und Randwinkel an.</span>
+                        </p>
+                    </div>
+
+                    <!-- Plate type selector -->
+                    <div class="plate-type-selector">
+                        <div class="plate-type-btn active" onclick="selectPlateType('flat', this)">
+                            <span class="plate-type-icon">🍽️</span>
+                            <span class="plate-type-name">Flachteller</span>
+                        </div>
+                        <div class="plate-type-btn" onclick="selectPlateType('soup', this)">
+                            <span class="plate-type-icon">🥣</span>
+                            <span class="plate-type-name">Suppenteller</span>
+                        </div>
+                        <div class="plate-type-btn" onclick="selectPlateType('bowl', this)">
+                            <span class="plate-type-icon">🥗</span>
+                            <span class="plate-type-name">Schüssel</span>
+                        </div>
+                        <div class="plate-type-btn" onclick="selectPlateType('cup', this)">
+                            <span class="plate-type-icon">☕</span>
+                            <span class="plate-type-name">Tasse</span>
+                        </div>
+                    </div>
+
+                    <!-- Group selector -->
+                    <div class="form-group" style="margin-bottom:16px;">
+                        <label>Gruppe wählen</label>
+                        <select id="recon-3d-group-select"></select>
+                    </div>
+
+                    <!-- 3D Controls -->
+                    <div class="three-controls">
+                        <div class="slider-group">
+                            <div class="slider-label"><span>Tiefe (mm)</span><span id="val-plate-depth">15</span></div>
+                            <input type="range" id="slider-plate-depth" min="3" max="60" value="15" step="1"
+                                   oninput="document.getElementById('val-plate-depth').textContent=this.value; update3DPlate();">
+                        </div>
+                        <div class="slider-group">
+                            <div class="slider-label"><span>Randwinkel (°)</span><span id="val-rim-angle">25</span></div>
+                            <input type="range" id="slider-rim-angle" min="5" max="75" value="25" step="1"
+                                   oninput="document.getElementById('val-rim-angle').textContent=this.value; update3DPlate();">
+                        </div>
+                        <div class="slider-group">
+                            <div class="slider-label"><span>Standfuß (%)</span><span id="val-base-frac">20</span></div>
+                            <input type="range" id="slider-base-frac" min="10" max="50" value="20" step="1"
+                                   oninput="document.getElementById('val-base-frac').textContent=this.value; update3DPlate();">
+                        </div>
+                        <div class="slider-group">
+                            <div class="slider-label"><span>Wandstärke</span><span id="val-wall-thick">3</span></div>
+                            <input type="range" id="slider-wall-thick" min="1" max="8" value="3" step="0.5"
+                                   oninput="document.getElementById('val-wall-thick').textContent=this.value; update3DPlate();">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-full" style="margin-top:16px;" onclick="run3DReconstruction()">
+                        🔮 3D-Rekonstruktion starten
+                    </button>
+
+                    <!-- 3D Viewport -->
+                    <div id="three-container" style="margin-top:16px;display:none;">
+                        <div class="three-hint">🖱️ Ziehen = Drehen | Scrollen = Zoom | Rechtsklick = Verschieben</div>
+                        <div class="assembly-progress" id="assembly-progress">
+                            <div class="assembly-progress-text" id="assembly-progress-text">Montage...</div>
+                            <div class="assembly-bar"><div class="assembly-bar-fill" id="assembly-bar-fill" style="width:0%"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="three-control-row" id="three-toggles" style="display:none;">
+                        <div class="three-toggle active" onclick="toggle3DOption(this,'texture')">🎨 Textur</div>
+                        <div class="three-toggle" onclick="toggle3DOption(this,'wireframe')">🔲 Drahtgitter</div>
+                        <div class="three-toggle" onclick="toggle3DOption(this,'fragments')">📍 Fragmentgrenzen</div>
+                        <div class="three-toggle" onclick="toggle3DOption(this,'animate')">▶️ Montage abspielen</div>
+                        <div class="three-toggle" onclick="toggle3DOption(this,'rotate')">🔄 Auto-Rotation</div>
+                        <div class="three-toggle" onclick="toggle3DOption(this,'underside')">🔃 Unterseite</div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="stats-row-3d" id="stats-3d" style="display:none;">
+                        <div class="stat-3d">
+                            <div class="stat-3d-val" id="stat-coverage">0%</div>
+                            <div class="stat-3d-lbl">Abdeckung</div>
+                        </div>
+                        <div class="stat-3d">
+                            <div class="stat-3d-val" id="stat-fragments-placed">0</div>
+                            <div class="stat-3d-lbl">Fragmente platziert</div>
+                        </div>
+                        <div class="stat-3d">
+                            <div class="stat-3d-val" id="stat-diameter">0 mm</div>
+                            <div class="stat-3d-lbl">Ø Durchmesser (est.)</div>
+                        </div>
+                    </div>
+
+                    <div style="display:none;gap:8px;margin-top:16px;flex-wrap:wrap;" id="three-export-btns">
+                        <button class="btn btn-secondary" onclick="export3DScreenshot()">📸 Screenshot</button>
+                        <button class="btn btn-secondary" onclick="reset3DCamera()">🎯 Kamera zurücksetzen</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1656,16 +1917,18 @@ function T(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || 
 // CHANGELOG DATA
 // ==================================================
 const CHANGELOG = {
-    '2.0': { date: '2025-02-07', title: 'Verzierungsanalyse & Kulturstufen', features: [
+    '2.0': { date: '2025-02-07', title: 'Verzierungsanalyse, Kulturstufen & 3D-Rekonstruktion', features: [
+        '🔮 3D-REKONSTRUKTION: Interaktives 3D-Tellermodell mit Three.js WebGL-Rendering',
+        '🍽️ GEFÄSSTYPEN: Flachteller, Suppenteller, Schüssel, Tasse — parametrisch anpassbar',
+        '📐 PROFILGENERATOR: Tiefe, Randwinkel, Standfuß, Wandstärke einstellbar',
+        '🎬 MONTAGE-ANIMATION: Fragmente werden animiert auf den Teller projiziert',
+        '🖱️ INTERAKTIVE 3D-ANSICHT: Drehen, Zoomen, Schwenken mit Maus und Touch',
         '🎨 VERZIERUNG → STRICHZEICHNUNG: Automatische Extraktion von Dekoren als maßstäbliche Linienzeichnung',
         '🏛️ KULTURSTUFEN-KLASSIFIKATION: Automatische Einordnung in archäologische Epochen',
         '📚 KERAMIK-WISSENSBASIS: Neolithikum bis Neuzeit mit Bestimmungsmerkmalen',
         '✏️ SVG-EXPORT: Vektorgrafik-Export der Strichzeichnungen',
-        '🔍 ÜBERLAGERUNGS-ANSICHT: Original und Zeichnung überlagert mit Transparenzregler',
-        '📐 ARCHÄOLOGISCHE MERKMALE: Wandstärke, Magerung, Oberflächenbehandlung, Brandführung',
-        '🎯 VERBESSERTE GRUPPIERUNG: Kulturspezifische Kriterien für Merkmalsextraktion',
-        '📏 MAßSTÄBLICHE DARSTELLUNG: Automatische Skalierung der Strichzeichnungen',
-    ], fixes: ['Verbesserte Verzierungserkennung (figürlich + ornamental)', 'Kulturperioden-spezifische Farbanalyse'] },
+        '🔍 ÜBERLAGERUNGS-ANSICHT: Original und Zeichnung überlagert',
+    ], fixes: ['Verbesserte Verzierungserkennung', 'Kulturperioden-spezifische Farbanalyse', 'UV-Mapping für korrekte Texturprojektion'] },
     '1.9': { date: '2025-01-23', title: 'Datenschutz & Cookie-Consent', features: [
         '🍪 COOKIE-BANNER mit Zustimmungs-Dialog', '📜 DATENSCHUTZERKLÄRUNG (DSGVO-konform)',
         '🔒 Cookie-Einstellungen jederzeit änderbar', '📄 VERBESSERTE PDF-ETIKETTEN',
@@ -1736,6 +1999,15 @@ const HELP_DE = `<h2>Schnellstart</h2>
 <li><strong>Nicht überlappen</strong> lassen</li>
 <li><strong>Gute Beleuchtung</strong> ohne Schatten</li>
 <li>Bei Problemen: Erkennungsmodus ändern</li></ul>
+<h2>🔮 3D-Rekonstruktion (NEU in v2.0)</h2>
+<p>Im Rekonstruktions-Tab wechseln Sie zwischen <strong>2D</strong> und <strong>3D-Ansicht</strong>:</p>
+<ul><li><strong>Gefäßtypen</strong>: Flachteller, Suppenteller, Schüssel, Tasse</li>
+<li><strong>Parameter</strong>: Tiefe, Randwinkel, Standfuß und Wandstärke anpassbar</li>
+<li><strong>Interaktiv</strong>: Drehen (Maus ziehen), Zoomen (Scrollen), Verschieben (Rechtsklick)</li>
+<li><strong>Montage-Animation</strong>: Fragmente werden animiert auf den Teller projiziert</li>
+<li><strong>Optionen</strong>: Drahtgitter, Fragmentgrenzen, Auto-Rotation, Unterseite</li>
+<li><strong>Export</strong>: Screenshot als PNG speichern</li></ul>
+<p><strong>So funktioniert es:</strong> Die Software nutzt das Circle-Fitting der Dekorbänder, um den Tellerradius zu bestimmen. Daraus wird ein parametrisches 3D-Modell erzeugt (Rotationskörper). Die Fragmentfotos werden als Textur auf die Oberfläche projiziert. Fehlende Bereiche zeigen die "Tonfarbe" des Gefäßkörpers.</p>
 <h2>🎨 Verzierungsanalyse (NEU in v2.0)</h2>
 <p>Im Tab "🎨 Verzierung" können Sie Fragmente mit Dekor auswählen und automatisch eine <strong>maßstäbliche Strichzeichnung</strong> extrahieren lassen.</p>
 <ul><li><strong>Verzierungstypen</strong>: Figürlich, Ornamental, Banddekor, Bemalt, Ritzdekor, Stempel/Relief</li>
@@ -1764,6 +2036,15 @@ const HELP_EN = `<h2>Quick Start</h2>
 <li><strong>Don't overlap</strong> fragments</li>
 <li><strong>Good lighting</strong> without shadows</li>
 <li>If problems: Change detection mode</li></ul>
+<h2>🔮 3D Reconstruction (NEW in v2.0)</h2>
+<p>In the Reconstruction tab, switch between <strong>2D</strong> and <strong>3D view</strong>:</p>
+<ul><li><strong>Vessel types</strong>: Flat plate, soup plate, bowl, cup</li>
+<li><strong>Parameters</strong>: Depth, rim angle, foot, wall thickness adjustable</li>
+<li><strong>Interactive</strong>: Rotate (drag), zoom (scroll), pan (right-click)</li>
+<li><strong>Assembly animation</strong>: Fragments animated onto the plate</li>
+<li><strong>Options</strong>: Wireframe, fragment boundaries, auto-rotation, underside</li>
+<li><strong>Export</strong>: Save screenshot as PNG</li></ul>
+<p><strong>How it works:</strong> The software uses circle fitting from decoration bands to determine plate radius. A parametric 3D model (surface of revolution) is generated. Fragment photos are projected as texture onto the surface. Missing areas show the clay body color.</p>
 <h2>🎨 Decoration Analysis (NEW in v2.0)</h2>
 <p>In the "🎨 Decoration" tab, select decorated fragments and automatically extract a <strong>scaled line drawing</strong>.</p>
 <ul><li><strong>Decoration types</strong>: Figural, ornamental, band, painted, incised, stamped/relief</li>
@@ -2437,8 +2718,16 @@ function renderReconOptions() {
     const container = document.getElementById('recon-content');
     if (activePieces.length === 0) {
         container.innerHTML = `<div class="empty-state"><div class="icon">🧩</div><p>${T('upload_first')}</p></div>`;
+        // Also update 3D panel
+        document.getElementById('recon-3d-empty').style.display = '';
+        document.getElementById('recon-3d-main').style.display = 'none';
         return;
     }
+    
+    // 3D panel: show main, hide empty
+    document.getElementById('recon-3d-empty').style.display = 'none';
+    document.getElementById('recon-3d-main').style.display = '';
+    updateRecon3DGroupSelect();
     
     const clusterIds = [...new Set(activePieces.map(p => p.cluster ?? -1))].filter(c => c >= 0).sort();
     
@@ -2848,6 +3137,918 @@ async function runReconstruction() {
         console.error('Reconstruction error', err);
         toast('Reconstruction error: ' + err.message, 'error');
     }
+}
+
+// ==================================================
+// 3D RECONSTRUCTION - THREE.JS
+// ==================================================
+
+let threeScene = null, threeCamera = null, threeRenderer = null;
+let plateMesh = null, plateWireframe = null, fragmentBoundaries = null;
+let threeAnimId = null;
+let autoRotate = false;
+let currentPlateType = 'flat';
+let threeReady = false;
+let assemblyAnimating = false;
+let fragmentMeshes = [];
+let plateTextureCanvas = null;
+let reconImageData = null; // stores 2D reconstruction result
+
+// Plate profiles: each is array of [radius_fraction, height_fraction] points
+const PLATE_PROFILES = {
+    flat: {
+        name: 'Flachteller',
+        points: [
+            [0,     0],
+            [0.15,  0],       // center flat
+            [0.25,  -0.02],   // very slight dip
+            [0.40,  -0.04],   // spiegel
+            [0.55,  -0.02],   // transition
+            [0.70,   0.10],   // fahne starts
+            [0.82,   0.30],   // fahne mid
+            [0.92,   0.55],   // approaching rim
+            [0.97,   0.75],   // rim
+            [1.00,   0.85],   // lip
+            [1.02,   0.90],   // lip outer edge
+        ],
+        defaultDepth: 15,
+        defaultRim: 25,
+    },
+    soup: {
+        name: 'Suppenteller',
+        points: [
+            [0,     0],
+            [0.10,  0],
+            [0.18,  -0.05],
+            [0.30,  -0.25],   // deep well
+            [0.42,  -0.40],   // deepest
+            [0.52,  -0.35],   // coming back up
+            [0.62,  -0.15],   // transition
+            [0.72,   0.10],   // fahne
+            [0.82,   0.35],
+            [0.92,   0.60],
+            [0.97,   0.80],
+            [1.00,   0.90],
+            [1.02,   0.95],
+        ],
+        defaultDepth: 35,
+        defaultRim: 30,
+    },
+    bowl: {
+        name: 'Schüssel',
+        points: [
+            [0,     0],
+            [0.08,  0],
+            [0.18,  -0.10],
+            [0.30,  -0.35],
+            [0.42,  -0.55],
+            [0.55,  -0.70],
+            [0.68,  -0.75],   // deep bowl
+            [0.78,  -0.65],
+            [0.85,  -0.40],
+            [0.92,  -0.10],
+            [0.97,   0.10],
+            [1.00,   0.20],
+            [1.01,   0.22],
+        ],
+        defaultDepth: 50,
+        defaultRim: 55,
+    },
+    cup: {
+        name: 'Tasse',
+        points: [
+            [0,     0],
+            [0.08,  0],
+            [0.15,  -0.05],
+            [0.22,  -0.20],
+            [0.28,  -0.45],
+            [0.33,  -0.70],
+            [0.37,  -0.90],
+            [0.40,  -1.00],   // bottom of cup
+            [0.42,  -0.95],
+            [0.48,  -0.70],
+            [0.56,  -0.40],
+            [0.65,  -0.15],
+            [0.75,   0.15],
+            [0.85,   0.40],
+            [0.92,   0.60],
+            [0.97,   0.80],
+            [1.00,   0.90],
+            [1.01,   0.92],
+        ],
+        defaultDepth: 55,
+        defaultRim: 45,
+    }
+};
+
+function setReconMode(mode, btn) {
+    document.querySelectorAll('.recon-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    document.getElementById('recon-2d-panel').style.display = mode === '2d' ? '' : 'none';
+    document.getElementById('recon-3d-panel').style.display = mode === '3d' ? '' : 'none';
+    
+    if (mode === '3d') {
+        updateRecon3DGroupSelect();
+        if (activePieces.length > 0) {
+            document.getElementById('recon-3d-empty').style.display = 'none';
+            document.getElementById('recon-3d-main').style.display = '';
+        } else {
+            document.getElementById('recon-3d-empty').style.display = '';
+            document.getElementById('recon-3d-main').style.display = 'none';
+        }
+    }
+}
+
+function updateRecon3DGroupSelect() {
+    const select = document.getElementById('recon-3d-group-select');
+    if (!select) return;
+    const clusterIds = [...new Set(activePieces.map(p => p.cluster ?? -1))].filter(c => c >= 0).sort();
+    let html = '';
+    clusterIds.forEach(cid => {
+        const cp = activePieces.filter(p => p.cluster === cid);
+        const name = clusterNames[cid] || `Group_${cid + 1}`;
+        html += `<option value="${cid}">${name} (${cp.length} Teile)</option>`;
+    });
+    // Also add "all" option
+    html += `<option value="-99">Alle Fragmente (${activePieces.length})</option>`;
+    select.innerHTML = html;
+}
+
+function selectPlateType(type, btn) {
+    currentPlateType = type;
+    document.querySelectorAll('.plate-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    // Set defaults
+    const profile = PLATE_PROFILES[type];
+    document.getElementById('slider-plate-depth').value = profile.defaultDepth;
+    document.getElementById('val-plate-depth').textContent = profile.defaultDepth;
+    document.getElementById('slider-rim-angle').value = profile.defaultRim;
+    document.getElementById('val-rim-angle').textContent = profile.defaultRim;
+    
+    if (threeReady) update3DPlate();
+}
+
+// ---------- THREE.JS SCENE SETUP ----------
+
+function initThreeScene() {
+    const container = document.getElementById('three-container');
+    if (!container || threeScene) return;
+
+    const w = container.clientWidth || 600;
+    const h = w; // square
+
+    // Scene
+    threeScene = new THREE.Scene();
+    threeScene.background = new THREE.Color(0x0a0b10);
+
+    // Camera
+    threeCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
+    threeCamera.position.set(0, 3.5, 5);
+    threeCamera.lookAt(0, 0, 0);
+
+    // Renderer
+    threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
+    threeRenderer.setSize(w, h);
+    threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    threeRenderer.shadowMap.enabled = true;
+    threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    threeRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    threeRenderer.toneMappingExposure = 1.1;
+    container.appendChild(threeRenderer.domElement);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xfff5e6, 0.5);
+    threeScene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    dirLight.position.set(5, 8, 5);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    threeScene.add(dirLight);
+
+    const fillLight = new THREE.DirectionalLight(0xadc6ff, 0.3);
+    fillLight.position.set(-3, 4, -3);
+    threeScene.add(fillLight);
+
+    const rimLight = new THREE.DirectionalLight(0xffe0c0, 0.2);
+    rimLight.position.set(0, -2, 5);
+    threeScene.add(rimLight);
+
+    // Ground plane (subtle shadow catcher)
+    const groundGeo = new THREE.PlaneGeometry(20, 20);
+    const groundMat = new THREE.MeshStandardMaterial({ 
+        color: 0x0d0e14, roughness: 1, metalness: 0 
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -1.5;
+    ground.receiveShadow = true;
+    threeScene.add(ground);
+
+    // Simple orbit controls (manual implementation for r128)
+    setupOrbitControls(container);
+
+    // Handle resize
+    const resizeObs = new ResizeObserver(() => {
+        const cw = container.clientWidth;
+        const ch = cw;
+        threeCamera.aspect = 1;
+        threeCamera.updateProjectionMatrix();
+        threeRenderer.setSize(cw, ch);
+    });
+    resizeObs.observe(container);
+
+    threeReady = true;
+    animate3D();
+}
+
+// ---------- ORBIT CONTROLS (manual for r128) ----------
+
+let orbitState = { isDown: false, isRight: false, prevX: 0, prevY: 0, theta: 0.3, phi: 1.1, distance: 6, targetX: 0, targetY: 0 };
+
+function setupOrbitControls(container) {
+    container.addEventListener('mousedown', (e) => {
+        orbitState.isDown = true;
+        orbitState.isRight = (e.button === 2);
+        orbitState.prevX = e.clientX;
+        orbitState.prevY = e.clientY;
+        e.preventDefault();
+    });
+    
+    container.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    window.addEventListener('mouseup', () => { orbitState.isDown = false; });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!orbitState.isDown) return;
+        const dx = e.clientX - orbitState.prevX;
+        const dy = e.clientY - orbitState.prevY;
+        orbitState.prevX = e.clientX;
+        orbitState.prevY = e.clientY;
+
+        if (orbitState.isRight) {
+            // Pan
+            orbitState.targetX -= dx * 0.005;
+            orbitState.targetY += dy * 0.005;
+        } else {
+            // Rotate
+            orbitState.theta -= dx * 0.008;
+            orbitState.phi = Math.max(0.1, Math.min(Math.PI - 0.1, orbitState.phi - dy * 0.008));
+        }
+        updateOrbitCamera();
+    });
+
+    container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        orbitState.distance = Math.max(2, Math.min(15, orbitState.distance + e.deltaY * 0.005));
+        updateOrbitCamera();
+    }, { passive: false });
+
+    // Touch support
+    let lastTouchDist = 0;
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            orbitState.isDown = true;
+            orbitState.isRight = false;
+            orbitState.prevX = e.touches[0].clientX;
+            orbitState.prevY = e.touches[0].clientY;
+        } else if (e.touches.length === 2) {
+            lastTouchDist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+        }
+        e.preventDefault();
+    }, { passive: false });
+
+    container.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && orbitState.isDown) {
+            const dx = e.touches[0].clientX - orbitState.prevX;
+            const dy = e.touches[0].clientY - orbitState.prevY;
+            orbitState.prevX = e.touches[0].clientX;
+            orbitState.prevY = e.touches[0].clientY;
+            orbitState.theta -= dx * 0.008;
+            orbitState.phi = Math.max(0.1, Math.min(Math.PI - 0.1, orbitState.phi - dy * 0.008));
+            updateOrbitCamera();
+        } else if (e.touches.length === 2) {
+            const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            orbitState.distance = Math.max(2, Math.min(15, orbitState.distance - (dist - lastTouchDist) * 0.02));
+            lastTouchDist = dist;
+            updateOrbitCamera();
+        }
+        e.preventDefault();
+    }, { passive: false });
+
+    container.addEventListener('touchend', () => { orbitState.isDown = false; });
+
+    updateOrbitCamera();
+}
+
+function updateOrbitCamera() {
+    if (!threeCamera) return;
+    const r = orbitState.distance;
+    threeCamera.position.set(
+        r * Math.sin(orbitState.phi) * Math.sin(orbitState.theta) + orbitState.targetX,
+        r * Math.cos(orbitState.phi) + orbitState.targetY,
+        r * Math.sin(orbitState.phi) * Math.cos(orbitState.theta)
+    );
+    threeCamera.lookAt(orbitState.targetX, orbitState.targetY, 0);
+}
+
+function reset3DCamera() {
+    orbitState = { isDown: false, isRight: false, prevX: 0, prevY: 0, theta: 0.3, phi: 1.1, distance: 6, targetX: 0, targetY: 0 };
+    updateOrbitCamera();
+}
+
+// ---------- PLATE GEOMETRY GENERATION ----------
+
+function generatePlateGeometry(plateType, depthMM, rimAngleDeg, baseFrac, wallThickness) {
+    const profile = PLATE_PROFILES[plateType];
+    if (!profile) return null;
+
+    const depthScale = depthMM / 30; // normalize to a "standard" depth
+    const rimScale = rimAngleDeg / 30;
+    const radius = 2.0; // world units
+
+    // Generate smooth profile from control points using interpolation
+    const controlPts = profile.points;
+    const numProfilePts = 40;
+    const profilePoints = [];
+
+    for (let i = 0; i < numProfilePts; i++) {
+        const t = i / (numProfilePts - 1);
+        const r = t * radius;
+        
+        // Find the two control points we're between
+        const rFrac = t;
+        let h = 0;
+        
+        for (let j = 0; j < controlPts.length - 1; j++) {
+            const [r0, h0] = controlPts[j];
+            const [r1, h1] = controlPts[j + 1];
+            if (rFrac >= r0 && rFrac <= r1) {
+                const localT = (rFrac - r0) / (r1 - r0 + 0.001);
+                // Smooth interpolation (smoothstep)
+                const smooth = localT * localT * (3 - 2 * localT);
+                h = h0 + (h1 - h0) * smooth;
+                break;
+            }
+        }
+        if (rFrac > controlPts[controlPts.length - 1][0]) {
+            h = controlPts[controlPts.length - 1][1];
+        }
+
+        const y = h * depthScale * rimScale * 0.15;
+        profilePoints.push(new THREE.Vector2(r, y));
+    }
+
+    // Create LatheGeometry (inner surface)
+    const segments = 64;
+    const innerGeo = new THREE.LatheGeometry(profilePoints, segments, 0, Math.PI * 2);
+
+    // Create outer surface (offset by wall thickness)
+    const wt = wallThickness * 0.01; // scale to world units
+    const outerProfilePts = profilePoints.map((pt, idx) => {
+        // Normal direction: perpendicular to the profile tangent
+        let nx = 0, ny = -1;
+        if (idx > 0 && idx < profilePoints.length - 1) {
+            const dx = profilePoints[idx + 1].x - profilePoints[idx - 1].x;
+            const dy = profilePoints[idx + 1].y - profilePoints[idx - 1].y;
+            const len = Math.sqrt(dx * dx + dy * dy) + 0.001;
+            nx = -dy / len;
+            ny = dx / len;
+        }
+        return new THREE.Vector2(pt.x + nx * wt, pt.y + ny * wt);
+    });
+
+    const outerGeo = new THREE.LatheGeometry(outerProfilePts, segments, 0, Math.PI * 2);
+
+    return { innerGeo, outerGeo, profilePoints, outerProfilePts, segments };
+}
+
+// ---------- TEXTURE CREATION ----------
+
+function createPlateTexture(pieces, plateRadius, plateCX, plateCY) {
+    const texSize = 2048;
+    const canvas = document.createElement('canvas');
+    canvas.width = texSize;
+    canvas.height = texSize;
+    const ctx = canvas.getContext('2d');
+
+    // Background: ceramic/clay color
+    ctx.fillStyle = '#d4c4a8';
+    ctx.beginPath();
+    ctx.arc(texSize / 2, texSize / 2, texSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Add subtle ceramic texture
+    for (let i = 0; i < 5000; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.random() * texSize / 2;
+        const x = texSize / 2 + r * Math.cos(angle);
+        const y = texSize / 2 + r * Math.sin(angle);
+        const shade = 180 + Math.random() * 40;
+        ctx.fillStyle = `rgba(${shade}, ${shade - 15}, ${shade - 30}, 0.05)`;
+        ctx.fillRect(x, y, 2 + Math.random() * 3, 2 + Math.random() * 3);
+    }
+
+    // Mark missing area with subtle pattern
+    ctx.strokeStyle = 'rgba(100,90,75,0.08)';
+    ctx.lineWidth = 1;
+    for (let r = 0; r < texSize / 2; r += 20) {
+        ctx.beginPath();
+        ctx.arc(texSize / 2, texSize / 2, r, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // Scale factor: how to map original pixel coords to texture coords
+    const scale = (texSize / 2) / (plateRadius || 200);
+
+    // Draw each fragment onto the texture
+    let placedCount = 0;
+    const fragBounds = []; // for boundary visualization
+
+    pieces.forEach((piece, idx) => {
+        if (!piece.thumbnailDataUrl) return;
+
+        const img = new Image();
+        img.src = piece.thumbnailDataUrl;
+
+        // We need synchronous drawing, so we use a temp canvas
+        const tmpCanvas = document.createElement('canvas');
+        const tmpCtx = tmpCanvas.getContext('2d');
+
+        // Fragment position relative to plate center
+        const offset = piece.offset || [0, 0];
+        const cx = piece.centroid || [offset[0] + 30, offset[1] + 30];
+
+        // Position on texture
+        const relX = (cx[0] - (plateCX || 0)) * scale;
+        const relY = (cx[1] - (plateCY || 0)) * scale;
+        const texX = texSize / 2 + relX;
+        const texY = texSize / 2 + relY;
+
+        // Store for later async painting
+        fragBounds.push({
+            idx, texX, texY, scale,
+            offset, dataUrl: piece.thumbnailDataUrl,
+            bbox: piece.bbox || [0, 0, 60, 60]
+        });
+
+        placedCount++;
+    });
+
+    // Since Image loading is async, we return a promise
+    plateTextureCanvas = canvas;
+
+    return new Promise((resolve) => {
+        let loaded = 0;
+
+        if (fragBounds.length === 0) {
+            resolve({ canvas, coverage: 0, placedCount: 0 });
+            return;
+        }
+
+        fragBounds.forEach((fb) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                const w = img.width * fb.scale;
+                const h = img.height * fb.scale;
+                const dx = fb.texX - (fb.bbox[0] - fb.offset[0]) * fb.scale - w / 2;
+                const dy = fb.texY - (fb.bbox[1] - fb.offset[1]) * fb.scale - h / 2;
+
+                // Draw with transparency for non-ceramic pixels
+                const tmpC = document.createElement('canvas');
+                tmpC.width = img.width;
+                tmpC.height = img.height;
+                const tmpX = tmpC.getContext('2d');
+                tmpX.drawImage(img, 0, 0);
+
+                // Get pixel data and mask out white background
+                const idata = tmpX.getImageData(0, 0, img.width, img.height);
+                const d = idata.data;
+                for (let px = 0; px < d.length; px += 4) {
+                    if (d[px] > 235 && d[px + 1] > 235 && d[px + 2] > 235) {
+                        d[px + 3] = 0; // transparent
+                    }
+                }
+                tmpX.putImageData(idata, 0, 0);
+
+                // Draw onto texture at correct position
+                const posX = fb.texX - w * 0.5;
+                const posY = fb.texY - h * 0.5;
+                ctx.drawImage(tmpC, posX, posY, w, h);
+
+                loaded++;
+                if (loaded >= fragBounds.length) {
+                    // Calculate coverage
+                    const totalPx = texSize * texSize;
+                    const texData = ctx.getImageData(0, 0, texSize, texSize).data;
+                    let ceramicPx = 0;
+                    const centerX = texSize / 2, centerY = texSize / 2;
+                    const maxR = texSize / 2;
+                    for (let y = 0; y < texSize; y += 4) {
+                        for (let x = 0; x < texSize; x += 4) {
+                            const dr = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                            if (dr > maxR) continue;
+                            const pi = (y * texSize + x) * 4;
+                            const r = texData[pi], g = texData[pi + 1], b = texData[pi + 2];
+                            // Check if this pixel is from a fragment (not the background clay color)
+                            if (Math.abs(r - 212) > 15 || Math.abs(g - 196) > 15 || Math.abs(b - 168) > 15) {
+                                ceramicPx++;
+                            }
+                        }
+                    }
+                    const platePxTotal = Math.PI * (maxR / 4) ** 2; // approx circle area at sampled resolution
+                    const coverage = Math.min(100, (ceramicPx / platePxTotal * 100).toFixed(0));
+
+                    resolve({ canvas, coverage, placedCount });
+                }
+            };
+            img.onerror = () => {
+                loaded++;
+                if (loaded >= fragBounds.length) {
+                    resolve({ canvas, coverage: 0, placedCount });
+                }
+            };
+            img.src = fb.dataUrl;
+        });
+    });
+}
+
+// ---------- BUILD 3D PLATE ----------
+
+async function run3DReconstruction() {
+    if (activePieces.length === 0) {
+        toast('Bitte zuerst Fotos analysieren', 'error');
+        return;
+    }
+
+    const select = document.getElementById('recon-3d-group-select');
+    const cid = parseInt(select?.value ?? -99);
+    let pieces = cid === -99 ? activePieces : activePieces.filter(p => p.cluster === cid);
+    if (pieces.length === 0) pieces = activePieces;
+
+    toast('Berechne 3D-Rekonstruktion...', 'info');
+
+    // Show container
+    document.getElementById('three-container').style.display = '';
+    document.getElementById('three-toggles').style.display = 'flex';
+    document.getElementById('stats-3d').style.display = 'grid';
+    document.getElementById('three-export-btns').style.display = 'flex';
+
+    // Init Three.js if needed
+    if (!threeReady) initThreeScene();
+
+    // Get plate parameters
+    const depth = parseInt(document.getElementById('slider-plate-depth').value);
+    const rimAngle = parseInt(document.getElementById('slider-rim-angle').value);
+    const baseFrac = parseInt(document.getElementById('slider-base-frac').value);
+    const wallThick = parseFloat(document.getElementById('slider-wall-thick').value);
+
+    // First: do circle fitting to get plate center and radius
+    let plateCX = 0, plateCY = 0, plateRadius = 200;
+    // Use Python circle fitting if available, else estimate from centroids
+    const centroids = pieces.filter(p => p.centroid).map(p => p.centroid);
+    if (centroids.length > 0) {
+        plateCX = centroids.reduce((s, c) => s + c[0], 0) / centroids.length;
+        plateCY = centroids.reduce((s, c) => s + c[1], 0) / centroids.length;
+        const dists = centroids.map(c => Math.sqrt((c[0] - plateCX) ** 2 + (c[1] - plateCY) ** 2));
+        plateRadius = Math.max(80, Math.max(...dists) * 1.3);
+    }
+
+    // Create texture from fragments
+    const texResult = await createPlateTexture(pieces, plateRadius, plateCX, plateCY);
+
+    // Clear old meshes
+    if (plateMesh) {
+        plateMesh.children.forEach(child => {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+                if (child.material.map) child.material.map.dispose();
+                child.material.dispose();
+            }
+        });
+        threeScene.remove(plateMesh);
+    }
+    if (plateWireframe) { threeScene.remove(plateWireframe); plateWireframe.geometry.dispose(); plateWireframe.material.dispose(); }
+    if (fragmentBoundaries) { threeScene.remove(fragmentBoundaries); }
+    fragmentMeshes.forEach(m => { threeScene.remove(m); m.geometry?.dispose(); m.material?.dispose(); });
+    fragmentMeshes = [];
+
+    // Generate plate geometry
+    const geoData = generatePlateGeometry(currentPlateType, depth, rimAngle, baseFrac, wallThick);
+    if (!geoData) { toast('Geometry error', 'error'); return; }
+
+    // Create texture from canvas
+    const texture = new THREE.CanvasTexture(texResult.canvas);
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+
+    // Inner surface material (glazed with fragment texture)
+    const innerMat = new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.3,
+        metalness: 0.02,
+        side: THREE.FrontSide,
+    });
+
+    // Fix UV mapping for LatheGeometry to be radial (center-to-rim)
+    fixPlateUVs(geoData.innerGeo, geoData.profilePoints);
+
+    const innerMesh = new THREE.Mesh(geoData.innerGeo, innerMat);
+    innerMesh.castShadow = true;
+    innerMesh.receiveShadow = true;
+
+    // Outer surface material (unglazed ceramic)
+    const outerMat = new THREE.MeshStandardMaterial({
+        color: 0xc4a882,
+        roughness: 0.85,
+        metalness: 0.0,
+        side: THREE.FrontSide,
+    });
+
+    // Flip outer normals
+    const outerGeo = geoData.outerGeo;
+    const posAttr = outerGeo.getAttribute('position');
+    const normAttr = outerGeo.getAttribute('normal');
+    const idxAttr = outerGeo.getIndex();
+    // Reverse winding order
+    if (idxAttr) {
+        const indices = idxAttr.array;
+        for (let i = 0; i < indices.length; i += 3) {
+            const tmp = indices[i];
+            indices[i] = indices[i + 2];
+            indices[i + 2] = tmp;
+        }
+        idxAttr.needsUpdate = true;
+    }
+    // Flip normals
+    for (let i = 0; i < normAttr.count; i++) {
+        normAttr.setXYZ(i, -normAttr.getX(i), -normAttr.getY(i), -normAttr.getZ(i));
+    }
+    normAttr.needsUpdate = true;
+
+    const outerMesh = new THREE.Mesh(outerGeo, outerMat);
+    outerMesh.castShadow = true;
+
+    // Group inner + outer
+    const plateGroup = new THREE.Group();
+    plateGroup.add(innerMesh);
+    plateGroup.add(outerMesh);
+
+    // Add rim/lip connecting ring
+    const rimGeo = createRimGeometry(geoData.profilePoints, geoData.outerProfilePts, geoData.segments);
+    if (rimGeo) {
+        const rimMesh = new THREE.Mesh(rimGeo, outerMat.clone());
+        plateGroup.add(rimMesh);
+    }
+
+    plateMesh = plateGroup;
+    threeScene.add(plateMesh);
+
+    // Wireframe overlay
+    const wireGeo = geoData.innerGeo.clone();
+    const wireMat = new THREE.MeshBasicMaterial({ color: 0xc9956b, wireframe: true, transparent: true, opacity: 0.15 });
+    plateWireframe = new THREE.Mesh(wireGeo, wireMat);
+    fixPlateUVs(wireGeo, geoData.profilePoints);
+    plateWireframe.visible = false;
+    threeScene.add(plateWireframe);
+
+    // Update stats
+    document.getElementById('stat-coverage').textContent = texResult.coverage + '%';
+    document.getElementById('stat-fragments-placed').textContent = texResult.placedCount;
+    document.getElementById('stat-diameter').textContent = (plateRadius * 0.5).toFixed(0) + ' mm';
+
+    // Run assembly animation
+    runAssemblyAnimation(pieces, geoData, plateCX, plateCY, plateRadius);
+
+    toast('3D-Rekonstruktion abgeschlossen!', 'success');
+}
+
+function fixPlateUVs(geometry, profilePoints) {
+    // For a plate, we want UV mapping where:
+    // u,v map to a top-down circular projection (like looking straight down at the plate)
+    const posAttr = geometry.getAttribute('position');
+    const uvAttr = geometry.getAttribute('uv');
+
+    if (!uvAttr) return;
+
+    const maxR = profilePoints[profilePoints.length - 1]?.x || 2;
+
+    for (let i = 0; i < posAttr.count; i++) {
+        const x = posAttr.getX(i);
+        const z = posAttr.getZ(i);
+        // Map to polar coordinates, then to UV
+        const r = Math.sqrt(x * x + z * z);
+        const angle = Math.atan2(z, x);
+        // Convert to circular UV mapping
+        const uv_r = r / (maxR * 1.05); // normalize
+        const u = 0.5 + uv_r * Math.cos(angle) * 0.5;
+        const v = 0.5 + uv_r * Math.sin(angle) * 0.5;
+        uvAttr.setXY(i, u, v);
+    }
+    uvAttr.needsUpdate = true;
+}
+
+function createRimGeometry(innerProfile, outerProfile, segments) {
+    // Connect the last points of inner and outer profiles around the circumference
+    if (!innerProfile || !outerProfile || innerProfile.length < 2 || outerProfile.length < 2) return null;
+
+    const innerLast = innerProfile[innerProfile.length - 1];
+    const outerLast = outerProfile[outerProfile.length - 1];
+
+    const points = [];
+    const indices = [];
+
+    for (let s = 0; s <= segments; s++) {
+        const angle = (s / segments) * Math.PI * 2;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+
+        // Inner rim point
+        points.push(innerLast.x * cos, innerLast.y, innerLast.x * sin);
+        // Outer rim point
+        points.push(outerLast.x * cos, outerLast.y, outerLast.x * sin);
+    }
+
+    for (let s = 0; s < segments; s++) {
+        const i0 = s * 2;
+        const i1 = s * 2 + 1;
+        const i2 = (s + 1) * 2;
+        const i3 = (s + 1) * 2 + 1;
+        indices.push(i0, i1, i2);
+        indices.push(i1, i3, i2);
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return geo;
+}
+
+// ---------- ASSEMBLY ANIMATION ----------
+
+function runAssemblyAnimation(pieces, geoData, plateCX, plateCY, plateRadius) {
+    assemblyAnimating = true;
+    const progress = document.getElementById('assembly-progress');
+    const progressBar = document.getElementById('assembly-bar-fill');
+    const progressText = document.getElementById('assembly-progress-text');
+    progress.style.display = '';
+
+    // Make plate transparent initially
+    plateMesh.children.forEach(child => {
+        if (child.material) {
+            child.material.transparent = true;
+            child.material.opacity = 0;
+        }
+    });
+
+    // Animate: fade in plate, then show fragments settling
+    const totalDuration = 2500; // ms
+    const startTime = performance.now();
+
+    function animateAssembly() {
+        const elapsed = performance.now() - startTime;
+        const t = Math.min(1, elapsed / totalDuration);
+
+        // Phase 1: Plate fades in (0-40%)
+        const plateT = Math.min(1, t / 0.4);
+        const plateOpacity = smoothstep(plateT);
+        plateMesh.children.forEach(child => {
+            if (child.material) {
+                child.material.opacity = plateOpacity;
+                if (plateOpacity >= 0.99) child.material.transparent = false;
+            }
+        });
+
+        // Phase 2: Plate rises (0-60%)
+        const riseT = Math.min(1, t / 0.6);
+        plateMesh.position.y = -0.5 + smoothstep(riseT) * 0.5;
+
+        // Phase 3: Gentle rotation
+        if (t < 1) {
+            plateMesh.rotation.y = t * Math.PI * 0.5;
+        }
+
+        // Update progress
+        const pct = Math.min(100, Math.round(t * 100));
+        progressBar.style.width = pct + '%';
+        progressText.textContent = `Montage: ${pct}%`;
+
+        if (t < 1) {
+            requestAnimationFrame(animateAssembly);
+        } else {
+            // Done
+            assemblyAnimating = false;
+            progress.style.display = 'none';
+            plateMesh.children.forEach(child => {
+                if (child.material) {
+                    child.material.transparent = false;
+                    child.material.opacity = 1;
+                }
+            });
+        }
+    }
+
+    requestAnimationFrame(animateAssembly);
+}
+
+function smoothstep(t) {
+    return t * t * (3 - 2 * t);
+}
+
+// ---------- UPDATE PLATE (live when sliders change) ----------
+
+let updateTimeout = null;
+function update3DPlate() {
+    if (!threeReady || !plateMesh) return;
+    clearTimeout(updateTimeout);
+    updateTimeout = setTimeout(() => {
+        run3DReconstruction();
+    }, 300);
+}
+
+// ---------- TOGGLE OPTIONS ----------
+
+let showTexture = true, showWireframe = false, showFragBounds = false, showUnderside = false;
+
+function toggle3DOption(el, option) {
+    el.classList.toggle('active');
+    const isActive = el.classList.contains('active');
+
+    switch (option) {
+        case 'texture':
+            showTexture = isActive;
+            if (plateMesh && plateMesh.children[0]) {
+                plateMesh.children[0].material.map = showTexture ? plateMesh.children[0].material.map : null;
+                plateMesh.children[0].material.color = showTexture ? new THREE.Color(0xffffff) : new THREE.Color(0xd4c4a8);
+                plateMesh.children[0].material.needsUpdate = true;
+            }
+            break;
+        case 'wireframe':
+            showWireframe = isActive;
+            if (plateWireframe) plateWireframe.visible = showWireframe;
+            break;
+        case 'fragments':
+            showFragBounds = isActive;
+            // Toggle fragment boundary visibility
+            break;
+        case 'animate':
+            if (isActive && plateMesh && activePieces.length > 0) {
+                run3DReconstruction(); // re-run to replay animation
+            }
+            el.classList.remove('active');
+            break;
+        case 'rotate':
+            autoRotate = isActive;
+            break;
+        case 'underside':
+            showUnderside = isActive;
+            if (isActive) {
+                orbitState.phi = Math.PI - 0.5;
+                orbitState.theta = 0;
+            } else {
+                orbitState.phi = 1.1;
+            }
+            updateOrbitCamera();
+            break;
+    }
+}
+
+// ---------- EXPORT ----------
+
+function export3DScreenshot() {
+    if (!threeRenderer) return;
+    threeRenderer.render(threeScene, threeCamera);
+    const link = document.createElement('a');
+    link.download = `shardmind_3d_${Date.now()}.png`;
+    link.href = threeRenderer.domElement.toDataURL('image/png');
+    link.click();
+    toast('Screenshot gespeichert!', 'success');
+}
+
+// ---------- ANIMATION LOOP ----------
+
+function animate3D() {
+    threeAnimId = requestAnimationFrame(animate3D);
+    if (!threeScene || !threeCamera || !threeRenderer) return;
+
+    if (autoRotate && plateMesh && !assemblyAnimating) {
+        plateMesh.rotation.y += 0.005;
+    }
+
+    threeRenderer.render(threeScene, threeCamera);
 }
 
 // ==================================================
