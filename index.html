@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShardMind v1.9 — Archaeological Fragment Analysis</title>
+    <title>ShardMind v2.0 — Archaeological Fragment Analysis</title>
 
     <!-- PyScript -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
@@ -622,6 +622,182 @@
         .empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
         .empty-state p { font-size: 14px; }
 
+        /* === DECORATION LINE DRAWING === */
+        .deco-viewer {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+        }
+        .deco-panel {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 16px; position: relative;
+        }
+        .deco-panel h4 {
+            font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;
+            font-weight: 500; letter-spacing: 0.3px;
+        }
+        .deco-panel canvas {
+            width: 100%; border-radius: var(--radius);
+            background: #1a1a1a;
+        }
+        .deco-panel.line-drawing canvas {
+            background: #faf8f5;
+        }
+        .deco-controls {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+        }
+        .deco-select-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px; margin-bottom: 20px;
+        }
+        .deco-select-item {
+            background: var(--bg-card); border: 2px solid var(--border);
+            border-radius: var(--radius); padding: 6px; cursor: pointer;
+            transition: var(--transition); text-align: center;
+        }
+        .deco-select-item:hover { border-color: var(--accent); }
+        .deco-select-item.selected {
+            border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent);
+        }
+        .deco-select-item img {
+            width: 100%; aspect-ratio: 1; object-fit: cover;
+            border-radius: 6px;
+        }
+        .deco-select-item .deco-id {
+            font-size: 10px; color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace; margin-top: 4px;
+        }
+        .deco-params {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            margin-bottom: 16px;
+        }
+        .scale-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; background: rgba(201,149,107,0.1);
+            border: 1px solid rgba(201,149,107,0.3);
+            border-radius: 20px; font-family: 'JetBrains Mono', monospace;
+            font-size: 12px; color: var(--accent);
+        }
+        .deco-overlay-toggle {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px; background: var(--bg-secondary);
+            border: 1px solid var(--border); border-radius: var(--radius);
+            cursor: pointer; transition: var(--transition);
+            font-size: 13px; color: var(--text-secondary);
+        }
+        .deco-overlay-toggle.active {
+            border-color: var(--accent); color: var(--accent);
+            background: rgba(201,149,107,0.08);
+        }
+
+        /* === CULTURE PERIOD CLASSIFICATION === */
+        .culture-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px;
+            position: relative; overflow: hidden;
+        }
+        .culture-card::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 4px; height: 100%;
+        }
+        .culture-card.neolithic::before { background: #8B6914; }
+        .culture-card.bronze-age::before { background: #CD7F32; }
+        .culture-card.iron-age::before { background: #6B6B6B; }
+        .culture-card.roman::before { background: #C41E3A; }
+        .culture-card.medieval::before { background: #4A3728; }
+        .culture-card.modern::before { background: #2E5090; }
+        .culture-card.unknown::before { background: var(--border); }
+
+        .culture-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .culture-badge.neolithic { background: rgba(139,105,20,0.2); color: #D4A843; }
+        .culture-badge.bronze-age { background: rgba(205,127,50,0.2); color: #E8A04E; }
+        .culture-badge.iron-age { background: rgba(107,107,107,0.2); color: #A0A0A0; }
+        .culture-badge.roman { background: rgba(196,30,58,0.2); color: #E84A6A; }
+        .culture-badge.medieval { background: rgba(74,55,40,0.2); color: #A08060; }
+        .culture-badge.modern { background: rgba(46,80,144,0.2); color: #6090D0; }
+
+        .culture-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .culture-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px; color: var(--text-primary);
+        }
+        .culture-confidence {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px; color: var(--accent);
+        }
+        .culture-details {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            margin-top: 12px;
+        }
+        .culture-detail {
+            padding: 10px; background: var(--bg-secondary);
+            border-radius: var(--radius);
+        }
+        .culture-detail-label {
+            font-size: 11px; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .culture-detail-value {
+            font-size: 13px; color: var(--text-secondary);
+        }
+        .culture-criteria {
+            margin-top: 16px; padding: 14px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            border-left: 3px solid var(--accent);
+        }
+        .culture-criteria h5 {
+            font-size: 13px; color: var(--accent);
+            margin-bottom: 8px;
+        }
+        .culture-criteria ul {
+            padding-left: 16px; margin: 0;
+        }
+        .culture-criteria li {
+            font-size: 12px; color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+        .culture-criteria li.match {
+            color: var(--success); font-weight: 500;
+        }
+
+        .culture-select-wrapper {
+            margin-bottom: 20px;
+        }
+        .culture-manual-select {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+        }
+        .culture-chip {
+            padding: 6px 14px; border-radius: 20px;
+            border: 1px solid var(--border);
+            font-size: 13px; cursor: pointer;
+            transition: var(--transition);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+        .culture-chip:hover { border-color: var(--accent); color: var(--accent); }
+        .culture-chip.selected {
+            background: rgba(201,149,107,0.15);
+            border-color: var(--accent); color: var(--accent);
+        }
+
+        .feature-explanation {
+            padding: 16px; background: rgba(96,165,250,0.06);
+            border: 1px solid rgba(96,165,250,0.15);
+            border-radius: var(--radius); margin-bottom: 20px;
+        }
+        .feature-explanation p {
+            font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+        }
+        .feature-explanation strong { color: var(--info); }
+
         /* Responsive */
         @media (max-width: 768px) {
             .sidebar { display: none; }
@@ -761,7 +937,7 @@
         </div>
 
         <div style="text-align:center;margin-top:16px;">
-            <span style="color:var(--text-muted);font-size:12px;">🔒 <span id="privacy-link-text">Datenschutzerklärung</span> | ShardMind v1.9</span>
+            <span style="color:var(--text-muted);font-size:12px;">🔒 <span id="privacy-link-text">Datenschutzerklärung</span> | ShardMind v2.0</span>
         </div>
     </div>
 </div>
@@ -772,7 +948,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <span class="sidebar-logo">🏺 ShardMind</span>
-            <span class="sidebar-version">v1.9</span>
+            <span class="sidebar-version">v2.0</span>
         </div>
 
         <div class="sidebar-user">
@@ -899,6 +1075,8 @@
             <button class="tab-btn" onclick="switchTab('gallery')">🏺 <span class="tab-label" data-key="tab_gallery">Galerie</span></button>
             <button class="tab-btn" onclick="switchTab('groups')">📦 <span class="tab-label" data-key="tab_groups">Gruppen</span></button>
             <button class="tab-btn" onclick="switchTab('reconstruction')">🧩 <span class="tab-label" data-key="tab_reconstruction">Rekonstruktion</span></button>
+            <button class="tab-btn" onclick="switchTab('decoration')">🎨 <span class="tab-label" data-key="tab_decoration">Verzierung</span></button>
+            <button class="tab-btn" onclick="switchTab('culture')">🏛️ <span class="tab-label" data-key="tab_culture">Kulturstufe</span></button>
             <button class="tab-btn" onclick="switchTab('database')">💾 <span class="tab-label" data-key="tab_database">Datenbank</span></button>
             <button class="tab-btn" onclick="switchTab('labels')">🏷️ <span class="tab-label" data-key="tab_labels">Etiketten</span></button>
             <button class="tab-btn" onclick="switchTab('changelog')">📋 <span class="tab-label" data-key="tab_changelog">Changelog</span></button>
@@ -978,7 +1156,175 @@
             </div>
         </div>
 
+        <!-- TAB: Decoration / Verzierung -->
+        <div class="tab-content" id="tab-decoration">
+            <h2 class="section-header">🎨 <span id="deco-header-text">Verzierungsanalyse</span></h2>
+
+            <div class="feature-explanation">
+                <p>
+                    <strong id="deco-explain-title">Verzierung → Strichzeichnung:</strong>
+                    <span id="deco-explain-text">Wählen Sie ein Fragment mit Verzierung (figürlich oder ornamental). Die Software extrahiert das Dekor automatisch als maßstäbliche Strichzeichnung, die in die Scherbenansicht integriert oder separat exportiert werden kann.</span>
+                </p>
+            </div>
+
+            <div id="deco-content">
+                <div id="deco-empty" class="empty-state">
+                    <div class="icon">🎨</div>
+                    <p id="deco-empty-text">Bitte zuerst Fotos analysieren. Fragmente mit Verzierung werden automatisch erkannt.</p>
+                </div>
+
+                <div id="deco-main" style="display:none;">
+                    <h4 style="margin-bottom:12px;" id="deco-select-title">Fragment mit Verzierung wählen:</h4>
+                    <div class="deco-select-grid" id="deco-select-grid"></div>
+
+                    <div class="deco-params">
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span id="lbl-line-thickness">Linienstärke</span>
+                                <span id="val-line-thickness">2</span>
+                            </div>
+                            <input type="range" id="slider-line-thickness" min="1" max="5" value="2"
+                                   oninput="document.getElementById('val-line-thickness').textContent=this.value">
+                        </div>
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span id="lbl-detail-level">Detailgrad</span>
+                                <span id="val-detail-level">50</span>
+                            </div>
+                            <input type="range" id="slider-detail-level" min="10" max="100" value="50"
+                                   oninput="document.getElementById('val-detail-level').textContent=this.value">
+                        </div>
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span id="lbl-edge-sensitivity">Kantenerkennung</span>
+                                <span id="val-edge-sensitivity">50</span>
+                            </div>
+                            <input type="range" id="slider-edge-sensitivity" min="10" max="100" value="50"
+                                   oninput="document.getElementById('val-edge-sensitivity').textContent=this.value">
+                        </div>
+                        <div class="form-group">
+                            <label id="lbl-deco-type">Verzierungstyp</label>
+                            <select id="select-deco-type">
+                                <option value="auto">Automatisch</option>
+                                <option value="figural">Figürlich</option>
+                                <option value="ornamental">Ornamental/Geometrisch</option>
+                                <option value="band">Banddekor</option>
+                                <option value="painted">Bemalt</option>
+                                <option value="incised">Ritzdekor/Eingeritzt</option>
+                                <option value="stamped">Stempel/Relief</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-full" onclick="runDecoExtraction()" id="btn-extract-deco">
+                        🎨 <span id="txt-extract-deco">Strichzeichnung extrahieren</span>
+                    </button>
+
+                    <div id="deco-result" style="display:none;margin-top:20px;">
+                        <div class="deco-viewer">
+                            <div class="deco-panel">
+                                <h4 id="deco-original-title">📸 Original</h4>
+                                <canvas id="deco-canvas-original" width="400" height="400"></canvas>
+                            </div>
+                            <div class="deco-panel line-drawing">
+                                <h4 id="deco-line-title">✏️ Strichzeichnung (maßstäblich)</h4>
+                                <canvas id="deco-canvas-lineart" width="400" height="400"></canvas>
+                                <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+                                    <span class="scale-badge" id="deco-scale-info">1:1</span>
+                                    <span style="font-size:11px;color:var(--text-muted);" id="deco-dimensions"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:16px;">
+                            <h4 style="margin-bottom:8px;" id="deco-overlay-title">Überlagerung</h4>
+                            <div class="deco-panel">
+                                <canvas id="deco-canvas-overlay" width="400" height="400"></canvas>
+                                <div class="deco-controls">
+                                    <div class="deco-overlay-toggle active" onclick="toggleOverlayMode(this,'lines')" id="toggle-lines-on-photo">
+                                        ✏️ <span>Linien auf Foto</span>
+                                    </div>
+                                    <div class="deco-overlay-toggle" onclick="toggleOverlayMode(this,'photo')" id="toggle-photo-on-lines">
+                                        📸 <span>Foto auf Zeichnung</span>
+                                    </div>
+                                    <div class="slider-group" style="flex:1;min-width:120px;">
+                                        <div class="slider-label">
+                                            <span>Transparenz</span>
+                                            <span id="val-overlay-opacity">50</span>%
+                                        </div>
+                                        <input type="range" id="slider-overlay-opacity" min="0" max="100" value="50"
+                                               oninput="document.getElementById('val-overlay-opacity').textContent=this.value;updateDecoOverlay();">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+                            <button class="btn btn-secondary" onclick="downloadDecoImage('lineart')">
+                                📥 <span id="txt-dl-lineart">Strichzeichnung (PNG)</span>
+                            </button>
+                            <button class="btn btn-secondary" onclick="downloadDecoImage('overlay')">
+                                📥 <span id="txt-dl-overlay">Überlagerung (PNG)</span>
+                            </button>
+                            <button class="btn btn-secondary" onclick="downloadDecoSVG()">
+                                📥 <span id="txt-dl-svg">Vektorgrafik (SVG)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Culture Period / Kulturstufe -->
+        <div class="tab-content" id="tab-culture">
+            <h2 class="section-header">🏛️ <span id="culture-header-text">Kulturstufen-Klassifikation</span></h2>
+
+            <div class="feature-explanation">
+                <p>
+                    <strong id="culture-explain-title">Archäologische Einordnung:</strong>
+                    <span id="culture-explain-text">Basierend auf Materialeigenschaften, Farbgebung, Wandstärke, Oberflächenbehandlung und Verzierungsmerkmalen schlägt ShardMind eine Zuordnung zu archäologischen Kulturstufen vor. Die Klassifikation dient als Orientierungshilfe — die endgültige Bestimmung erfordert archäologische Fachkenntnisse.</span>
+                </p>
+            </div>
+
+            <div class="culture-select-wrapper">
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:500;" id="culture-manual-label">
+                    Manuelle Zuordnung (optional — überschreibt automatische Klassifikation):
+                </label>
+                <div class="culture-manual-select" id="culture-chips">
+                    <div class="culture-chip" data-culture="neolithic" onclick="toggleCultureChip(this)">🪨 Neolithikum</div>
+                    <div class="culture-chip" data-culture="bronze-age" onclick="toggleCultureChip(this)">⚔️ Bronzezeit</div>
+                    <div class="culture-chip" data-culture="iron-age" onclick="toggleCultureChip(this)">🗡️ Eisenzeit</div>
+                    <div class="culture-chip" data-culture="roman" onclick="toggleCultureChip(this)">🏛️ Römisch</div>
+                    <div class="culture-chip" data-culture="medieval" onclick="toggleCultureChip(this)">🏰 Mittelalter</div>
+                    <div class="culture-chip" data-culture="early-modern" onclick="toggleCultureChip(this)">⚙️ Frühe Neuzeit</div>
+                    <div class="culture-chip" data-culture="modern" onclick="toggleCultureChip(this)">🏭 Neuzeit</div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="runCultureClassification()" id="btn-classify-culture" style="margin-bottom:20px;">
+                🏛️ <span id="txt-classify">Kulturstufen analysieren</span>
+            </button>
+
+            <div id="culture-results"></div>
+
+            <div id="culture-empty" class="empty-state">
+                <div class="icon">🏛️</div>
+                <p id="culture-empty-text">Fragmente analysieren, um automatische Kulturzuordnung zu erhalten</p>
+            </div>
+
+            <hr style="border-color:var(--border);margin:24px 0;">
+
+            <div id="culture-knowledge-base">
+                <h3 style="font-size:18px;margin-bottom:16px;color:var(--accent);" id="culture-kb-title">📚 Keramik-Wissensbasis</h3>
+                <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;" id="culture-kb-desc">
+                    Merkmale verschiedener Kulturstufen, die für die Klassifikation herangezogen werden:
+                </p>
+                <div id="culture-kb-content"></div>
+            </div>
+        </div>
+
         <!-- TAB: Database -->
+
         <div class="tab-content" id="tab-database">
             <h2 class="section-header" id="database-header">Meine Sammlung</h2>
             <div id="database-content">
@@ -1100,7 +1446,7 @@
 // ==================================================
 // STATE & CONFIG
 // ==================================================
-const APP_VERSION = "1.9";
+const APP_VERSION = "2.0";
 const BASE_URL = "https://shardmind.streamlit.app";
 
 let currentLang = 'de';
@@ -1178,6 +1524,37 @@ const TRANSLATIONS = {
         high_contrast: 'Hoher Kontrast',
         necessary_desc: 'Erforderlich für Grundfunktionen',
         functional_desc: 'Einstellungen speichern',
+        // Decoration
+        tab_decoration: 'Verzierung', tab_culture: 'Kulturstufe',
+        deco_header: 'Verzierungsanalyse',
+        deco_explain: 'Wählen Sie ein Fragment mit Verzierung (figürlich oder ornamental). Die Software extrahiert das Dekor automatisch als maßstäbliche Strichzeichnung.',
+        deco_select: 'Fragment mit Verzierung wählen:',
+        deco_extract: 'Strichzeichnung extrahieren',
+        deco_original: '📸 Original', deco_lineart: '✏️ Strichzeichnung (maßstäblich)',
+        deco_overlay: 'Überlagerung',
+        deco_empty: 'Bitte zuerst Fotos analysieren. Fragmente mit Verzierung werden automatisch erkannt.',
+        deco_type: 'Verzierungstyp',
+        deco_type_auto: 'Automatisch', deco_type_figural: 'Figürlich',
+        deco_type_ornamental: 'Ornamental/Geometrisch', deco_type_band: 'Banddekor',
+        deco_type_painted: 'Bemalt', deco_type_incised: 'Ritzdekor/Eingeritzt',
+        deco_type_stamped: 'Stempel/Relief',
+        line_thickness: 'Linienstärke', detail_level: 'Detailgrad',
+        edge_sensitivity: 'Kantenerkennung',
+        dl_lineart: 'Strichzeichnung (PNG)', dl_overlay: 'Überlagerung (PNG)',
+        dl_svg: 'Vektorgrafik (SVG)',
+        lines_on_photo: 'Linien auf Foto', photo_on_lines: 'Foto auf Zeichnung',
+        // Culture
+        culture_header: 'Kulturstufen-Klassifikation',
+        culture_explain: 'Basierend auf Materialeigenschaften, Farbgebung, Wandstärke und Verzierung schlägt ShardMind eine Zuordnung zu Kulturstufen vor. Die endgültige Bestimmung erfordert archäologische Fachkenntnisse.',
+        culture_manual: 'Manuelle Zuordnung (optional — überschreibt automatische Klassifikation):',
+        culture_classify: 'Kulturstufen analysieren',
+        culture_empty: 'Fragmente analysieren, um automatische Kulturzuordnung zu erhalten',
+        culture_kb_title: '📚 Keramik-Wissensbasis',
+        culture_kb_desc: 'Merkmale verschiedener Kulturstufen, die für die Klassifikation herangezogen werden:',
+        culture_confidence: 'Konfidenz', culture_criteria_used: 'Herangezogene Merkmale',
+        culture_wall_thickness: 'Wandstärke', culture_surface: 'Oberfläche',
+        culture_firing: 'Brandführung', culture_temper: 'Magerung',
+        culture_decoration: 'Verzierung', culture_typical_forms: 'Typische Formen',
     },
     en: {
         app_tagline: 'Analyze and reconstruct broken objects',
@@ -1239,6 +1616,37 @@ const TRANSLATIONS = {
         high_contrast: 'High Contrast',
         necessary_desc: 'Required for basic functionality',
         functional_desc: 'Save your settings',
+        // Decoration
+        tab_decoration: 'Decoration', tab_culture: 'Culture Period',
+        deco_header: 'Decoration Analysis',
+        deco_explain: 'Select a fragment with decoration (figural or ornamental). The software automatically extracts the decor as a scaled line drawing.',
+        deco_select: 'Select fragment with decoration:',
+        deco_extract: 'Extract line drawing',
+        deco_original: '📸 Original', deco_lineart: '✏️ Line Drawing (to scale)',
+        deco_overlay: 'Overlay',
+        deco_empty: 'Please analyze photos first. Decorated fragments will be detected automatically.',
+        deco_type: 'Decoration type',
+        deco_type_auto: 'Automatic', deco_type_figural: 'Figural',
+        deco_type_ornamental: 'Ornamental/Geometric', deco_type_band: 'Band decoration',
+        deco_type_painted: 'Painted', deco_type_incised: 'Incised',
+        deco_type_stamped: 'Stamped/Relief',
+        line_thickness: 'Line thickness', detail_level: 'Detail level',
+        edge_sensitivity: 'Edge sensitivity',
+        dl_lineart: 'Line drawing (PNG)', dl_overlay: 'Overlay (PNG)',
+        dl_svg: 'Vector (SVG)',
+        lines_on_photo: 'Lines on photo', photo_on_lines: 'Photo on drawing',
+        // Culture
+        culture_header: 'Culture Period Classification',
+        culture_explain: 'Based on material properties, coloring, wall thickness, and decoration, ShardMind suggests a cultural period. Final determination requires archaeological expertise.',
+        culture_manual: 'Manual assignment (optional — overrides automatic classification):',
+        culture_classify: 'Analyze culture periods',
+        culture_empty: 'Analyze fragments to get automatic culture classification',
+        culture_kb_title: '📚 Ceramic Knowledge Base',
+        culture_kb_desc: 'Characteristics of different culture periods used for classification:',
+        culture_confidence: 'Confidence', culture_criteria_used: 'Criteria Used',
+        culture_wall_thickness: 'Wall Thickness', culture_surface: 'Surface',
+        culture_firing: 'Firing', culture_temper: 'Temper',
+        culture_decoration: 'Decoration', culture_typical_forms: 'Typical Forms',
     }
 };
 
@@ -1248,6 +1656,16 @@ function T(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || 
 // CHANGELOG DATA
 // ==================================================
 const CHANGELOG = {
+    '2.0': { date: '2025-02-07', title: 'Verzierungsanalyse & Kulturstufen', features: [
+        '🎨 VERZIERUNG → STRICHZEICHNUNG: Automatische Extraktion von Dekoren als maßstäbliche Linienzeichnung',
+        '🏛️ KULTURSTUFEN-KLASSIFIKATION: Automatische Einordnung in archäologische Epochen',
+        '📚 KERAMIK-WISSENSBASIS: Neolithikum bis Neuzeit mit Bestimmungsmerkmalen',
+        '✏️ SVG-EXPORT: Vektorgrafik-Export der Strichzeichnungen',
+        '🔍 ÜBERLAGERUNGS-ANSICHT: Original und Zeichnung überlagert mit Transparenzregler',
+        '📐 ARCHÄOLOGISCHE MERKMALE: Wandstärke, Magerung, Oberflächenbehandlung, Brandführung',
+        '🎯 VERBESSERTE GRUPPIERUNG: Kulturspezifische Kriterien für Merkmalsextraktion',
+        '📏 MAßSTÄBLICHE DARSTELLUNG: Automatische Skalierung der Strichzeichnungen',
+    ], fixes: ['Verbesserte Verzierungserkennung (figürlich + ornamental)', 'Kulturperioden-spezifische Farbanalyse'] },
     '1.9': { date: '2025-01-23', title: 'Datenschutz & Cookie-Consent', features: [
         '🍪 COOKIE-BANNER mit Zustimmungs-Dialog', '📜 DATENSCHUTZERKLÄRUNG (DSGVO-konform)',
         '🔒 Cookie-Einstellungen jederzeit änderbar', '📄 VERBESSERTE PDF-ETIKETTEN',
@@ -1318,6 +1736,21 @@ const HELP_DE = `<h2>Schnellstart</h2>
 <li><strong>Nicht überlappen</strong> lassen</li>
 <li><strong>Gute Beleuchtung</strong> ohne Schatten</li>
 <li>Bei Problemen: Erkennungsmodus ändern</li></ul>
+<h2>🎨 Verzierungsanalyse (NEU in v2.0)</h2>
+<p>Im Tab "🎨 Verzierung" können Sie Fragmente mit Dekor auswählen und automatisch eine <strong>maßstäbliche Strichzeichnung</strong> extrahieren lassen.</p>
+<ul><li><strong>Verzierungstypen</strong>: Figürlich, Ornamental, Banddekor, Bemalt, Ritzdekor, Stempel/Relief</li>
+<li><strong>Parameter</strong>: Linienstärke, Detailgrad und Kantenerkennung anpassbar</li>
+<li><strong>Überlagerung</strong>: Original und Zeichnung überlagert mit Transparenzregler</li>
+<li><strong>Export</strong>: PNG (Strichzeichnung), PNG (Überlagerung), SVG (Vektorgrafik)</li></ul>
+<h2>🏛️ Kulturstufen-Klassifikation (NEU in v2.0)</h2>
+<p>Im Tab "🏛️ Kulturstufe" analysiert ShardMind Material, Farbe, Form und Verzierung und schlägt eine archäologische Einordnung vor:</p>
+<ul><li><strong>Neolithikum</strong>: Grobe Magerung, Ritzdekor, Kugeltöpfe</li>
+<li><strong>Bronzezeit</strong>: Rillen, Buckel, verbesserte Brandführung</li>
+<li><strong>Eisenzeit</strong>: Graphittonware, Drehscheibe, Kammstrich</li>
+<li><strong>Römisch</strong>: Terra Sigillata, dünne Wandung, Reliefdekor</li>
+<li><strong>Mittelalter</strong>: Steinzeug, Glasur, Wellenbänder</li>
+<li><strong>Neuzeit</strong>: Porzellan, Transfer-Druck, industrielle Fertigung</li></ul>
+<p><strong>Hinweis:</strong> Die automatische Klassifikation dient als Orientierungshilfe. Die endgültige Bestimmung erfordert archäologische Fachkenntnisse unter Berücksichtigung des Fundkontextes.</p>
 <h2>Rekonstruktion</h2><p>Analysiert Fragmentkanten, findet passende Abschnitte, berechnet Rotation und setzt schrittweise zusammen.</p>
 <h2>Etiketten</h2><p>PDF mit QR-Codes, eigene Etiketten, QR-Codes verlinken zur App.</p>
 <h2>Datenschutz</h2><p>Datenschutzerklärung, Cookie-Einstellungen, Account und Daten löschen.</p>`;
@@ -1331,6 +1764,21 @@ const HELP_EN = `<h2>Quick Start</h2>
 <li><strong>Don't overlap</strong> fragments</li>
 <li><strong>Good lighting</strong> without shadows</li>
 <li>If problems: Change detection mode</li></ul>
+<h2>🎨 Decoration Analysis (NEW in v2.0)</h2>
+<p>In the "🎨 Decoration" tab, select decorated fragments and automatically extract a <strong>scaled line drawing</strong>.</p>
+<ul><li><strong>Decoration types</strong>: Figural, ornamental, band, painted, incised, stamped/relief</li>
+<li><strong>Parameters</strong>: Line thickness, detail level, edge sensitivity adjustable</li>
+<li><strong>Overlay</strong>: Original and drawing overlaid with transparency control</li>
+<li><strong>Export</strong>: PNG (line drawing), PNG (overlay), SVG (vector)</li></ul>
+<h2>🏛️ Culture Period Classification (NEW in v2.0)</h2>
+<p>In the "🏛️ Culture" tab, ShardMind analyzes material, color, form and decoration to suggest an archaeological classification:</p>
+<ul><li><strong>Neolithic</strong>: Coarse temper, incised decoration, globular pots</li>
+<li><strong>Bronze Age</strong>: Grooves, bosses, improved firing</li>
+<li><strong>Iron Age</strong>: Graphite ware, wheel-thrown, comb decoration</li>
+<li><strong>Roman</strong>: Terra sigillata, thin walls, relief decoration</li>
+<li><strong>Medieval</strong>: Stoneware, glaze, wavy bands</li>
+<li><strong>Modern</strong>: Porcelain, transfer printing, industrial production</li></ul>
+<p><strong>Note:</strong> Automatic classification serves as a guide. Final determination requires archaeological expertise considering the find context.</p>
 <h2>Reconstruction</h2><p>Analyzes fragment edges, finds matching segments, calculates rotation and assembles step by step.</p>
 <h2>Labels</h2><p>PDF with QR codes, custom labels, QR codes link to app.</p>
 <h2>Privacy</h2><p>Privacy policy, cookie settings, delete account and data.</p>`;
@@ -1552,6 +2000,29 @@ function updateAllTranslations() {
         'priv-necessary-desc': T('necessary_desc'),
         'priv-functional-desc': T('functional_desc'),
         'priv-settings-title': T('privacy_settings'),
+        // Decoration & Culture
+        'deco-header-text': T('deco_header'),
+        'deco-explain-text': T('deco_explain'),
+        'deco-select-title': T('deco_select'),
+        'txt-extract-deco': T('deco_extract'),
+        'deco-original-title': T('deco_original'),
+        'deco-line-title': T('deco_lineart'),
+        'deco-overlay-title': T('deco_overlay'),
+        'deco-empty-text': T('deco_empty'),
+        'lbl-line-thickness': T('line_thickness'),
+        'lbl-detail-level': T('detail_level'),
+        'lbl-edge-sensitivity': T('edge_sensitivity'),
+        'lbl-deco-type': T('deco_type'),
+        'txt-dl-lineart': T('dl_lineart'),
+        'txt-dl-overlay': T('dl_overlay'),
+        'txt-dl-svg': T('dl_svg'),
+        'culture-header-text': T('culture_header'),
+        'culture-explain-text': T('culture_explain'),
+        'culture-manual-label': T('culture_manual'),
+        'txt-classify': T('culture_classify'),
+        'culture-empty-text': T('culture_empty'),
+        'culture-kb-title': T('culture_kb_title'),
+        'culture-kb-desc': T('culture_kb_desc'),
     };
     
     Object.entries(updates).forEach(([id, text]) => {
@@ -1747,6 +2218,7 @@ function showApp() {
     updateAllTranslations();
     updateDBMetrics();
     renderChangelog();
+    renderCultureKnowledgeBase();
     drawDemoPottery();
     drawDemoPlate();
 }
@@ -2291,6 +2763,7 @@ async function runAnalysis() {
         renderGroups();
         renderReconOptions();
         renderDatabase();
+        renderDecoSelection();
         
         toast(`${activePieces.length} ${T('success_fragments')}`, 'success');
     }, 500);
@@ -2319,6 +2792,13 @@ function clearAnalysis() {
     renderGallery();
     renderGroups();
     renderReconOptions();
+    renderDecoSelection();
+    document.getElementById('culture-results').innerHTML = '';
+    document.getElementById('culture-empty').style.display = '';
+    selectedDecoFragment = null;
+    decoOriginalImg = null;
+    decoLineArtImg = null;
+    decoSvgData = null;
     
     toast('Cleared', 'info');
 }
@@ -2368,6 +2848,512 @@ async function runReconstruction() {
         console.error('Reconstruction error', err);
         toast('Reconstruction error: ' + err.message, 'error');
     }
+}
+
+// ==================================================
+// CULTURE PERIOD KNOWLEDGE BASE
+// ==================================================
+const CULTURE_DB = {
+    neolithic: {
+        name_de: 'Neolithikum', name_en: 'Neolithic',
+        period: 'ca. 5500–2200 v.Chr.',
+        icon: '🪨',
+        class: 'neolithic',
+        criteria: {
+            wall_thickness: { de: 'Dick (8–15 mm), unregelmäßig', en: 'Thick (8–15 mm), irregular' },
+            surface: { de: 'Rau, oft geglättet oder poliert', en: 'Rough, often smoothed or polished' },
+            firing: { de: 'Niedrig (600–800°C), oxidierend/reduzierend gemischt', en: 'Low (600–800°C), mixed oxidizing/reducing' },
+            temper: { de: 'Grob: Quarz, Feldspat, Schamotte, Pflanzenmaterial', en: 'Coarse: quartz, feldspar, grog, plant material' },
+            decoration: { de: 'Ritzlinien, Einstiche, Bandkeramik, Schnureindrücke', en: 'Incised lines, punctures, Linear Pottery, cord impressions' },
+            typical_forms: { de: 'Kugeltöpfe, Schüsseln, Vorratsgefäße', en: 'Globular pots, bowls, storage vessels' },
+        },
+        color_hints: ['Braun', 'Schwarz', 'Grau', 'Orange'],
+        material_hints: ['Keramik'],
+        decoration_hints: ['incised', 'stamped'],
+    },
+    'bronze-age': {
+        name_de: 'Bronzezeit', name_en: 'Bronze Age',
+        period: 'ca. 2200–800 v.Chr.',
+        icon: '⚔️',
+        class: 'bronze-age',
+        criteria: {
+            wall_thickness: { de: 'Mittel (5–10 mm), regelmäßiger', en: 'Medium (5–10 mm), more regular' },
+            surface: { de: 'Geglättet, teils poliert oder geschlickt', en: 'Smoothed, partly polished or slipped' },
+            firing: { de: 'Verbessert (700–900°C)', en: 'Improved (700–900°C)' },
+            temper: { de: 'Feiner: Quarz, Glimmer, Kalkstein', en: 'Finer: quartz, mica, limestone' },
+            decoration: { de: 'Rillen, Buckel, Kerbleisten, Fingertupfen', en: 'Grooves, bosses, notched strips, finger impressions' },
+            typical_forms: { de: 'Urnen, Tassen, Amphoren, Siebgefäße', en: 'Urns, cups, amphorae, strainer vessels' },
+        },
+        color_hints: ['Braun', 'Orange', 'Rot'],
+        material_hints: ['Keramik'],
+        decoration_hints: ['ornamental', 'band', 'stamped'],
+    },
+    'iron-age': {
+        name_de: 'Eisenzeit', name_en: 'Iron Age',
+        period: 'ca. 800 v.Chr. – Zeitenwende',
+        icon: '🗡️',
+        class: 'iron-age',
+        criteria: {
+            wall_thickness: { de: 'Variabel (3–10 mm), fein bei Drehscheibenware', en: 'Variable (3–10 mm), fine on wheel-thrown ware' },
+            surface: { de: 'Graphitiert, poliert, Kammstrich', en: 'Graphite-coated, polished, combed' },
+            firing: { de: 'Fortgeschritten (800–1000°C)', en: 'Advanced (800–1000°C)' },
+            temper: { de: 'Fein bis mittel, oft Graphit-Beimengung', en: 'Fine to medium, often graphite admixture' },
+            decoration: { de: 'Graphitbemalung, Stempelmuster, Kammstrich, plastische Leisten', en: 'Graphite painting, stamp patterns, comb decoration, applied strips' },
+            typical_forms: { de: 'Situlae, Schalen, Graphittonware, Drehscheibenkeramik', en: 'Situlae, bowls, graphite ware, wheel-thrown ceramics' },
+        },
+        color_hints: ['Schwarz', 'Grau', 'Braun'],
+        material_hints: ['Keramik'],
+        decoration_hints: ['stamped', 'painted', 'ornamental'],
+    },
+    roman: {
+        name_de: 'Römisch', name_en: 'Roman',
+        period: 'ca. 1. Jh. v.Chr. – 5. Jh. n.Chr.',
+        icon: '🏛️',
+        class: 'roman',
+        criteria: {
+            wall_thickness: { de: 'Dünn (2–6 mm), gleichmäßig, Drehscheibe', en: 'Thin (2–6 mm), uniform, wheel-thrown' },
+            surface: { de: 'Terra Sigillata: Glanztonüberzug; Gebrauchskeramik: glatt', en: 'Terra sigillata: gloss slip; common ware: smooth' },
+            firing: { de: 'Hoch (900–1100°C), kontrolliert oxidierend', en: 'High (900–1100°C), controlled oxidizing' },
+            temper: { de: 'Sehr fein, kaum sichtbar', en: 'Very fine, barely visible' },
+            decoration: { de: 'Reliefdekor (Formschüssel), Barbotine, Rädchenverzierung, Stempel', en: 'Relief decor (mold), barbotine, rouletting, stamps' },
+            typical_forms: { de: 'Terra Sigillata, Amphoren, Mortaria, Dolien', en: 'Terra sigillata, amphorae, mortaria, dolia' },
+        },
+        color_hints: ['Rot', 'Orange'],
+        material_hints: ['Keramik', 'Porzellan'],
+        decoration_hints: ['figural', 'stamped', 'ornamental'],
+    },
+    medieval: {
+        name_de: 'Mittelalter', name_en: 'Medieval',
+        period: 'ca. 5.–15. Jh. n.Chr.',
+        icon: '🏰',
+        class: 'medieval',
+        criteria: {
+            wall_thickness: { de: 'Mittel (4–8 mm), Drehscheibe und Handaufbau', en: 'Medium (4–8 mm), wheel and hand-built' },
+            surface: { de: 'Steinzeug: gesintert; Irdenware: engobiert/glasiert', en: 'Stoneware: sintered; earthenware: slipped/glazed' },
+            firing: { de: 'Steinzeug bis 1300°C; Irdenware 900–1100°C', en: 'Stoneware up to 1300°C; earthenware 900–1100°C' },
+            temper: { de: 'Fein bis mittel, Quarz, Feldspat', en: 'Fine to medium, quartz, feldspar' },
+            decoration: { de: 'Wellenbänder, Rollstempel, Glasur, Ritzdekor, aufgelegte Leisten', en: 'Wavy bands, roller stamps, glaze, incised, applied strips' },
+            typical_forms: { de: 'Kugeltöpfe, Kannen, Krüge, Grapen', en: 'Globular pots, pitchers, jugs, tripod pots' },
+        },
+        color_hints: ['Grau', 'Braun', 'Grün'],
+        material_hints: ['Keramik'],
+        decoration_hints: ['band', 'stamped', 'ornamental', 'incised'],
+    },
+    'early-modern': {
+        name_de: 'Frühe Neuzeit', name_en: 'Early Modern',
+        period: 'ca. 15.–18. Jh.',
+        icon: '⚙️',
+        class: 'modern',
+        criteria: {
+            wall_thickness: { de: 'Dünn (2–5 mm), Fayence/Steinzeug', en: 'Thin (2–5 mm), faience/stoneware' },
+            surface: { de: 'Zinnglasur (Fayence), Salzglasur (Steinzeug)', en: 'Tin glaze (faience), salt glaze (stoneware)' },
+            firing: { de: 'Hoch (1100–1400°C)', en: 'High (1100–1400°C)' },
+            temper: { de: 'Sehr fein, industriell aufbereitet', en: 'Very fine, industrially processed' },
+            decoration: { de: 'Blaumalerei, Mangan-Dekor, Reliefauflagen, Figuraldekor', en: 'Blue painting, manganese decor, relief, figural decoration' },
+            typical_forms: { de: 'Teller, Krüge, Apothekengefäße, Ofenkacheln', en: 'Plates, jugs, pharmacy vessels, stove tiles' },
+        },
+        color_hints: ['Weiß', 'Blau', 'Braun'],
+        material_hints: ['Keramik', 'Porzellan'],
+        decoration_hints: ['painted', 'figural', 'ornamental'],
+    },
+    modern: {
+        name_de: 'Neuzeit (Industriezeitalter)', name_en: 'Modern (Industrial)',
+        period: 'ab 18. Jh.',
+        icon: '🏭',
+        class: 'modern',
+        criteria: {
+            wall_thickness: { de: 'Sehr dünn (1–4 mm), gleichmäßig', en: 'Very thin (1–4 mm), uniform' },
+            surface: { de: 'Porzellan: glatt, glasiert; Steingut: engobiert', en: 'Porcelain: smooth, glazed; earthenware: slipped' },
+            firing: { de: 'Sehr hoch (1200–1450°C)', en: 'Very high (1200–1450°C)' },
+            temper: { de: 'Kaolin, Feldspat, Quarz (Porzellanmasse)', en: 'Kaolin, feldspar, quartz (porcelain body)' },
+            decoration: { de: 'Unterglasurmalerei, Aufglasur, Transfer-Druck, Vergoldung', en: 'Underglaze painting, overglaze, transfer printing, gilding' },
+            typical_forms: { de: 'Teller, Tassen, Vasen, industrielle Serienproduktion', en: 'Plates, cups, vases, industrial mass production' },
+        },
+        color_hints: ['Weiß', 'Blau'],
+        material_hints: ['Porzellan'],
+        decoration_hints: ['painted', 'band', 'figural', 'ornamental'],
+    }
+};
+
+// ==================================================
+// CULTURE CLASSIFICATION
+// ==================================================
+let selectedCultureOverride = null;
+
+function toggleCultureChip(el) {
+    document.querySelectorAll('.culture-chip').forEach(c => c.classList.remove('selected'));
+    if (el.classList.contains('selected')) {
+        selectedCultureOverride = null;
+    } else {
+        el.classList.add('selected');
+        selectedCultureOverride = el.dataset.culture;
+    }
+}
+
+function classifyPieceCulture(piece) {
+    const scores = {};
+
+    Object.entries(CULTURE_DB).forEach(([key, culture]) => {
+        let score = 0;
+        const matchedCriteria = [];
+
+        // Color matching
+        if (piece.color_name && culture.color_hints.includes(piece.color_name)) {
+            score += 25;
+            matchedCriteria.push(`color:${piece.color_name}`);
+        }
+
+        // Material matching
+        if (piece.material && culture.material_hints.includes(piece.material)) {
+            score += 20;
+            matchedCriteria.push(`material:${piece.material}`);
+        }
+
+        // Decoration matching
+        if (piece.has_decoration) {
+            score += 10;
+            matchedCriteria.push('has_decoration');
+        }
+
+        // Curvature analysis (thin walls = higher curvature often)
+        const curv = piece.curvature || 0;
+        if (key === 'roman' || key === 'modern' || key === 'early-modern') {
+            if (curv > 0.01) { score += 10; matchedCriteria.push('high_curvature'); }
+        } else if (key === 'neolithic') {
+            if (curv < 0.005) { score += 10; matchedCriteria.push('low_curvature'); }
+        }
+
+        // Area analysis (rough proxy for wall thickness)
+        const area = piece.area || 0;
+        const bbox = piece.bbox || [0,0,100,100];
+        const perimeter = 2 * (bbox[2] + bbox[3]);
+        const thickness_proxy = area / (perimeter + 1);
+
+        if (key === 'neolithic' && thickness_proxy > 15) { score += 15; matchedCriteria.push('thick_walls'); }
+        if (key === 'roman' && thickness_proxy < 10) { score += 15; matchedCriteria.push('thin_walls'); }
+        if (key === 'modern' && thickness_proxy < 8) { score += 15; matchedCriteria.push('very_thin_walls'); }
+
+        // Solidity (regular = wheel-thrown = later periods)
+        const sol = piece.solidity || 0;
+        if (sol > 0.85 && (key === 'roman' || key === 'medieval' || key === 'modern' || key === 'early-modern')) {
+            score += 10; matchedCriteria.push('regular_shape');
+        }
+        if (sol < 0.7 && (key === 'neolithic' || key === 'bronze-age')) {
+            score += 10; matchedCriteria.push('irregular_shape');
+        }
+
+        // Circularity
+        const circ = piece.circularity || 0;
+        if (circ > 0.7 && (key === 'roman' || key === 'modern')) {
+            score += 5; matchedCriteria.push('circular');
+        }
+
+        scores[key] = { score: Math.min(score, 100), criteria: matchedCriteria };
+    });
+
+    // Sort and return top matches
+    const sorted = Object.entries(scores)
+        .sort((a, b) => b[1].score - a[1].score)
+        .filter(([, v]) => v.score > 15);
+
+    return sorted.slice(0, 3);
+}
+
+function runCultureClassification() {
+    if (activePieces.length === 0) {
+        toast(T('upload_first'), 'error');
+        return;
+    }
+
+    const results = document.getElementById('culture-results');
+    const empty = document.getElementById('culture-empty');
+    empty.style.display = 'none';
+
+    let html = '';
+    const lang = currentLang;
+
+    // Classify each piece
+    activePieces.forEach((piece, idx) => {
+        let topMatches;
+
+        if (selectedCultureOverride) {
+            topMatches = [[selectedCultureOverride, { score: 100, criteria: ['manual_override'] }]];
+        } else {
+            topMatches = classifyPieceCulture(piece);
+        }
+
+        if (topMatches.length === 0) {
+            topMatches = [['unknown', { score: 0, criteria: [] }]];
+        }
+
+        const topKey = topMatches[0][0];
+        const topScore = topMatches[0][1].score;
+        const topCriteria = topMatches[0][1].criteria;
+        const culture = CULTURE_DB[topKey] || { name_de: 'Unbestimmt', name_en: 'Undetermined', icon: '❓', class: 'unknown', period: '?', criteria: {} };
+
+        html += `<div class="culture-card ${culture.class}">
+            <div class="culture-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    ${piece.thumbnailDataUrl ? `<img src="${piece.thumbnailDataUrl}" style="width:50px;height:50px;object-fit:cover;border-radius:8px;">` : ''}
+                    <div>
+                        <div class="culture-title">${piece.id.substring(0,11)}</div>
+                        <div style="font-size:12px;color:var(--text-muted);">${piece.name || 'Fragment'}</div>
+                    </div>
+                </div>
+                <div>
+                    <span class="culture-badge ${culture.class}">${culture.icon} ${lang === 'de' ? culture.name_de : culture.name_en}</span>
+                    <div class="culture-confidence">${T('culture_confidence')}: ${topScore}%</div>
+                </div>
+            </div>
+
+            <div class="culture-details">
+                <div class="culture-detail">
+                    <div class="culture-detail-label">⏳ ${lang === 'de' ? 'Zeitraum' : 'Period'}</div>
+                    <div class="culture-detail-value">${culture.period}</div>
+                </div>
+                <div class="culture-detail">
+                    <div class="culture-detail-label">🎨 ${T('culture_decoration')}</div>
+                    <div class="culture-detail-value">${culture.criteria.decoration ? (lang === 'de' ? culture.criteria.decoration.de : culture.criteria.decoration.en) : '-'}</div>
+                </div>
+                <div class="culture-detail">
+                    <div class="culture-detail-label">🔥 ${T('culture_firing')}</div>
+                    <div class="culture-detail-value">${culture.criteria.firing ? (lang === 'de' ? culture.criteria.firing.de : culture.criteria.firing.en) : '-'}</div>
+                </div>
+                <div class="culture-detail">
+                    <div class="culture-detail-label">📐 ${T('culture_wall_thickness')}</div>
+                    <div class="culture-detail-value">${culture.criteria.wall_thickness ? (lang === 'de' ? culture.criteria.wall_thickness.de : culture.criteria.wall_thickness.en) : '-'}</div>
+                </div>
+            </div>
+
+            <div class="culture-criteria">
+                <h5>${T('culture_criteria_used')}</h5>
+                <ul>
+                    ${topCriteria.map(c => `<li class="match">✓ ${c.replace(/_/g,' ')}</li>`).join('')}
+                </ul>
+                ${topMatches.length > 1 ? `<p style="margin-top:8px;font-size:11px;color:var(--text-muted);">
+                    ${lang === 'de' ? 'Weitere Möglichkeiten' : 'Other possibilities'}: 
+                    ${topMatches.slice(1).map(([k, v]) => {
+                        const c = CULTURE_DB[k];
+                        return c ? `${c.icon} ${lang === 'de' ? c.name_de : c.name_en} (${v.score}%)` : '';
+                    }).filter(Boolean).join(', ')}
+                </p>` : ''}
+            </div>
+        </div>`;
+    });
+
+    results.innerHTML = html;
+
+    // Render knowledge base
+    renderCultureKnowledgeBase();
+}
+
+function renderCultureKnowledgeBase() {
+    const container = document.getElementById('culture-kb-content');
+    const lang = currentLang;
+    let html = '';
+
+    Object.entries(CULTURE_DB).forEach(([key, culture]) => {
+        html += `<div class="culture-card ${culture.class}" style="padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <span style="font-size:16px;font-weight:600;">${culture.icon} ${lang === 'de' ? culture.name_de : culture.name_en}</span>
+                <span style="font-size:12px;color:var(--text-muted);">${culture.period}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                ${Object.entries(culture.criteria).map(([ck, cv]) => `
+                    <div style="padding:6px 10px;background:var(--bg-secondary);border-radius:6px;">
+                        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">${T('culture_' + ck) || ck}</div>
+                        <div style="font-size:12px;color:var(--text-secondary);">${lang === 'de' ? cv.de : cv.en}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+}
+
+// ==================================================
+// DECORATION → LINE DRAWING
+// ==================================================
+let selectedDecoFragment = null;
+let decoOriginalImg = null;
+let decoLineArtImg = null;
+let decoSvgData = null;
+
+function renderDecoSelection() {
+    const grid = document.getElementById('deco-select-grid');
+    const empty = document.getElementById('deco-empty');
+    const main = document.getElementById('deco-main');
+
+    // Show all pieces, highlight decorated ones
+    const decorated = activePieces.filter(p => p.has_decoration);
+    const all = activePieces;
+
+    if (all.length === 0) {
+        empty.style.display = '';
+        main.style.display = 'none';
+        return;
+    }
+
+    empty.style.display = 'none';
+    main.style.display = '';
+
+    let html = '';
+    all.forEach((p, idx) => {
+        const isDeco = p.has_decoration;
+        html += `<div class="deco-select-item ${selectedDecoFragment === idx ? 'selected' : ''}" 
+                     onclick="selectDecoFragment(${idx})"
+                     style="${isDeco ? 'border-color:var(--accent);' : ''}">
+            ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);border-radius:6px;"></div>'}
+            <div class="deco-id">${p.id.substring(0,8)} ${isDeco ? '🎨' : ''}</div>
+        </div>`;
+    });
+    grid.innerHTML = html;
+}
+
+function selectDecoFragment(idx) {
+    selectedDecoFragment = idx;
+    document.querySelectorAll('.deco-select-item').forEach((el, i) => {
+        el.classList.toggle('selected', i === idx);
+    });
+}
+
+async function runDecoExtraction() {
+    if (selectedDecoFragment === null || !activePieces[selectedDecoFragment]) {
+        toast(currentLang === 'de' ? 'Bitte erst ein Fragment wählen' : 'Please select a fragment first', 'error');
+        return;
+    }
+
+    if (!pyReady || !window.py_extract_decoration) {
+        toast('Python environment not ready', 'error');
+        return;
+    }
+
+    const piece = activePieces[selectedDecoFragment];
+    const lineThickness = parseInt(document.getElementById('slider-line-thickness').value);
+    const detailLevel = parseInt(document.getElementById('slider-detail-level').value);
+    const edgeSensitivity = parseInt(document.getElementById('slider-edge-sensitivity').value);
+    const decoType = document.getElementById('select-deco-type').value;
+
+    toast(currentLang === 'de' ? 'Extrahiere Verzierung...' : 'Extracting decoration...', 'info');
+
+    try {
+        const result = window.py_extract_decoration(
+            piece.thumbnailDataUrl,
+            lineThickness,
+            detailLevel,
+            edgeSensitivity,
+            decoType
+        );
+
+        let data;
+        if (result && typeof result.toJs === 'function') {
+            data = result.toJs({dict_converter: Object.fromEntries});
+        } else {
+            data = result;
+        }
+
+        if (data && data.lineartDataUrl) {
+            decoOriginalImg = piece.thumbnailDataUrl;
+            decoLineArtImg = data.lineartDataUrl;
+            decoSvgData = data.svgData || null;
+
+            // Draw original
+            const canvasOrig = document.getElementById('deco-canvas-original');
+            const ctxOrig = canvasOrig.getContext('2d');
+            const imgOrig = new Image();
+            imgOrig.onload = () => {
+                canvasOrig.width = imgOrig.width;
+                canvasOrig.height = imgOrig.height;
+                ctxOrig.drawImage(imgOrig, 0, 0);
+            };
+            imgOrig.src = decoOriginalImg;
+
+            // Draw line art
+            const canvasLine = document.getElementById('deco-canvas-lineart');
+            const ctxLine = canvasLine.getContext('2d');
+            const imgLine = new Image();
+            imgLine.onload = () => {
+                canvasLine.width = imgLine.width;
+                canvasLine.height = imgLine.height;
+                ctxLine.drawImage(imgLine, 0, 0);
+            };
+            imgLine.src = decoLineArtImg;
+
+            // Scale info
+            const dims = data.dimensions || {};
+            document.getElementById('deco-scale-info').textContent = `1:1 (${dims.ppmm ? dims.ppmm.toFixed(1) + ' px/mm' : 'auto'})`;
+            document.getElementById('deco-dimensions').textContent = `${dims.width_mm ? dims.width_mm.toFixed(0) : '?'} × ${dims.height_mm ? dims.height_mm.toFixed(0) : '?'} mm`;
+
+            document.getElementById('deco-result').style.display = '';
+            updateDecoOverlay();
+
+            toast(currentLang === 'de' ? 'Strichzeichnung erstellt!' : 'Line drawing created!', 'success');
+        }
+    } catch (err) {
+        console.error('Decoration extraction error:', err);
+        toast('Error: ' + err.message, 'error');
+    }
+}
+
+let overlayMode = 'lines';
+function toggleOverlayMode(el, mode) {
+    overlayMode = mode;
+    document.querySelectorAll('.deco-overlay-toggle').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    updateDecoOverlay();
+}
+
+function updateDecoOverlay() {
+    if (!decoOriginalImg || !decoLineArtImg) return;
+    const canvas = document.getElementById('deco-canvas-overlay');
+    const ctx = canvas.getContext('2d');
+    const opacity = parseInt(document.getElementById('slider-overlay-opacity').value) / 100;
+
+    const imgA = new Image();
+    const imgB = new Image();
+
+    const base = overlayMode === 'lines' ? decoOriginalImg : decoLineArtImg;
+    const overlay = overlayMode === 'lines' ? decoLineArtImg : decoOriginalImg;
+
+    imgA.onload = () => {
+        canvas.width = imgA.width;
+        canvas.height = imgA.height;
+        ctx.drawImage(imgA, 0, 0);
+        imgB.onload = () => {
+            ctx.globalAlpha = opacity;
+            ctx.drawImage(imgB, 0, 0, canvas.width, canvas.height);
+            ctx.globalAlpha = 1.0;
+        };
+        imgB.src = overlay;
+    };
+    imgA.src = base;
+}
+
+function downloadDecoImage(type) {
+    let canvas;
+    if (type === 'lineart') canvas = document.getElementById('deco-canvas-lineart');
+    else if (type === 'overlay') canvas = document.getElementById('deco-canvas-overlay');
+    else return;
+
+    const link = document.createElement('a');
+    link.download = `shardmind_${type}_${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+function downloadDecoSVG() {
+    if (!decoSvgData) {
+        toast('No SVG data available', 'error');
+        return;
+    }
+    const blob = new Blob([decoSvgData], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `shardmind_decoration_${Date.now()}.svg`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
 }
 
 // ==================================================
@@ -3016,6 +4002,272 @@ def py_reconstruct(pieces_json, canvas_size):
 js.window.py_analyze = create_proxy(py_analyze)
 js.window.py_cluster = create_proxy(py_cluster)
 js.window.py_reconstruct = create_proxy(py_reconstruct)
+
+
+# =============================================================================
+# DECORATION → LINE DRAWING EXTRACTION
+# =============================================================================
+
+def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge_sensitivity=50, deco_type="auto"):
+    """
+    Extract decoration from a fragment photo and create a scaled line drawing.
+    
+    Process:
+    1. Isolate decorated areas (colored regions) from the ceramic body
+    2. Apply adaptive edge detection tuned by deco_type
+    3. Clean and vectorize edges into line art
+    4. Generate SVG with proper scale
+    """
+    # Decode image from data URL
+    try:
+        b64_data = data_url.split(',')[1]
+        img_bytes = base64.b64decode(b64_data)
+        nparr = np.frombuffer(img_bytes, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    except:
+        return None
+    
+    if img is None:
+        return None
+    
+    h, w = img.shape[:2]
+    
+    # ---- Step 1: Create decoration mask ----
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2Lab)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+    # Detect colored decoration (saturated regions)
+    s_ch = hsv[:, :, 1]
+    v_ch = hsv[:, :, 2]
+    h_ch = hsv[:, :, 0]
+    
+    # Decoration types affect processing
+    if deco_type == "painted" or deco_type == "auto":
+        # Painted: look for saturated color areas
+        color_mask = (s_ch > 25).astype(np.uint8) * 255
+        
+        # Also check for strong luminance variation
+        l_ch = lab[:, :, 0]
+        l_mean = np.mean(l_ch)
+        l_mask = (np.abs(l_ch.astype(float) - l_mean) > 20).astype(np.uint8) * 255
+        deco_mask = cv2.bitwise_or(color_mask, l_mask)
+        
+    elif deco_type == "incised":
+        # Incised: look for shadow lines (dark narrow features)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(4, 4))
+        enhanced = clahe.apply(gray)
+        _, deco_mask = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        
+    elif deco_type == "stamped":
+        # Stamped/relief: look for local height variation via shadow
+        blur_large = cv2.GaussianBlur(gray, (31, 31), 0)
+        local_diff = cv2.absdiff(gray, blur_large)
+        _, deco_mask = cv2.threshold(local_diff, 15, 255, cv2.THRESH_BINARY)
+        
+    elif deco_type == "band":
+        # Band decoration: horizontal/circular patterns
+        blue_mask = cv2.inRange(hsv, np.array([90, 25, 40]), np.array([130, 255, 255]))
+        color_general = (s_ch > 30).astype(np.uint8) * 255
+        deco_mask = cv2.bitwise_or(blue_mask, color_general)
+        
+    elif deco_type == "figural":
+        # Figural: strong contrast features
+        clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
+        enhanced = clahe.apply(gray)
+        color_mask = (s_ch > 20).astype(np.uint8) * 255
+        _, lum_mask = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        deco_mask = cv2.bitwise_or(color_mask, lum_mask)
+        
+    elif deco_type == "ornamental":
+        # Ornamental/geometric: regular patterns
+        color_mask = (s_ch > 25).astype(np.uint8) * 255
+        edges = cv2.Canny(gray, 30, 100)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        edges = cv2.dilate(edges, kernel, iterations=1)
+        deco_mask = cv2.bitwise_or(color_mask, edges)
+    else:
+        deco_mask = (s_ch > 25).astype(np.uint8) * 255
+    
+    # Clean decoration mask
+    kernel_small = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    kernel_med = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    deco_mask = cv2.morphologyEx(deco_mask, cv2.MORPH_CLOSE, kernel_small, iterations=2)
+    deco_mask = cv2.morphologyEx(deco_mask, cv2.MORPH_OPEN, kernel_small, iterations=1)
+    
+    # ---- Step 2: Edge detection on decoration ----
+    # Map sensitivity (10-100) to Canny thresholds
+    canny_low = max(10, 120 - edge_sensitivity)
+    canny_high = max(30, 200 - edge_sensitivity)
+    
+    # Multi-scale edge detection
+    edges1 = cv2.Canny(gray, canny_low, canny_high)
+    
+    # Apply CLAHE for enhanced local contrast edges
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(gray)
+    edges2 = cv2.Canny(enhanced, canny_low, canny_high)
+    
+    # Color channel edges
+    b_ch, g_ch, r_ch = cv2.split(img)
+    edges_b = cv2.Canny(b_ch, canny_low + 10, canny_high + 10)
+    edges_g = cv2.Canny(g_ch, canny_low + 10, canny_high + 10)
+    edges_r = cv2.Canny(r_ch, canny_low + 10, canny_high + 10)
+    
+    # Combine all edges
+    all_edges = cv2.bitwise_or(edges1, edges2)
+    all_edges = cv2.bitwise_or(all_edges, edges_b)
+    all_edges = cv2.bitwise_or(all_edges, edges_g)
+    all_edges = cv2.bitwise_or(all_edges, edges_r)
+    
+    # Focus on decoration area
+    deco_edges = cv2.bitwise_and(all_edges, deco_mask)
+    
+    # Also keep strong edges in non-decoration areas (outlines)
+    strong_edges = cv2.Canny(gray, canny_high, canny_high + 50)
+    combined_edges = cv2.bitwise_or(deco_edges, strong_edges)
+    
+    # ---- Step 3: Clean and refine ----
+    # Detail level controls morphological cleanup
+    if detail_level < 30:
+        # Less detail = more cleanup
+        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        combined_edges = cv2.morphologyEx(combined_edges, cv2.MORPH_CLOSE, k, iterations=2)
+        combined_edges = cv2.morphologyEx(combined_edges, cv2.MORPH_OPEN, k, iterations=1)
+    elif detail_level > 70:
+        # More detail = minimal cleanup
+        k = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        combined_edges = cv2.morphologyEx(combined_edges, cv2.MORPH_CLOSE, k, iterations=1)
+    else:
+        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
+        combined_edges = cv2.morphologyEx(combined_edges, cv2.MORPH_CLOSE, k, iterations=1)
+    
+    # Remove very small components (noise)
+    contours, _ = cv2.findContours(combined_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    min_contour_area = max(5, (100 - detail_level) * 2)
+    clean_edges = np.zeros_like(combined_edges)
+    for c in contours:
+        if cv2.contourArea(c) > min_contour_area or cv2.arcLength(c, False) > min_contour_area * 0.5:
+            cv2.drawContours(clean_edges, [c], -1, 255, 1)
+    
+    # ---- Step 4: Create line drawing ----
+    # White background, black lines
+    lineart = np.ones((h, w, 3), dtype=np.uint8) * 250  # Slightly off-white like paper
+    
+    # Draw edges with specified thickness
+    contours_final, _ = cv2.findContours(clean_edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_TC89_KCOS)
+    
+    for c in contours_final:
+        # Approximate contour for smoother lines
+        epsilon = max(0.5, (100 - detail_level) / 100.0 * 3.0)
+        approx = cv2.approxPolyDP(c, epsilon, False)
+        cv2.polylines(lineart, [approx], False, (30, 30, 30), line_thickness, cv2.LINE_AA)
+    
+    # Add fragment outline
+    # Find the overall piece boundary
+    piece_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, piece_mask = cv2.threshold(piece_gray, 240, 255, cv2.THRESH_BINARY_INV)
+    piece_contours, _ = cv2.findContours(piece_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if piece_contours:
+        largest = max(piece_contours, key=cv2.contourArea)
+        cv2.drawContours(lineart, [largest], -1, (60, 60, 60), max(1, line_thickness), cv2.LINE_AA)
+    
+    # ---- Step 5: Generate SVG ----
+    svg_paths = []
+    for c in contours_final:
+        epsilon = max(0.5, (100 - detail_level) / 100.0 * 3.0)
+        approx = cv2.approxPolyDP(c, epsilon, False)
+        if len(approx) >= 2:
+            pts = approx.reshape(-1, 2)
+            path_d = f"M {pts[0][0]},{pts[0][1]}"
+            for pt in pts[1:]:
+                path_d += f" L {pt[0]},{pt[1]}"
+            svg_paths.append(path_d)
+    
+    # Add piece outline to SVG
+    if piece_contours:
+        largest = max(piece_contours, key=cv2.contourArea)
+        outline_approx = cv2.approxPolyDP(largest, 2.0, True)
+        if len(outline_approx) >= 3:
+            pts = outline_approx.reshape(-1, 2)
+            path_d = f"M {pts[0][0]},{pts[0][1]}"
+            for pt in pts[1:]:
+                path_d += f" L {pt[0]},{pt[1]}"
+            path_d += " Z"
+            svg_paths.insert(0, path_d)  # Outline first
+    
+    svg_content = f'''<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" 
+     viewBox="0 0 {w} {h}" 
+     width="{w}" height="{h}">
+  <title>ShardMind Decoration Line Drawing</title>
+  <desc>Automatically extracted decoration from archaeological fragment</desc>
+  <style>
+    .outline {{ fill: none; stroke: #3c3c3c; stroke-width: {max(1, line_thickness)}; stroke-linecap: round; stroke-linejoin: round; }}
+    .decoration {{ fill: none; stroke: #1e1e1e; stroke-width: {line_thickness}; stroke-linecap: round; stroke-linejoin: round; }}
+  </style>
+  <rect width="{w}" height="{h}" fill="#faf8f5"/>
+'''
+    
+    if svg_paths:
+        svg_content += f'  <path class="outline" d="{svg_paths[0]}"/>\n'
+        for path_d in svg_paths[1:]:
+            svg_content += f'  <path class="decoration" d="{path_d}"/>\n'
+    
+    svg_content += '</svg>'
+    
+    # ---- Dimensions estimate ----
+    # Rough estimate: typical pottery shard is 3-15cm
+    # Use area to estimate scale
+    piece_area_px = 0
+    if piece_contours:
+        piece_area_px = cv2.contourArea(max(piece_contours, key=cv2.contourArea))
+    
+    # Estimate pixels per mm (rough heuristic)
+    estimated_size_mm = 60  # assume ~60mm for a typical shard
+    if piece_contours:
+        x_, y_, bw_, bh_ = cv2.boundingRect(max(piece_contours, key=cv2.contourArea))
+        max_dim = max(bw_, bh_)
+        ppmm = max_dim / estimated_size_mm if estimated_size_mm > 0 else 1.0
+    else:
+        ppmm = max(w, h) / estimated_size_mm
+    
+    lineart_url = cv2_to_dataurl(lineart)
+    
+    return {
+        'lineartDataUrl': lineart_url,
+        'svgData': svg_content,
+        'dimensions': {
+            'width_px': int(w),
+            'height_px': int(h),
+            'width_mm': float(w / ppmm),
+            'height_mm': float(h / ppmm),
+            'ppmm': float(ppmm),
+        }
+    }
+
+
+def py_extract_decoration(data_url, line_thickness, detail_level, edge_sensitivity, deco_type):
+    """Called from JavaScript"""
+    result = extract_decoration_lineart(
+        str(data_url), 
+        int(line_thickness), 
+        int(detail_level), 
+        int(edge_sensitivity), 
+        str(deco_type)
+    )
+    
+    if result is None:
+        return to_js({'lineartDataUrl': None, 'svgData': None, 'dimensions': {}}, dict_converter=js.Object.fromEntries)
+    
+    return to_js(result, dict_converter=js.Object.fromEntries)
+
+
+# Make functions available to JavaScript
+js.window.py_analyze = create_proxy(py_analyze)
+js.window.py_cluster = create_proxy(py_cluster)
+js.window.py_reconstruct = create_proxy(py_reconstruct)
+js.window.py_extract_decoration = create_proxy(py_extract_decoration)
 
 # Signal ready
 set_py_ready()
