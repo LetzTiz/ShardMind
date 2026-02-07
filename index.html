@@ -69,9 +69,9 @@
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             gap: 24px;
-            transition: opacity 0.5s;
+            transition: opacity 0.6s ease-out;
         }
-        #loading-screen.hidden { opacity: 0; pointer-events: none; }
+        #loading-screen.hidden { opacity: 0; pointer-events: none; display: none !important; }
         .loading-logo {
             font-family: 'Playfair Display', serif;
             font-size: 48px; color: var(--accent);
@@ -91,6 +91,43 @@
         @keyframes loadSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
         .loading-text { color: var(--text-secondary); font-size: 14px; }
         .loading-packages { color: var(--text-muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+
+        /* Python status indicator (non-blocking) */
+        .py-status-bar {
+            margin: 8px 12px; padding: 10px 14px;
+            border-radius: var(--radius);
+            font-size: 12px;
+            display: flex; align-items: center; gap: 8px;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .py-status-bar.loading {
+            background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25);
+            color: var(--warning);
+        }
+        .py-status-bar.ready {
+            background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);
+            color: var(--success);
+        }
+        .py-status-bar.error {
+            background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.25);
+            color: var(--error);
+        }
+        .py-status-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+        }
+        .py-status-bar.loading .py-status-dot {
+            background: var(--warning); animation: pulse 1.2s ease-in-out infinite;
+        }
+        .py-status-bar.ready .py-status-dot { background: var(--success); }
+        .py-status-bar.error .py-status-dot { background: var(--error); }
+        .py-retry-btn {
+            margin-left: auto; padding: 3px 10px;
+            border-radius: 12px; border: 1px solid currentColor;
+            background: transparent; color: inherit;
+            font-size: 11px; cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .py-retry-btn:hover { background: rgba(255,255,255,0.1); }
 
         /* Cookie Banner */
         #cookie-banner {
@@ -1104,6 +1141,13 @@
         </div>
 
         <div class="sidebar-divider"></div>
+
+        <!-- Python Engine Status -->
+        <div class="py-status-bar loading" id="py-status-bar">
+            <div class="py-status-dot"></div>
+            <span id="py-status-text">Python-Engine lädt...</span>
+            <button class="py-retry-btn" id="py-retry-btn" style="display:none;" onclick="retryPyLoad()">↻ Retry</button>
+        </div>
 
         <div class="sidebar-section-title" id="sidebar-upload-title">📤 FOTOS HOCHLADEN</div>
         <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
@@ -2982,7 +3026,21 @@ async function runAnalysis() {
     }
     
     if (!pyReady) {
-        toast('Python environment still loading...', 'info');
+        const elapsed = Math.round((Date.now() - pyLoadStartTime) / 1000);
+        const statusBar = document.getElementById('py-status-bar');
+        const isError = statusBar && statusBar.classList.contains('error');
+        
+        if (isError) {
+            toast(currentLang === 'de' 
+                ? 'Python-Umgebung konnte nicht geladen werden. Bitte Seite neu laden (Retry-Button in der Sidebar).'
+                : 'Python environment failed to load. Please reload the page (Retry button in sidebar).', 
+                'error');
+        } else {
+            toast(currentLang === 'de'
+                ? `Python-Umgebung lädt noch (${elapsed}s). Bitte warten — die Pakete werden heruntergeladen (~50 MB).`
+                : `Python environment still loading (${elapsed}s). Please wait — packages are downloading (~50 MB).`,
+                'info');
+        }
         return;
     }
     
@@ -4426,7 +4484,9 @@ async function runDecoExtraction() {
     }
 
     if (!pyReady || !window.py_extract_decoration) {
-        toast('Python environment not ready', 'error');
+        toast(currentLang === 'de'
+            ? 'Python-Umgebung noch nicht bereit. Bitte warten.'
+            : 'Python environment not ready yet. Please wait.', 'error');
         return;
     }
 
@@ -4565,6 +4625,12 @@ function init() {
     setLanguage(currentLang);
     checkCookieConsent();
     
+    // Hide loading screen after brief splash (don't block on Python)
+    setTimeout(() => {
+        const ls = document.getElementById('loading-screen');
+        if (ls) ls.classList.add('hidden');
+    }, 1500);
+    
     // Auto-login if saved
     const savedUser = localStorage.getItem('shardmind_user');
     if (savedUser) {
@@ -4572,12 +4638,120 @@ function init() {
         if (db[savedUser]) {
             currentUser = savedUser;
             showApp();
-            return;
+        } else {
+            document.getElementById('login-page').style.display = '';
         }
+    } else {
+        document.getElementById('login-page').style.display = '';
     }
     
-    // Show login
-    document.getElementById('login-page').style.display = '';
+    // Start monitoring Python environment
+    monitorPythonLoading();
+}
+
+// ==================================================
+// PYTHON ENVIRONMENT MONITORING
+// ==================================================
+
+let pyLoadStartTime = Date.now();
+let pyLoadTimeout = null;
+let pyMonitorInterval = null;
+const PY_TIMEOUT_MS = 120000; // 120 seconds
+
+function monitorPythonLoading() {
+    pyLoadStartTime = Date.now();
+    
+    // Poll for pyReady every 500ms
+    pyMonitorInterval = setInterval(() => {
+        const elapsed = Date.now() - pyLoadStartTime;
+        const elapsedSec = Math.round(elapsed / 1000);
+        
+        if (pyReady || window.py_analyze) {
+            // Python is ready!
+            pyReady = true;
+            clearInterval(pyMonitorInterval);
+            setPyStatus('ready', currentLang === 'de' ? '✓ Python-Engine bereit' : '✓ Python engine ready');
+            return;
+        }
+        
+        if (elapsed > PY_TIMEOUT_MS) {
+            // Timeout
+            clearInterval(pyMonitorInterval);
+            setPyStatus('error', currentLang === 'de' 
+                ? `Zeitüberschreitung (${elapsedSec}s). Pakete konnten nicht geladen werden.`
+                : `Timeout (${elapsedSec}s). Packages could not be loaded.`);
+            return;
+        }
+        
+        // Still loading - update status with elapsed time
+        const statusText = currentLang === 'de'
+            ? `Python-Engine lädt... (${elapsedSec}s)`
+            : `Python engine loading... (${elapsedSec}s)`;
+        
+        const statusEl = document.getElementById('py-status-text');
+        if (statusEl) statusEl.textContent = statusText;
+        
+        // Also update loading screen text if still visible
+        const loadingPkg = document.getElementById('loading-packages');
+        if (loadingPkg) loadingPkg.textContent = statusText;
+        
+    }, 500);
+    
+    // Listen for PyScript errors
+    window.addEventListener('error', (e) => {
+        if (e.message && (e.message.includes('pyodide') || e.message.includes('pyscript') || e.message.includes('micropip'))) {
+            clearInterval(pyMonitorInterval);
+            setPyStatus('error', currentLang === 'de' 
+                ? `Fehler beim Laden: ${e.message.substring(0, 80)}`
+                : `Load error: ${e.message.substring(0, 80)}`);
+        }
+    });
+    
+    // Listen for unhandled promise rejections (common with PyScript)
+    window.addEventListener('unhandledrejection', (e) => {
+        const reason = e.reason ? String(e.reason).substring(0, 100) : 'Unknown error';
+        if (reason.includes('pyodide') || reason.includes('pyscript') || reason.includes('micropip') || reason.includes('Package')) {
+            clearInterval(pyMonitorInterval);
+            console.error('PyScript load error:', reason);
+            setPyStatus('error', currentLang === 'de'
+                ? `Paket-Fehler: ${reason.substring(0, 60)}`
+                : `Package error: ${reason.substring(0, 60)}`);
+        }
+    });
+}
+
+function setPyStatus(state, text) {
+    const bar = document.getElementById('py-status-bar');
+    const textEl = document.getElementById('py-status-text');
+    const retryBtn = document.getElementById('py-retry-btn');
+    
+    if (!bar) return;
+    
+    bar.className = 'py-status-bar ' + state;
+    if (textEl) textEl.textContent = text;
+    
+    if (state === 'error') {
+        retryBtn.style.display = '';
+    } else if (state === 'ready') {
+        retryBtn.style.display = 'none';
+        // Auto-hide after 5 seconds on success
+        setTimeout(() => {
+            bar.style.transition = 'opacity 0.5s, max-height 0.5s';
+            bar.style.opacity = '0';
+            bar.style.maxHeight = '0';
+            bar.style.padding = '0';
+            bar.style.margin = '0';
+            bar.style.overflow = 'hidden';
+        }, 5000);
+    } else {
+        retryBtn.style.display = 'none';
+    }
+}
+
+function retryPyLoad() {
+    setPyStatus('loading', currentLang === 'de' ? 'Neustart...' : 'Restarting...');
+    toast(currentLang === 'de' ? 'Seite wird neu geladen...' : 'Reloading page...', 'info');
+    setTimeout(() => location.reload(), 800);
 }
 
 // Wait for DOM
@@ -4586,34 +4760,85 @@ document.addEventListener('DOMContentLoaded', init);
 
 <!-- ======================= PYSCRIPT - PYTHON CODE ======================= -->
 <script type="py" config='{"packages":["numpy","opencv-python","scikit-learn","scipy","Pillow"]}'>
-import numpy as np
-import cv2
-from sklearn.cluster import AgglomerativeClustering
-from scipy.spatial.distance import cdist
 import js
-from pyodide.ffi import to_js, create_proxy
-import json
-import base64
-from io import BytesIO
-from PIL import Image
-import uuid
+import sys
 
-# =============================================================================
-# Signal that Python is ready
-# =============================================================================
+def update_loading(msg):
+    """Update both loading screen and sidebar status"""
+    try:
+        el = js.document.getElementById('loading-packages')
+        if el:
+            el.textContent = msg
+        el2 = js.document.getElementById('py-status-text')
+        if el2:
+            el2.textContent = msg
+    except:
+        pass
+    print(f"[ShardMind] {msg}")
 
 def set_py_ready():
+    """Signal to JavaScript that Python engine is ready"""
     js.pyReady = True
+    # Hide loading screen
+    loading = js.document.getElementById('loading-screen')
+    if loading:
+        loading.classList.add('hidden')
+    # Update sidebar status
+    try:
+        if js.window.setPyStatus:
+            lang = js.window.currentLang or 'de'
+            msg = '✓ Python-Engine bereit' if lang == 'de' else '✓ Python engine ready'
+            js.window.setPyStatus('ready', msg)
+    except:
+        pass
+
+def set_py_error(msg):
+    """Signal to JavaScript that Python loading failed"""
+    try:
+        if js.window.setPyStatus:
+            js.window.setPyStatus('error', msg)
+    except:
+        pass
+    # Still hide loading screen so app is usable
     loading = js.document.getElementById('loading-screen')
     if loading:
         loading.classList.add('hidden')
 
-def update_loading(msg):
-    el = js.document.getElementById('loading-packages')
-    if el:
-        el.textContent = msg
+# =============================================================================
+# IMPORT PACKAGES WITH PROGRESS
+# =============================================================================
 
-update_loading("Loading NumPy, OpenCV, scikit-learn...")
+try:
+    update_loading("Loading NumPy...")
+    import numpy as np
+    
+    update_loading("Loading OpenCV...")
+    import cv2
+    
+    update_loading("Loading scikit-learn...")
+    from sklearn.cluster import AgglomerativeClustering
+    
+    update_loading("Loading SciPy...")
+    from scipy.spatial.distance import cdist
+    
+    update_loading("Loading Pillow...")
+    from PIL import Image
+    
+    update_loading("Loading utilities...")
+    from pyodide.ffi import to_js, create_proxy
+    import json
+    import base64
+    from io import BytesIO
+    import uuid
+    
+    update_loading("Alle Pakete geladen ✓")
+
+except Exception as e:
+    error_msg = f"Import-Fehler: {str(e)[:100]}"
+    print(f"[ShardMind ERROR] {error_msg}")
+    update_loading(error_msg)
+    set_py_error(error_msg)
+    raise  # re-raise so we don't execute code that depends on these imports
 
 # =============================================================================
 # HELPER: Convert images between JS and Python
@@ -5199,10 +5424,6 @@ def py_reconstruct(pieces_json, canvas_size):
         'matches': matches[:10]
     }, dict_converter=js.Object.fromEntries)
 
-# Make functions available to JavaScript
-js.window.py_analyze = create_proxy(py_analyze)
-js.window.py_cluster = create_proxy(py_cluster)
-js.window.py_reconstruct = create_proxy(py_reconstruct)
 
 
 # =============================================================================
@@ -5464,15 +5685,25 @@ def py_extract_decoration(data_url, line_thickness, detail_level, edge_sensitivi
     return to_js(result, dict_converter=js.Object.fromEntries)
 
 
-# Make functions available to JavaScript
-js.window.py_analyze = create_proxy(py_analyze)
-js.window.py_cluster = create_proxy(py_cluster)
-js.window.py_reconstruct = create_proxy(py_reconstruct)
-js.window.py_extract_decoration = create_proxy(py_extract_decoration)
+# =============================================================================
+# REGISTER ALL PYTHON FUNCTIONS FOR JAVASCRIPT
+# =============================================================================
 
-# Signal ready
-set_py_ready()
-print("ShardMind Python engine ready!")
+try:
+    update_loading("Registriere Funktionen...")
+    js.window.py_analyze = create_proxy(py_analyze)
+    js.window.py_cluster = create_proxy(py_cluster)
+    js.window.py_reconstruct = create_proxy(py_reconstruct)
+    js.window.py_extract_decoration = create_proxy(py_extract_decoration)
+    
+    # Signal ready
+    set_py_ready()
+    print("ShardMind Python engine ready!")
+
+except Exception as e:
+    error_msg = f"Registrierungs-Fehler: {str(e)[:100]}"
+    print(f"[ShardMind ERROR] {error_msg}")
+    set_py_error(error_msg)
 </script>
 
 <!-- Bridge functions between JS and Python -->
