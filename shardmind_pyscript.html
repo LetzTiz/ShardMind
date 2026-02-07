@@ -1,0 +1,3111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShardMind v1.9 — Archaeological Fragment Analysis</title>
+
+    <!-- PyScript -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-primary: #0f1117;
+            --bg-secondary: #1a1d28;
+            --bg-card: #222633;
+            --bg-hover: #2a2e3d;
+            --accent: #c9956b;
+            --accent-light: #e4b88a;
+            --accent-dark: #a07448;
+            --text-primary: #e8e6e3;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --border: #333847;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --error: #f87171;
+            --info: #60a5fa;
+            --cluster-1: #E74C3C; --cluster-2: #3498DB; --cluster-3: #2ECC71;
+            --cluster-4: #F39C12; --cluster-5: #9B59B6; --cluster-6: #1ABC9C;
+            --radius: 10px;
+            --radius-lg: 16px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed; inset: 0; z-index: 10000;
+            background: var(--bg-primary);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 24px;
+            transition: opacity 0.5s;
+        }
+        #loading-screen.hidden { opacity: 0; pointer-events: none; }
+        .loading-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 48px; color: var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .loading-bar {
+            width: 200px; height: 3px;
+            background: var(--bg-card); border-radius: 3px; overflow: hidden;
+        }
+        .loading-bar-inner {
+            width: 40%; height: 100%;
+            background: var(--accent);
+            border-radius: 3px;
+            animation: loadSlide 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes loadSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
+        .loading-text { color: var(--text-secondary); font-size: 14px; }
+        .loading-packages { color: var(--text-muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+
+        /* Cookie Banner */
+        #cookie-banner {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 9000;
+            background: linear-gradient(135deg, #2a1f14, #1a1520);
+            border-top: 2px solid var(--accent);
+            padding: 24px 32px; display: none;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
+        }
+        #cookie-banner.show { display: block; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .cookie-content { max-width: 1000px; margin: 0 auto; }
+        .cookie-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--accent); margin-bottom: 8px; }
+        .cookie-text { color: var(--text-secondary); font-size: 14px; margin-bottom: 16px; }
+        .cookie-options { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+        .cookie-option { display: flex; align-items: center; gap: 8px; }
+        .cookie-option label { font-size: 13px; color: var(--text-secondary); }
+        .cookie-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        /* Login Page */
+        #login-page {
+            min-height: 100vh; display: flex;
+            align-items: center; justify-content: center;
+            background: radial-gradient(ellipse at 30% 20%, rgba(201,149,107,0.08), transparent 50%),
+                        radial-gradient(ellipse at 70% 80%, rgba(100,80,60,0.06), transparent 50%),
+                        var(--bg-primary);
+        }
+        #login-page.hidden { display: none; }
+        .login-container {
+            width: 100%; max-width: 440px; padding: 20px;
+        }
+        .login-header {
+            text-align: center; margin-bottom: 32px;
+        }
+        .login-header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 42px; color: var(--accent);
+            letter-spacing: 2px;
+        }
+        .login-header p {
+            color: var(--text-secondary); font-size: 15px; margin-top: 8px;
+        }
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--shadow);
+        }
+        .login-tabs {
+            display: flex; gap: 0; margin-bottom: 24px;
+            border-bottom: 2px solid var(--border);
+        }
+        .login-tab {
+            flex: 1; padding: 12px; text-align: center;
+            background: none; border: none;
+            color: var(--text-secondary); font-size: 15px; font-weight: 500;
+            cursor: pointer; transition: var(--transition);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .login-tab.active {
+            color: var(--accent); border-bottom-color: var(--accent);
+        }
+        .login-form { display: none; flex-direction: column; gap: 16px; }
+        .login-form.active { display: flex; }
+
+        /* Form Elements */
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label {
+            font-size: 13px; color: var(--text-secondary);
+            font-weight: 500; letter-spacing: 0.3px;
+        }
+        input[type="text"], input[type="password"], input[type="number"],
+        select, textarea {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px 14px; color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif; font-size: 14px;
+            transition: var(--transition); outline: none;
+            width: 100%;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(201,149,107,0.15);
+        }
+        select { cursor: pointer; }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px; border-radius: var(--radius);
+            border: 1px solid var(--border); cursor: pointer;
+            font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+            transition: var(--transition); display: inline-flex;
+            align-items: center; gap: 8px; justify-content: center;
+        }
+        .btn-primary {
+            background: var(--accent); color: #1a1d28;
+            border-color: var(--accent); font-weight: 600;
+        }
+        .btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); }
+        .btn-secondary {
+            background: var(--bg-secondary); color: var(--text-primary);
+        }
+        .btn-secondary:hover { background: var(--bg-hover); }
+        .btn-danger {
+            background: rgba(248,113,113,0.15); color: var(--error);
+            border-color: rgba(248,113,113,0.3);
+        }
+        .btn-danger:hover { background: rgba(248,113,113,0.25); }
+        .btn-full { width: 100%; }
+        .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+        /* App Layout */
+        #app-page { display: none; min-height: 100vh; }
+        #app-page.active { display: flex; }
+
+        .sidebar {
+            width: 300px; min-width: 300px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            height: 100vh; overflow-y: auto;
+            padding: 20px; display: flex; flex-direction: column; gap: 16px;
+            position: sticky; top: 0;
+        }
+        .sidebar-header {
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .sidebar-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px; color: var(--accent);
+        }
+        .sidebar-version {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; color: var(--text-muted);
+        }
+        .sidebar-user {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px; background: rgba(74,222,128,0.08);
+            border: 1px solid rgba(74,222,128,0.2);
+            border-radius: var(--radius);
+        }
+        .sidebar-user span { color: var(--success); font-weight: 500; font-size: 14px; }
+        .sidebar-divider {
+            height: 1px; background: var(--border); margin: 4px 0;
+        }
+        .sidebar-section-title {
+            font-size: 11px; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-muted);
+            font-weight: 600; margin-top: 4px;
+        }
+
+        /* File Upload Area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 20px; text-align: center;
+            cursor: pointer; transition: var(--transition);
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--accent);
+            background: rgba(201,149,107,0.05);
+        }
+        .upload-area .icon { font-size: 28px; margin-bottom: 6px; }
+        .upload-area .label { font-size: 13px; color: var(--text-secondary); }
+        .upload-area input { display: none; }
+        .upload-files-list {
+            display: flex; flex-direction: column; gap: 4px; margin-top: 8px;
+        }
+        .upload-file-item {
+            font-size: 12px; color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 4px 8px; background: var(--bg-primary);
+            border-radius: 4px; display: flex;
+            justify-content: space-between; align-items: center;
+        }
+
+        /* Slider */
+        .slider-group { display: flex; flex-direction: column; gap: 4px; }
+        .slider-label {
+            font-size: 12px; color: var(--text-secondary);
+            display: flex; justify-content: space-between;
+        }
+        input[type="range"] {
+            -webkit-appearance: none; width: 100%; height: 4px;
+            background: var(--border); border-radius: 4px; outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 16px; height: 16px;
+            border-radius: 50%; background: var(--accent); cursor: pointer;
+            border: 2px solid var(--bg-secondary);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1; overflow-y: auto; height: 100vh;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex; gap: 0; padding: 0 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto; position: sticky; top: 0; z-index: 100;
+        }
+        .tab-btn {
+            padding: 14px 18px; background: none; border: none;
+            color: var(--text-muted); font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: var(--transition);
+            white-space: nowrap; border-bottom: 2px solid transparent;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .tab-btn:hover { color: var(--text-secondary); }
+        .tab-btn.active {
+            color: var(--accent); border-bottom-color: var(--accent);
+        }
+
+        .tab-content { display: none; padding: 24px; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Metrics Row */
+        .metrics-row {
+            display: flex; gap: 16px; padding: 16px 24px;
+            background: var(--bg-secondary); border-bottom: 1px solid var(--border);
+        }
+        .metric-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 12px 20px;
+            flex: 1; text-align: center;
+        }
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 24px; font-weight: 600; color: var(--accent);
+        }
+        .metric-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+        /* Section Headers */
+        .section-header {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px; color: var(--accent);
+            margin-bottom: 20px;
+        }
+        .section-sub {
+            font-size: 14px; color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        /* Fragment Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+        }
+        .gallery-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden; cursor: pointer;
+            transition: var(--transition);
+        }
+        .gallery-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            border-color: var(--accent);
+        }
+        .gallery-item img {
+            width: 100%; aspect-ratio: 1;
+            object-fit: cover; display: block;
+        }
+        .gallery-item .gallery-info {
+            padding: 10px;
+        }
+        .gallery-item .gallery-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; color: var(--accent);
+            font-weight: 600;
+        }
+        .gallery-item .gallery-name {
+            font-size: 12px; color: var(--text-secondary);
+            margin-top: 2px; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .gallery-item-border {
+            height: 4px; width: 100%;
+        }
+
+        /* Group Cards */
+        .group-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px; margin-bottom: 16px;
+        }
+        .group-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 16px;
+        }
+        .group-title { font-size: 18px; font-weight: 600; }
+        .group-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px; padding: 4px 10px;
+            border-radius: 20px; background: rgba(201,149,107,0.15);
+            color: var(--accent);
+        }
+        .group-pieces {
+            display: flex; gap: 8px; overflow-x: auto;
+            padding: 8px 0;
+        }
+        .group-piece {
+            width: 80px; min-width: 80px;
+            border-radius: 8px; overflow: hidden;
+            border: 2px solid var(--border);
+        }
+        .group-piece img {
+            width: 100%; aspect-ratio: 1; object-fit: cover;
+        }
+        .group-actions {
+            display: flex; gap: 8px; margin-top: 12px;
+        }
+
+        /* Reconstruction Canvas */
+        .recon-container {
+            display: flex; gap: 24px; flex-wrap: wrap;
+        }
+        .recon-main { flex: 2; min-width: 400px; }
+        .recon-sidebar { flex: 1; min-width: 250px; }
+        .recon-canvas-wrapper {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 16px; text-align: center;
+        }
+        #recon-canvas {
+            max-width: 100%; border-radius: var(--radius);
+            background: #f5f5f0;
+        }
+        .match-list {
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .match-item {
+            padding: 10px 14px; background: var(--bg-card);
+            border: 1px solid var(--border); border-radius: var(--radius);
+            font-size: 13px; color: var(--text-secondary);
+            display: flex; justify-content: space-between;
+        }
+        .match-score {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent); font-weight: 600;
+        }
+
+        /* Database */
+        .db-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+        .db-item {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 8px;
+            text-align: center;
+        }
+        .db-item img {
+            width: 100%; aspect-ratio: 1; object-fit: cover;
+            border-radius: 6px;
+        }
+        .db-item .db-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; color: var(--text-muted); margin-top: 4px;
+        }
+
+        /* Labels */
+        .label-options {
+            display: flex; gap: 12px; margin-bottom: 20px;
+        }
+        .label-option {
+            padding: 10px 20px; background: var(--bg-card);
+            border: 1px solid var(--border); border-radius: var(--radius);
+            cursor: pointer; transition: var(--transition);
+            font-size: 14px; color: var(--text-secondary);
+        }
+        .label-option.active {
+            border-color: var(--accent); color: var(--accent);
+            background: rgba(201,149,107,0.08);
+        }
+
+        /* Changelog */
+        .changelog-version {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px;
+        }
+        .changelog-version.current {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent);
+        }
+        .changelog-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px; color: var(--accent); font-weight: 600;
+        }
+        .changelog-date {
+            font-size: 12px; color: var(--text-muted);
+        }
+        .changelog-list { margin-top: 12px; padding-left: 20px; }
+        .changelog-list li {
+            font-size: 13px; color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        /* Privacy */
+        .privacy-content {
+            max-width: 700px;
+        }
+        .privacy-content h2 {
+            font-family: 'Playfair Display', serif;
+            color: var(--accent); margin: 24px 0 12px;
+        }
+        .privacy-content h3 {
+            color: var(--text-primary); margin: 16px 0 8px;
+        }
+        .privacy-content p, .privacy-content li {
+            color: var(--text-secondary); line-height: 1.6;
+            font-size: 14px;
+        }
+        .privacy-content ul { padding-left: 20px; }
+
+        /* Help */
+        .help-content h2 {
+            font-family: 'Playfair Display', serif;
+            color: var(--accent); margin: 20px 0 12px;
+        }
+        .help-content p, .help-content li {
+            color: var(--text-secondary); line-height: 1.7;
+            font-size: 14px;
+        }
+        .help-content ul { padding-left: 20px; margin: 8px 0; }
+        .help-content strong { color: var(--text-primary); }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px; border-radius: var(--radius);
+            font-size: 14px; min-width: 250px;
+            box-shadow: var(--shadow);
+            animation: toastIn 0.3s ease-out;
+        }
+        .toast.success { background: rgba(74,222,128,0.15); color: var(--success); border: 1px solid rgba(74,222,128,0.3); }
+        .toast.error { background: rgba(248,113,113,0.15); color: var(--error); border: 1px solid rgba(248,113,113,0.3); }
+        .toast.info { background: rgba(96,165,250,0.15); color: var(--info); border: 1px solid rgba(96,165,250,0.3); }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 8000;
+            background: rgba(0,0,0,0.6); display: none;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 32px;
+            max-width: 500px; width: 90%;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.4);
+        }
+        .modal h3 { font-family: 'Playfair Display', serif; color: var(--accent); margin-bottom: 16px; }
+
+        /* Demo Section */
+        .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .demo-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 16px;
+        }
+        .demo-card h4 { font-size: 16px; margin-bottom: 12px; }
+        .demo-card canvas {
+            width: 100%; border-radius: var(--radius);
+            background: #e6e6e1;
+        }
+
+        /* Search bar */
+        .search-bar {
+            display: flex; gap: 8px; max-width: 400px; margin-bottom: 20px;
+        }
+        .search-bar input { flex: 1; }
+
+        /* Spinner */
+        .spinner {
+            width: 24px; height: 24px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%; height: 4px; background: var(--border);
+            border-radius: 4px; overflow: hidden; margin: 8px 0;
+        }
+        .progress-bar-inner {
+            height: 100%; background: var(--accent);
+            border-radius: 4px; transition: width 0.3s;
+            width: 0%;
+        }
+
+        /* Language Toggle */
+        .lang-toggle {
+            display: flex; gap: 0; border: 1px solid var(--border);
+            border-radius: var(--radius); overflow: hidden;
+        }
+        .lang-btn {
+            padding: 6px 12px; background: var(--bg-primary);
+            border: none; color: var(--text-muted);
+            cursor: pointer; font-size: 13px;
+            transition: var(--transition);
+        }
+        .lang-btn.active {
+            background: var(--accent); color: var(--bg-primary);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center; padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+        .empty-state p { font-size: 14px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            #app-page { flex-direction: column; }
+            .main-content { height: auto; min-height: 100vh; }
+            .tab-nav { padding: 0 12px; }
+            .tab-btn { padding: 10px 12px; font-size: 12px; }
+            .tab-content { padding: 16px; }
+            .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+            .demo-grid { grid-template-columns: 1fr; }
+            .recon-container { flex-direction: column; }
+            .metrics-row { flex-wrap: wrap; }
+        }
+
+        /* Mobile sidebar toggle */
+        .mobile-menu-btn {
+            display: none; position: fixed; bottom: 20px; right: 20px;
+            z-index: 200; width: 56px; height: 56px;
+            border-radius: 50%; background: var(--accent);
+            border: none; color: var(--bg-primary); font-size: 24px;
+            cursor: pointer; box-shadow: var(--shadow);
+        }
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: flex; align-items: center; justify-content: center; }
+            .sidebar.mobile-open {
+                display: flex; position: fixed; z-index: 300;
+                left: 0; top: 0; width: 300px;
+                box-shadow: 8px 0 32px rgba(0,0,0,0.5);
+            }
+        }
+
+        /* Custom label list */
+        .custom-labels-list { margin-top: 12px; }
+        .custom-label-item {
+            display: flex; justify-content: space-between;
+            align-items: center; padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius); margin-bottom: 6px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ======================= LOADING SCREEN ======================= -->
+<div id="loading-screen">
+    <div class="loading-logo">🏺 ShardMind</div>
+    <div class="loading-bar"><div class="loading-bar-inner"></div></div>
+    <div class="loading-text" id="loading-status">Initializing...</div>
+    <div class="loading-packages" id="loading-packages">Loading Python environment...</div>
+</div>
+
+<!-- ======================= TOAST CONTAINER ======================= -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ======================= COOKIE BANNER ======================= -->
+<div id="cookie-banner">
+    <div class="cookie-content">
+        <div class="cookie-title" id="cookie-title">🍪 Wir verwenden Cookies</div>
+        <div class="cookie-text" id="cookie-text">
+            Diese App verwendet Cookies für die Funktionalität und zum Speichern Ihrer Einstellungen.
+        </div>
+        <div class="cookie-options">
+            <div class="cookie-option">
+                <input type="checkbox" checked disabled id="cookie-necessary">
+                <label for="cookie-necessary" id="lbl-cookie-necessary">Notwendige Cookies</label>
+            </div>
+            <div class="cookie-option">
+                <input type="checkbox" checked id="cookie-functional">
+                <label for="cookie-functional" id="lbl-cookie-functional">Funktionale Cookies</label>
+            </div>
+        </div>
+        <div class="cookie-btns">
+            <button class="btn btn-primary" onclick="acceptAllCookies()">
+                <span id="btn-accept-all">✅ Alle akzeptieren</span>
+            </button>
+            <button class="btn btn-secondary" onclick="acceptNecessaryCookies()">
+                <span id="btn-accept-necessary">⚙️ Nur notwendige</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ======================= LOGIN PAGE ======================= -->
+<div id="login-page">
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🏺 ShardMind</h1>
+            <p id="login-tagline">Archäologische Fragmentanalyse & Rekonstruktion</p>
+        </div>
+
+        <div style="display:flex; justify-content:center; margin-bottom:20px;">
+            <div class="lang-toggle">
+                <button class="lang-btn active" id="lang-de-btn" onclick="setLanguage('de')">🇩🇪 Deutsch</button>
+                <button class="lang-btn" id="lang-en-btn" onclick="setLanguage('en')">🇬🇧 English</button>
+            </div>
+        </div>
+
+        <div class="login-card">
+            <div class="login-tabs">
+                <button class="login-tab active" onclick="showLoginTab('login')" id="tab-login-btn">🔐 Anmelden</button>
+                <button class="login-tab" onclick="showLoginTab('register')" id="tab-register-btn">📝 Registrieren</button>
+            </div>
+
+            <form class="login-form active" id="login-form" onsubmit="return handleLogin(event)">
+                <div class="form-group">
+                    <label id="lbl-username">Benutzername</label>
+                    <input type="text" id="login-username" required>
+                </div>
+                <div class="form-group">
+                    <label id="lbl-password">Passwort</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button class="btn btn-primary btn-full" type="submit" id="btn-login">🔐 Anmelden</button>
+                <div id="login-error" style="color:var(--error);font-size:13px;display:none;text-align:center;"></div>
+            </form>
+
+            <form class="login-form" id="register-form" onsubmit="return handleRegister(event)">
+                <div class="form-group">
+                    <label id="lbl-reg-username">Benutzername</label>
+                    <input type="text" id="reg-username" required>
+                </div>
+                <div class="form-group">
+                    <label id="lbl-reg-password">Passwort</label>
+                    <input type="password" id="reg-password" required>
+                </div>
+                <div class="form-group">
+                    <label id="lbl-reg-confirm">Passwort bestätigen</label>
+                    <input type="password" id="reg-confirm" required>
+                </div>
+                <div style="padding:10px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:var(--radius);font-size:13px;color:var(--info);" id="account-info-text">
+                    ℹ️ Dein Account wird im Browser gespeichert
+                </div>
+                <button class="btn btn-primary btn-full" type="submit" id="btn-register">📝 Registrieren</button>
+                <div id="register-msg" style="font-size:13px;display:none;text-align:center;"></div>
+            </form>
+        </div>
+
+        <div style="text-align:center;margin-top:16px;">
+            <span style="color:var(--text-muted);font-size:12px;">🔒 <span id="privacy-link-text">Datenschutzerklärung</span> | ShardMind v1.9</span>
+        </div>
+    </div>
+</div>
+
+<!-- ======================= MAIN APP ======================= -->
+<div id="app-page">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">🏺 ShardMind</span>
+            <span class="sidebar-version">v1.9</span>
+        </div>
+
+        <div class="sidebar-user">
+            <span>👤 <span id="sidebar-username"></span></span>
+            <button class="btn btn-sm btn-secondary" onclick="handleLogout()" title="Logout">🚪</button>
+        </div>
+
+        <div class="lang-toggle" style="width:100%;">
+            <button class="lang-btn active" id="app-lang-de" onclick="setLanguage('de')" style="flex:1;">🇩🇪</button>
+            <button class="lang-btn" id="app-lang-en" onclick="setLanguage('en')" style="flex:1;">🇬🇧</button>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section-title" id="sidebar-upload-title">📤 FOTOS HOCHLADEN</div>
+        <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+            <div class="icon">📷</div>
+            <div class="label" id="upload-label">JPG, PNG — Scherben auf hellem Hintergrund</div>
+            <input type="file" id="file-input" multiple accept=".png,.jpg,.jpeg">
+        </div>
+        <div class="upload-files-list" id="upload-files-list"></div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="slider-group">
+            <div class="slider-label">
+                <span id="lbl-min-size">Min. Fragmentgröße</span>
+                <span id="val-min-size">150</span>
+            </div>
+            <input type="range" id="slider-min-size" min="50" max="1000" value="150"
+                   oninput="document.getElementById('val-min-size').textContent=this.value">
+        </div>
+
+        <div class="slider-group">
+            <div class="slider-label">
+                <span id="lbl-cluster-sens">Gruppierungsstärke</span>
+                <span id="val-cluster-sens">40</span>
+            </div>
+            <input type="range" id="slider-cluster-sens" min="10" max="80" value="40"
+                   oninput="document.getElementById('val-cluster-sens').textContent=this.value">
+        </div>
+
+        <div class="slider-group">
+            <div class="slider-label">
+                <span id="lbl-separation">Trennungs-Empfindlichkeit</span>
+                <span id="val-separation">0.5</span>
+            </div>
+            <input type="range" id="slider-separation" min="0" max="10" value="5"
+                   oninput="document.getElementById('val-separation').textContent=(this.value/10).toFixed(1)">
+        </div>
+
+        <div class="form-group">
+            <label id="lbl-detection-mode">Erkennungsmodus</label>
+            <select id="select-mode">
+                <option value="porcelain">Porzellan/Keramik</option>
+                <option value="auto">Automatisch</option>
+                <option value="light_bg">Heller Hintergrund</option>
+                <option value="dark_bg">Dunkler Hintergrund</option>
+                <option value="high_contrast">Hoher Kontrast</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label id="lbl-project">Projekt/Grabung</label>
+            <input type="text" id="input-project" value="Project_2025">
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <button class="btn btn-primary btn-full" id="btn-analyze" onclick="runAnalysis()">
+            🔬 <span id="txt-analyze">Analysieren</span>
+        </button>
+
+        <button class="btn btn-secondary btn-full" onclick="clearAnalysis()">
+            🗑️ <span id="txt-clear">Leeren</span>
+        </button>
+
+        <div class="sidebar-divider"></div>
+
+        <div style="display:flex;gap:12px;">
+            <div class="metric-card" style="flex:1;">
+                <div class="metric-value" id="db-fragments-count">0</div>
+                <div class="metric-label" id="lbl-db-frags">Fragmente</div>
+            </div>
+            <div class="metric-card" style="flex:1;">
+                <div class="metric-value" id="db-groups-count">0</div>
+                <div class="metric-label" id="lbl-db-groups">Gruppen</div>
+            </div>
+        </div>
+    </aside>
+
+    <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">☰</button>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Metrics Row -->
+        <div class="metrics-row" id="metrics-row" style="display:none;">
+            <div class="metric-card">
+                <div class="metric-value" id="metric-fragments">0</div>
+                <div class="metric-label">🏺 <span id="ml-frags">Fragmente</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metric-groups">0</div>
+                <div class="metric-label">📦 <span id="ml-groups">Gruppen</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metric-project">—</div>
+                <div class="metric-label">🗺️ Projekt</div>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div id="analysis-progress" style="display:none;padding:16px 24px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="spinner"></div>
+                <span id="progress-text">Analysiere...</span>
+            </div>
+            <div class="progress-bar"><div class="progress-bar-inner" id="progress-bar-inner"></div></div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('start')">🏠 <span class="tab-label" data-key="tab_start">Start</span></button>
+            <button class="tab-btn" onclick="switchTab('gallery')">🏺 <span class="tab-label" data-key="tab_gallery">Galerie</span></button>
+            <button class="tab-btn" onclick="switchTab('groups')">📦 <span class="tab-label" data-key="tab_groups">Gruppen</span></button>
+            <button class="tab-btn" onclick="switchTab('reconstruction')">🧩 <span class="tab-label" data-key="tab_reconstruction">Rekonstruktion</span></button>
+            <button class="tab-btn" onclick="switchTab('database')">💾 <span class="tab-label" data-key="tab_database">Datenbank</span></button>
+            <button class="tab-btn" onclick="switchTab('labels')">🏷️ <span class="tab-label" data-key="tab_labels">Etiketten</span></button>
+            <button class="tab-btn" onclick="switchTab('changelog')">📋 <span class="tab-label" data-key="tab_changelog">Changelog</span></button>
+            <button class="tab-btn" onclick="switchTab('privacy')">🔒 <span class="tab-label" data-key="tab_privacy">Datenschutz</span></button>
+            <button class="tab-btn" onclick="switchTab('help')">❓ <span class="tab-label" data-key="tab_help">Hilfe</span></button>
+        </nav>
+
+        <!-- TAB: Start -->
+        <div class="tab-content active" id="tab-start">
+            <h2 class="section-header">🏺 ShardMind</h2>
+            <p class="section-sub" id="start-tagline">Analysiere und rekonstruiere zerbrochene Objekte</p>
+
+            <div style="margin-bottom:24px;">
+                <h3 style="font-size:18px;margin-bottom:12px;" id="search-title">🔍 Fragment suchen</h3>
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="SM-XXXXXXXX">
+                    <button class="btn btn-primary" onclick="searchFragment()">🔍</button>
+                </div>
+                <div id="search-result"></div>
+            </div>
+
+            <hr style="border-color:var(--border);margin:24px 0;">
+
+            <h3 style="font-size:18px;margin-bottom:16px;" id="demo-title">🎨 Demo</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px;font-size:14px;" id="demo-hint">
+                Herunterladen → Links hochladen → Analysieren
+            </p>
+
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h4>🏺 <span id="demo-pottery-title">Keramik</span></h4>
+                    <canvas id="demo-canvas-pottery" width="400" height="400"></canvas>
+                    <button class="btn btn-secondary btn-full" style="margin-top:12px;" onclick="downloadDemoImage('pottery')">
+                        📥 <span id="demo-dl-pottery">Download</span>
+                    </button>
+                </div>
+                <div class="demo-card">
+                    <h4>🍽️ <span id="demo-plate-title">Teller</span></h4>
+                    <canvas id="demo-canvas-plate" width="400" height="400"></canvas>
+                    <button class="btn btn-secondary btn-full" style="margin-top:12px;" onclick="downloadDemoImage('plate')">
+                        📥 <span id="demo-dl-plate">Download</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Gallery -->
+        <div class="tab-content" id="tab-gallery">
+            <h2 class="section-header" id="gallery-header">Erkannte Fragmente</h2>
+            <div id="gallery-content">
+                <div class="empty-state" id="gallery-empty">
+                    <div class="icon">📷</div>
+                    <p id="gallery-empty-text">Bitte zuerst Fotos hochladen</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Groups -->
+        <div class="tab-content" id="tab-groups">
+            <h2 class="section-header" id="groups-header">Gruppierung</h2>
+            <div id="groups-content">
+                <div class="empty-state">
+                    <div class="icon">📦</div>
+                    <p id="groups-empty-text">Bitte zuerst Fotos hochladen</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Reconstruction -->
+        <div class="tab-content" id="tab-reconstruction">
+            <h2 class="section-header" id="recon-header">Rekonstruktion</h2>
+            <div id="recon-content">
+                <div class="empty-state">
+                    <div class="icon">🧩</div>
+                    <p id="recon-empty-text">Bitte zuerst Fotos hochladen und analysieren</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Database -->
+        <div class="tab-content" id="tab-database">
+            <h2 class="section-header" id="database-header">Meine Sammlung</h2>
+            <div id="database-content">
+                <div class="empty-state">
+                    <div class="icon">💾</div>
+                    <p id="database-empty-text">Noch leer</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Labels -->
+        <div class="tab-content" id="tab-labels">
+            <h2 class="section-header" id="labels-header">Etiketten erstellen</h2>
+            <div id="labels-content">
+                <div class="label-options" id="label-source-options">
+                    <div class="label-option active" onclick="selectLabelSource('session')" id="lbl-opt-session">Aktuelle Analyse</div>
+                    <div class="label-option" onclick="selectLabelSource('database')" id="lbl-opt-database">Datenbank</div>
+                    <div class="label-option" onclick="selectLabelSource('custom')" id="lbl-opt-custom">Eigenes Etikett</div>
+                </div>
+
+                <div id="label-session-content"></div>
+                <div id="label-database-content" style="display:none;"></div>
+                <div id="label-custom-content" style="display:none;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                        <div class="form-group">
+                            <label>ID</label>
+                            <input type="text" id="custom-label-id" placeholder="SM-CUSTOM01">
+                        </div>
+                        <div class="form-group">
+                            <label id="lbl-custom-name">Bezeichnung</label>
+                            <input type="text" id="custom-label-name">
+                        </div>
+                        <div class="form-group">
+                            <label id="lbl-custom-desc">Beschreibung</label>
+                            <input type="text" id="custom-label-desc">
+                        </div>
+                        <div class="form-group">
+                            <label id="lbl-custom-proj">Projekt</label>
+                            <input type="text" id="custom-label-proj" value="Project_2025">
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="addCustomLabel()">➕ <span id="txt-add-custom">Hinzufügen</span></button>
+                    <div class="custom-labels-list" id="custom-labels-list"></div>
+                </div>
+
+                <hr style="border-color:var(--border);margin:20px 0;">
+                <div id="label-preview-area"></div>
+                <button class="btn btn-primary btn-full" onclick="createLabelsPDF()" id="btn-create-pdf" style="margin-top:16px;">
+                    📄 <span id="txt-create-pdf">PDF erstellen</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB: Changelog -->
+        <div class="tab-content" id="tab-changelog">
+            <h2 class="section-header">📋 <span id="changelog-header-text">Versionshistorie</span></h2>
+            <div id="changelog-content"></div>
+        </div>
+
+        <!-- TAB: Privacy -->
+        <div class="tab-content" id="tab-privacy">
+            <h2 class="section-header">🔒 <span id="privacy-header-text">Datenschutz</span></h2>
+
+            <div style="margin-bottom:24px;">
+                <h3 style="font-size:16px;margin-bottom:12px;" id="cookie-settings-title">🍪 Cookie-Einstellungen</h3>
+                <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px;">
+                    <div>
+                        <strong id="priv-necessary-title">Notwendige Cookies</strong>
+                        <p style="font-size:12px;color:var(--text-muted);" id="priv-necessary-desc">Erforderlich für Grundfunktionen</p>
+                        <input type="checkbox" checked disabled> <span style="font-size:12px;color:var(--text-muted);">Always on</span>
+                    </div>
+                    <div>
+                        <strong id="priv-functional-title">Funktionale Cookies</strong>
+                        <p style="font-size:12px;color:var(--text-muted);" id="priv-functional-desc">Einstellungen speichern</p>
+                        <input type="checkbox" checked id="priv-func-checkbox">
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="saveCookieSettings()">💾 <span id="txt-save-cookies">Einstellungen speichern</span></button>
+            </div>
+
+            <hr style="border-color:var(--border);margin:24px 0;">
+
+            <div class="privacy-content" id="privacy-policy-content"></div>
+
+            <hr style="border-color:var(--border);margin:24px 0;">
+
+            <h3 style="font-size:16px;margin-bottom:12px;" id="priv-settings-title">🔒 Datenschutz-Einstellungen</h3>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <button class="btn btn-secondary" onclick="exportUserData()">📥 <span id="txt-export">Meine Daten exportieren</span></button>
+                <button class="btn btn-danger" onclick="showDeleteAccountModal()">🗑️ <span id="txt-delete">Account löschen</span></button>
+            </div>
+            <div id="export-data-output" style="margin-top:16px;"></div>
+        </div>
+
+        <!-- TAB: Help -->
+        <div class="tab-content" id="tab-help">
+            <h2 class="section-header">❓ <span id="help-header-text">Anleitung</span></h2>
+            <div class="help-content" id="help-content-area"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================= DELETE ACCOUNT MODAL ======================= -->
+<div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+        <h3 id="delete-modal-title">🗑️ Account löschen</h3>
+        <p style="color:var(--text-secondary);margin-bottom:20px;" id="delete-modal-text">
+            Sind Sie sicher? Dies kann nicht rückgängig gemacht werden!
+        </p>
+        <div style="display:flex;gap:12px;">
+            <button class="btn btn-danger" onclick="confirmDeleteAccount()">❌ <span id="txt-confirm-delete">Ja, löschen</span></button>
+            <button class="btn btn-secondary" onclick="hideDeleteAccountModal()">Abbrechen</button>
+        </div>
+    </div>
+</div>
+
+<!-- ======================= JAVASCRIPT ======================= -->
+<script>
+// ==================================================
+// STATE & CONFIG
+// ==================================================
+const APP_VERSION = "1.9";
+const BASE_URL = "https://shardmind.streamlit.app";
+
+let currentLang = 'de';
+let currentUser = null;
+let activePieces = [];
+let clusterLabels = [];
+let clusterNames = {};
+let customLabels = [];
+let uploadedFiles = [];
+let reconImage = null;
+let reconMatches = [];
+let pyReady = false;
+
+// ==================================================
+// TRANSLATIONS
+// ==================================================
+const TRANSLATIONS = {
+    de: {
+        app_tagline: 'Analysiere und rekonstruiere zerbrochene Objekte',
+        login_tagline: 'Archäologische Fragmentanalyse & Rekonstruktion',
+        login: 'Anmelden', register: 'Registrieren',
+        username: 'Benutzername', password: 'Passwort',
+        password_confirm: 'Passwort bestätigen',
+        login_btn: '🔐 Anmelden', register_btn: '📝 Registrieren',
+        login_error: 'Falsche Anmeldedaten',
+        register_success: 'Registrierung erfolgreich!',
+        register_error_exists: 'Benutzername bereits vergeben',
+        register_error_password: 'Passwörter stimmen nicht überein',
+        register_error_short: 'Passwort mind. 4 Zeichen',
+        account_info: 'ℹ️ Dein Account wird im Browser gespeichert',
+        upload_title: '📤 FOTOS HOCHLADEN',
+        upload_label: 'JPG, PNG — Scherben auf hellem Hintergrund',
+        min_size: 'Min. Fragmentgröße', cluster_sens: 'Gruppierungsstärke',
+        separation: 'Trennungs-Empfindlichkeit',
+        detection_mode: 'Erkennungsmodus', project: 'Projekt/Grabung',
+        analyze: 'Analysieren', clear: 'Leeren',
+        fragments: 'Fragmente', groups: 'Gruppen',
+        tab_start: 'Start', tab_gallery: 'Galerie', tab_groups: 'Gruppen',
+        tab_reconstruction: 'Rekonstruktion', tab_database: 'Datenbank',
+        tab_labels: 'Etiketten', tab_changelog: 'Changelog',
+        tab_privacy: 'Datenschutz', tab_help: 'Hilfe',
+        gallery_header: 'Erkannte Fragmente',
+        groups_header: 'Gruppierung', group_name: 'Gruppenname',
+        save: 'Speichern', saved: 'Gespeichert!', pieces: 'Teile',
+        reconstruction_header: 'Rekonstruktion',
+        select_group: 'Gruppe wählen', canvas_size: 'Größe',
+        reconstruct: 'Zusammensetzen', connections: 'Verbindungen',
+        export_img: 'Bild speichern', edge_matches: 'Kantenpassungen',
+        database_header: 'Meine Sammlung', db_empty: 'Noch leer',
+        labels_header: 'Etiketten erstellen',
+        label_session: 'Aktuelle Analyse', label_database: 'Datenbank',
+        label_custom: 'Eigenes Etikett', custom_name: 'Bezeichnung',
+        custom_desc: 'Beschreibung', add_custom: 'Hinzufügen',
+        create_pdf: 'PDF erstellen', clear_custom: 'Liste leeren',
+        search_title: 'Fragment suchen', search_found: 'Gefunden!',
+        search_not_found: 'Nicht gefunden',
+        demo_title: 'Demo', demo_pottery: 'Keramik', demo_plate: 'Teller',
+        demo_download: 'Download',
+        demo_hint: 'Herunterladen → Links hochladen → Analysieren',
+        changelog_title: 'Versionshistorie', changelog_current: 'Aktuelle Version',
+        changelog_features: 'Neue Funktionen', changelog_fixes: 'Fehlerbehebungen',
+        cookie_banner_title: '🍪 Wir verwenden Cookies',
+        cookie_banner_text: 'Diese App verwendet Cookies für die Funktionalität und zum Speichern Ihrer Einstellungen.',
+        cookie_necessary: 'Notwendige Cookies', cookie_functional: 'Funktionale Cookies',
+        accept_all: '✅ Alle akzeptieren', accept_necessary: '⚙️ Nur notwendige',
+        cookie_settings: 'Cookie-Einstellungen', save_cookies: 'Einstellungen speichern',
+        privacy_title: 'Datenschutzerklärung', privacy_settings: 'Datenschutz-Einstellungen',
+        export_data: 'Meine Daten exportieren', delete_account: 'Account löschen',
+        delete_confirm: 'Sind Sie sicher? Dies kann nicht rückgängig gemacht werden!',
+        confirm_delete: 'Ja, löschen',
+        help_title: 'Anleitung', upload_first: 'Bitte zuerst Fotos hochladen',
+        analyzing: 'Analysiere...', success_fragments: 'Fragmente erkannt!',
+        porcelain: 'Porzellan/Keramik', auto: 'Automatisch',
+        light_bg: 'Heller Hintergrund', dark_bg: 'Dunkler Hintergrund',
+        high_contrast: 'Hoher Kontrast',
+        necessary_desc: 'Erforderlich für Grundfunktionen',
+        functional_desc: 'Einstellungen speichern',
+    },
+    en: {
+        app_tagline: 'Analyze and reconstruct broken objects',
+        login_tagline: 'Archaeological Fragment Analysis & Reconstruction',
+        login: 'Login', register: 'Register',
+        username: 'Username', password: 'Password',
+        password_confirm: 'Confirm Password',
+        login_btn: '🔐 Login', register_btn: '📝 Register',
+        login_error: 'Invalid credentials',
+        register_success: 'Registration successful!',
+        register_error_exists: 'Username already taken',
+        register_error_password: 'Passwords do not match',
+        register_error_short: 'Password min. 4 characters',
+        account_info: 'ℹ️ Your account is saved in the browser',
+        upload_title: '📤 UPLOAD PHOTOS',
+        upload_label: 'JPG, PNG — Fragments on light background',
+        min_size: 'Min. Fragment Size', cluster_sens: 'Grouping Strength',
+        separation: 'Separation Sensitivity',
+        detection_mode: 'Detection Mode', project: 'Project/Excavation',
+        analyze: 'Analyze', clear: 'Clear',
+        fragments: 'Fragments', groups: 'Groups',
+        tab_start: 'Start', tab_gallery: 'Gallery', tab_groups: 'Groups',
+        tab_reconstruction: 'Reconstruction', tab_database: 'Database',
+        tab_labels: 'Labels', tab_changelog: 'Changelog',
+        tab_privacy: 'Privacy', tab_help: 'Help',
+        gallery_header: 'Detected Fragments',
+        groups_header: 'Grouping', group_name: 'Group Name',
+        save: 'Save', saved: 'Saved!', pieces: 'pieces',
+        reconstruction_header: 'Reconstruction',
+        select_group: 'Select Group', canvas_size: 'Size',
+        reconstruct: 'Reconstruct', connections: 'Connections',
+        export_img: 'Save Image', edge_matches: 'Edge Matches',
+        database_header: 'My Collection', db_empty: 'Empty',
+        labels_header: 'Create Labels',
+        label_session: 'Current Analysis', label_database: 'Database',
+        label_custom: 'Custom Label', custom_name: 'Name',
+        custom_desc: 'Description', add_custom: 'Add',
+        create_pdf: 'Create PDF', clear_custom: 'Clear List',
+        search_title: 'Search Fragment', search_found: 'Found!',
+        search_not_found: 'Not found',
+        demo_title: 'Demo', demo_pottery: 'Pottery', demo_plate: 'Plate',
+        demo_download: 'Download',
+        demo_hint: 'Download → Upload left → Analyze',
+        changelog_title: 'Version History', changelog_current: 'Current Version',
+        changelog_features: 'New Features', changelog_fixes: 'Bug Fixes',
+        cookie_banner_title: '🍪 We use Cookies',
+        cookie_banner_text: 'This app uses cookies for functionality and to save your settings.',
+        cookie_necessary: 'Necessary Cookies', cookie_functional: 'Functional Cookies',
+        accept_all: '✅ Accept All', accept_necessary: '⚙️ Necessary Only',
+        cookie_settings: 'Cookie Settings', save_cookies: 'Save Settings',
+        privacy_title: 'Privacy Policy', privacy_settings: 'Privacy Settings',
+        export_data: 'Export My Data', delete_account: 'Delete Account',
+        delete_confirm: 'Are you sure? This cannot be undone!',
+        confirm_delete: 'Yes, Delete',
+        help_title: 'Guide', upload_first: 'Please upload photos first',
+        analyzing: 'Analyzing...', success_fragments: 'fragments detected!',
+        porcelain: 'Porcelain/Ceramic', auto: 'Automatic',
+        light_bg: 'Light Background', dark_bg: 'Dark Background',
+        high_contrast: 'High Contrast',
+        necessary_desc: 'Required for basic functionality',
+        functional_desc: 'Save your settings',
+    }
+};
+
+function T(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || key; }
+
+// ==================================================
+// CHANGELOG DATA
+// ==================================================
+const CHANGELOG = {
+    '1.9': { date: '2025-01-23', title: 'Datenschutz & Cookie-Consent', features: [
+        '🍪 COOKIE-BANNER mit Zustimmungs-Dialog', '📜 DATENSCHUTZERKLÄRUNG (DSGVO-konform)',
+        '🔒 Cookie-Einstellungen jederzeit änderbar', '📄 VERBESSERTE PDF-ETIKETTEN',
+        '🌍 Datenschutz in DE und EN'
+    ], fixes: ['PDF-Layout komplett überarbeitet', 'Bessere Lesbarkeit der Etiketten'] },
+    '1.8': { date: '2025-01-23', title: 'Verbesserte Fragment-Trennung', features: [
+        '🔪 WATERSHED-ALGORITHMUS für Schatten-Trennung', '🔍 Bessere Erkennung von zusammenhängenden Fragmenten',
+        '📐 Konvexitäts-Defekte zur Fragment-Trennung', '🎯 Verbesserte Morphologie-Operationen',
+        '📋 NEUER CHANGELOG-TAB', '🛠️ Einstellbare Trennungs-Empfindlichkeit'
+    ], fixes: ['Fragmente die durch Schatten verbunden waren werden jetzt getrennt'] },
+    '1.7': { date: '2025-01-21', title: 'Kreis-Fitting Rekonstruktion', features: [
+        '🎯 KOMPLETT NEUER REKONSTRUKTIONS-ALGORITHMUS', '📊 Kreis-Fitting aus blauem Dekorband',
+        '🔬 Muster-Analyse mit pattern_direction Erkennung', '📚 Vollständige Algorithmus-Dokumentation'
+    ], fixes: ['Funktioniert auch bei Schatten-Verbindungen'] },
+    '1.5': { date: '2025-01-21', title: 'Echte Kantenpassung', features: [
+        '🧩 KOMPLETT NEUE REKONSTRUKTION mit echter Kantenpassung', '📐 Kontur-basierte Kantenanalyse',
+        '📄 PDF-Layout überarbeitet (3x4 Raster auf A4)'
+    ], fixes: ['Iteratives Zusammensetzen der Fragmente'] },
+    '1.4': { date: '2025-01-21', title: 'Gemini & Accounts', features: [
+        '🤖 Gemini API Integration', '💾 Dauerhafte Account-Speicherung',
+        '🌍 Verbesserte Übersetzungen', '🏷️ Eigene Etiketten'
+    ], fixes: ['Android Bild-Bug behoben'] },
+    '1.3': { date: '2025-01-21', title: 'Start-Tab & QR-Codes', features: [
+        '🏠 Start-Tab mit Demo-Bildern', '🏷️ PDF-Etiketten mit QR-Codes', '📊 Verbessertes Clustering'
+    ], fixes: [] },
+    '1.2': { date: '2025-01-16', title: 'Login & Clustering', features: [
+        '🔐 Login-System', '🧩 Kanten-basiertes Clustering', '📖 Hilfe-Tab', '🌍 Zweisprachig'
+    ], fixes: [] },
+    '1.1': { date: '2025-01-15', title: 'Erste Rekonstruktion', features: [
+        '🧩 Erste Rekonstruktions-Funktion', '📦 Gruppierung nach Farbe/Material'
+    ], fixes: [] },
+    '1.0': { date: '2025-01-14', title: 'Erste Version', features: [
+        '🏺 Erste Version', '🔬 Grundlegende Segmentierung', '🎨 Farbanalyse'
+    ], fixes: [] },
+};
+
+// ==================================================
+// PRIVACY POLICIES
+// ==================================================
+const PRIVACY_DE = `<h2>Datenschutzerklärung</h2><p><strong>Stand: Januar 2025</strong></p>
+<h3>1. Verantwortlicher</h3><p>Verantwortlich für die Datenverarbeitung ist der Betreiber von ShardMind.</p>
+<h3>2. Welche Daten wir erheben</h3>
+<h3>2.1 Account-Daten</h3><p>Benutzername, Passwort (als Hash), Erstellungsdatum.</p>
+<h3>2.2 Nutzungsdaten</h3><p>Bilder (nur während der Sitzung), analysierte Fragmente, Gruppen.</p>
+<h3>2.3 Cookies</h3><p>Notwendige Cookies (Session), Funktionale Cookies (Einstellungen).</p>
+<h3>3. Zweck</h3><p>App-Funktionalität, Speicherung, Verbesserung der Erfahrung.</p>
+<h3>4. Datenweitergabe</h3><p>Keine Weitergabe an Dritte.</p>
+<h3>5. Ihre Rechte (DSGVO)</h3><p>Auskunft, Berichtigung, Löschung, Widerspruch.</p>
+<h3>6. Kontakt</h3><p>Bei Fragen kontaktieren Sie uns über die App.</p>`;
+
+const PRIVACY_EN = `<h2>Privacy Policy</h2><p><strong>Last updated: January 2025</strong></p>
+<h3>1. Data Controller</h3><p>The operator of ShardMind is responsible for data processing.</p>
+<h3>2. Data We Collect</h3>
+<h3>2.1 Account Data</h3><p>Username, password (stored as hash), creation date.</p>
+<h3>2.2 Usage Data</h3><p>Images (session only), analyzed fragments, groups.</p>
+<h3>2.3 Cookies</h3><p>Necessary cookies (session), Functional cookies (settings).</p>
+<h3>3. Purpose</h3><p>App functionality, storage, improving experience.</p>
+<h3>4. Data Sharing</h3><p>No sharing with third parties.</p>
+<h3>5. Your Rights (GDPR)</h3><p>Access, rectification, erasure, objection.</p>
+<h3>6. Contact</h3><p>Contact us through the app.</p>`;
+
+const HELP_DE = `<h2>Schnellstart</h2>
+<ul><li><strong>Demo testen</strong>: Testbild im Start-Tab herunterladen</li>
+<li><strong>Hochladen</strong>: Bild in den Upload-Bereich ziehen</li>
+<li><strong>Analysieren</strong>: "🔬 Analysieren" klicken</li>
+<li><strong>Rekonstruieren</strong>: Gruppe wählen → "🧩 Zusammensetzen"</li></ul>
+<h2>Tipps</h2><ul><li><strong>Heller Hintergrund</strong> funktioniert am besten</li>
+<li><strong>Nicht überlappen</strong> lassen</li>
+<li><strong>Gute Beleuchtung</strong> ohne Schatten</li>
+<li>Bei Problemen: Erkennungsmodus ändern</li></ul>
+<h2>Rekonstruktion</h2><p>Analysiert Fragmentkanten, findet passende Abschnitte, berechnet Rotation und setzt schrittweise zusammen.</p>
+<h2>Etiketten</h2><p>PDF mit QR-Codes, eigene Etiketten, QR-Codes verlinken zur App.</p>
+<h2>Datenschutz</h2><p>Datenschutzerklärung, Cookie-Einstellungen, Account und Daten löschen.</p>`;
+
+const HELP_EN = `<h2>Quick Start</h2>
+<ul><li><strong>Try Demo</strong>: Download test image in Start tab</li>
+<li><strong>Upload</strong>: Drag image to upload area</li>
+<li><strong>Analyze</strong>: Click "🔬 Analyze"</li>
+<li><strong>Reconstruct</strong>: Select group → "🧩 Reconstruct"</li></ul>
+<h2>Tips</h2><ul><li><strong>Light background</strong> works best</li>
+<li><strong>Don't overlap</strong> fragments</li>
+<li><strong>Good lighting</strong> without shadows</li>
+<li>If problems: Change detection mode</li></ul>
+<h2>Reconstruction</h2><p>Analyzes fragment edges, finds matching segments, calculates rotation and assembles step by step.</p>
+<h2>Labels</h2><p>PDF with QR codes, custom labels, QR codes link to app.</p>
+<h2>Privacy</h2><p>Privacy policy, cookie settings, delete account and data.</p>`;
+
+// ==================================================
+// UTILITY FUNCTIONS
+// ==================================================
+function toast(msg, type='info') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+function hashPassword(pw) {
+    // Simple hash for client-side (in production use bcrypt/server-side)
+    let hash = 0;
+    for (let i = 0; i < pw.length; i++) {
+        const c = pw.charCodeAt(i);
+        hash = ((hash << 5) - hash) + c;
+        hash |= 0;
+    }
+    return 'smhash_' + Math.abs(hash).toString(36);
+}
+
+function genId() {
+    const hex = [...Array(8)].map(() => Math.floor(Math.random()*16).toString(16)).join('').toUpperCase();
+    return `SM-${hex}`;
+}
+
+function getDB() {
+    try { return JSON.parse(localStorage.getItem('shardmind_db') || '{}'); } catch { return {}; }
+}
+function saveDB(db) { localStorage.setItem('shardmind_db', JSON.stringify(db)); }
+
+function getUserData() {
+    const db = getDB();
+    if (!currentUser || !db[currentUser]) return { pieces: {}, clusters: {} };
+    return db[currentUser].data || { pieces: {}, clusters: {} };
+}
+function saveUserData(data) {
+    const db = getDB();
+    if (currentUser && db[currentUser]) {
+        db[currentUser].data = data;
+        saveDB(db);
+    }
+}
+
+// ==================================================
+// AUTH
+// ==================================================
+function handleLogin(e) {
+    e.preventDefault();
+    const user = document.getElementById('login-username').value.trim();
+    const pw = document.getElementById('login-password').value;
+    const db = getDB();
+    
+    if (!db[user] || db[user].pw_hash !== hashPassword(pw)) {
+        const err = document.getElementById('login-error');
+        err.textContent = T('login_error');
+        err.style.display = 'block';
+        return false;
+    }
+    
+    currentUser = user;
+    localStorage.setItem('shardmind_user', user);
+    showApp();
+    return false;
+}
+
+function handleRegister(e) {
+    e.preventDefault();
+    const user = document.getElementById('reg-username').value.trim();
+    const pw = document.getElementById('reg-password').value;
+    const confirm = document.getElementById('reg-confirm').value;
+    const msg = document.getElementById('register-msg');
+    
+    if (pw !== confirm) {
+        msg.textContent = T('register_error_password');
+        msg.style.color = 'var(--error)';
+        msg.style.display = 'block'; return false;
+    }
+    if (pw.length < 4) {
+        msg.textContent = T('register_error_short');
+        msg.style.color = 'var(--error)';
+        msg.style.display = 'block'; return false;
+    }
+    
+    const db = getDB();
+    if (db[user]) {
+        msg.textContent = T('register_error_exists');
+        msg.style.color = 'var(--error)';
+        msg.style.display = 'block'; return false;
+    }
+    
+    db[user] = {
+        pw_hash: hashPassword(pw),
+        created: new Date().toISOString(),
+        data: { pieces: {}, clusters: {} }
+    };
+    saveDB(db);
+    
+    msg.textContent = T('register_success');
+    msg.style.color = 'var(--success)';
+    msg.style.display = 'block';
+    return false;
+}
+
+function handleLogout() {
+    currentUser = null;
+    activePieces = [];
+    clusterLabels = [];
+    reconImage = null;
+    localStorage.removeItem('shardmind_user');
+    document.getElementById('app-page').classList.remove('active');
+    document.getElementById('login-page').classList.remove('hidden');
+    document.getElementById('login-page').style.display = '';
+}
+
+// ==================================================
+// NAVIGATION
+// ==================================================
+function showLoginTab(tab) {
+    document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
+    document.querySelector(`#${tab}-form`).classList.add('active');
+    event.target.classList.add('active');
+}
+
+function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+    event.target.closest('.tab-btn').classList.add('active');
+}
+
+function toggleMobileSidebar() {
+    document.getElementById('sidebar').classList.toggle('mobile-open');
+}
+
+// ==================================================
+// LANGUAGE
+// ==================================================
+function setLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('shardmind_lang', lang);
+    
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`lang-${lang}-btn`)?.classList.add('active');
+    document.getElementById(`app-lang-${lang}`)?.classList.add('active');
+    
+    updateAllTranslations();
+}
+
+function updateAllTranslations() {
+    // Update tab labels
+    document.querySelectorAll('.tab-label').forEach(el => {
+        const key = el.dataset.key;
+        if (key && T(key)) el.textContent = T(key);
+    });
+    
+    // Update specific elements
+    const updates = {
+        'login-tagline': T('login_tagline'),
+        'start-tagline': T('app_tagline'),
+        'upload-label': T('upload_label'),
+        'sidebar-upload-title': T('upload_title'),
+        'lbl-min-size': T('min_size'),
+        'lbl-cluster-sens': T('cluster_sens'),
+        'lbl-separation': T('separation'),
+        'lbl-detection-mode': T('detection_mode'),
+        'lbl-project': T('project'),
+        'txt-analyze': T('analyze'),
+        'txt-clear': T('clear'),
+        'gallery-header': T('gallery_header'),
+        'groups-header': T('groups_header'),
+        'recon-header': T('reconstruction_header'),
+        'database-header': T('database_header'),
+        'labels-header': T('labels_header'),
+        'changelog-header-text': T('changelog_title'),
+        'privacy-header-text': T('privacy_title'),
+        'help-header-text': T('help_title'),
+        'gallery-empty-text': T('upload_first'),
+        'search-title': T('search_title'),
+        'demo-title': T('demo_title'),
+        'demo-hint': T('demo_hint'),
+        'demo-pottery-title': T('demo_pottery'),
+        'demo-plate-title': T('demo_plate'),
+        'lbl-opt-session': T('label_session'),
+        'lbl-opt-database': T('label_database'),
+        'lbl-opt-custom': T('label_custom'),
+        'txt-create-pdf': T('create_pdf'),
+        'txt-save-cookies': T('save_cookies'),
+        'txt-export': T('export_data'),
+        'txt-delete': T('delete_account'),
+        'txt-add-custom': T('add_custom'),
+        'btn-accept-all': T('accept_all'),
+        'btn-accept-necessary': T('accept_necessary'),
+        'cookie-title': T('cookie_banner_title'),
+        'cookie-text': T('cookie_banner_text'),
+        'lbl-cookie-necessary': T('cookie_necessary'),
+        'lbl-cookie-functional': T('cookie_functional'),
+        'tab-login-btn': T('login_btn'),
+        'tab-register-btn': T('register_btn'),
+        'lbl-username': T('username'),
+        'lbl-password': T('password'),
+        'lbl-reg-username': T('username'),
+        'lbl-reg-password': T('password'),
+        'lbl-reg-confirm': T('password_confirm'),
+        'btn-login': T('login_btn'),
+        'btn-register': T('register_btn'),
+        'account-info-text': T('account_info'),
+        'progress-text': T('analyzing'),
+        'cookie-settings-title': T('cookie_settings'),
+        'priv-necessary-title': T('cookie_necessary'),
+        'priv-functional-title': T('cookie_functional'),
+        'priv-necessary-desc': T('necessary_desc'),
+        'priv-functional-desc': T('functional_desc'),
+        'priv-settings-title': T('privacy_settings'),
+    };
+    
+    Object.entries(updates).forEach(([id, text]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    });
+    
+    // Update mode select options
+    const modeSelect = document.getElementById('select-mode');
+    if (modeSelect) {
+        const modes = { porcelain: T('porcelain'), auto: T('auto'), light_bg: T('light_bg'), dark_bg: T('dark_bg'), high_contrast: T('high_contrast') };
+        [...modeSelect.options].forEach(opt => { if (modes[opt.value]) opt.textContent = modes[opt.value]; });
+    }
+    
+    // Update privacy and help content
+    document.getElementById('privacy-policy-content').innerHTML = currentLang === 'de' ? PRIVACY_DE : PRIVACY_EN;
+    document.getElementById('help-content-area').innerHTML = currentLang === 'de' ? HELP_DE : HELP_EN;
+}
+
+// ==================================================
+// COOKIE CONSENT
+// ==================================================
+function checkCookieConsent() {
+    const consent = localStorage.getItem('shardmind_cookie_consent');
+    if (!consent) {
+        document.getElementById('cookie-banner').classList.add('show');
+    }
+}
+function acceptAllCookies() {
+    localStorage.setItem('shardmind_cookie_consent', JSON.stringify({ necessary: true, functional: true }));
+    document.getElementById('cookie-banner').classList.remove('show');
+}
+function acceptNecessaryCookies() {
+    localStorage.setItem('shardmind_cookie_consent', JSON.stringify({ necessary: true, functional: false }));
+    document.getElementById('cookie-banner').classList.remove('show');
+}
+function saveCookieSettings() {
+    const func = document.getElementById('priv-func-checkbox').checked;
+    localStorage.setItem('shardmind_cookie_consent', JSON.stringify({ necessary: true, functional: func }));
+    toast(T('saved'), 'success');
+}
+
+// ==================================================
+// FILE UPLOAD
+// ==================================================
+const fileInput = document.getElementById('file-input');
+const uploadArea = document.getElementById('upload-area');
+
+fileInput?.addEventListener('change', (e) => {
+    uploadedFiles = [...e.target.files];
+    renderUploadedFiles();
+});
+
+uploadArea?.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea?.addEventListener('dragleave', () => { uploadArea.classList.remove('dragover'); });
+uploadArea?.addEventListener('drop', (e) => {
+    e.preventDefault(); uploadArea.classList.remove('dragover');
+    uploadedFiles = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+    const dt = new DataTransfer();
+    uploadedFiles.forEach(f => dt.items.add(f));
+    fileInput.files = dt.files;
+    renderUploadedFiles();
+});
+
+function renderUploadedFiles() {
+    const list = document.getElementById('upload-files-list');
+    list.innerHTML = uploadedFiles.map(f =>
+        `<div class="upload-file-item"><span>${f.name}</span><span>${(f.size/1024).toFixed(0)}KB</span></div>`
+    ).join('');
+}
+
+// ==================================================
+// DEMO IMAGES
+// ==================================================
+function drawDemoPottery() {
+    const canvas = document.getElementById('demo-canvas-pottery');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.fillStyle = '#e6e6e1';
+    ctx.fillRect(0, 0, w, h);
+    
+    const cx = w/2, cy = h/2, r = 150;
+    const colors = ['#374B82','#3C5087','#32467D','#41558C','#2D4178','#465A91'];
+    const num = 6;
+    const angles = [];
+    for (let i = 0; i < num; i++) angles.push(i * 2*Math.PI/num + (Math.random()-0.5)*0.3);
+    angles.sort((a,b) => a-b);
+    
+    for (let i = 0; i < num; i++) {
+        const a1 = angles[i];
+        let a2 = angles[(i+1)%num];
+        if (a2 < a1) a2 += 2*Math.PI;
+        const mid = (a1+a2)/2;
+        const ox = 80*Math.cos(mid) + (Math.random()-0.5)*40;
+        const oy = 80*Math.sin(mid) + (Math.random()-0.5)*40;
+        
+        ctx.beginPath();
+        ctx.moveTo(cx+ox, cy+oy);
+        for (let a = a1; a <= a2; a += 0.05) {
+            ctx.lineTo(cx+ox+(r+5)*Math.cos(a), cy+oy+(r+5)*Math.sin(a));
+        }
+        ctx.closePath();
+        
+        // Clip to circle
+        ctx.save();
+        ctx.clip();
+        ctx.beginPath();
+        ctx.arc(cx+ox, cy+oy, r+10, 0, 2*Math.PI);
+        ctx.fillStyle = colors[i];
+        ctx.fill();
+        ctx.restore();
+        
+        // Draw piece
+        ctx.beginPath();
+        ctx.moveTo(cx+ox, cy+oy);
+        for (let a = a1; a <= a2; a += 0.05) {
+            const pr = r - 3 + Math.sin(a*5)*2;
+            ctx.lineTo(cx+ox+pr*Math.cos(a), cy+oy+pr*Math.sin(a));
+        }
+        ctx.closePath();
+        ctx.fillStyle = colors[i];
+        ctx.fill();
+        ctx.strokeStyle = '#2a3560';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+}
+
+function drawDemoPlate() {
+    const canvas = document.getElementById('demo-canvas-plate');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.fillStyle = '#e1e1dc';
+    ctx.fillRect(0, 0, w, h);
+    
+    const cx = w/2, cy = h/2, outerR = 160, innerR = 30;
+    const num = 5;
+    const angles = [];
+    for (let i = 0; i < num; i++) angles.push(i * 2*Math.PI/num + (Math.random()-0.5)*0.2);
+    angles.sort((a,b) => a-b);
+    
+    for (let i = 0; i < num; i++) {
+        const a1 = angles[i];
+        let a2 = angles[(i+1)%num];
+        if (a2 < a1) a2 += 2*Math.PI;
+        const mid = (a1+a2)/2;
+        const ox = 60*Math.cos(mid) + (Math.random()-0.5)*30;
+        const oy = 60*Math.sin(mid) + (Math.random()-0.5)*30;
+        
+        ctx.beginPath();
+        for (let a = a1; a <= a2; a += 0.04) {
+            ctx.lineTo(cx+ox+innerR*Math.cos(a), cy+oy+innerR*Math.sin(a));
+        }
+        for (let a = a2; a >= a1; a -= 0.04) {
+            ctx.lineTo(cx+ox+outerR*Math.cos(a), cy+oy+outerR*Math.sin(a));
+        }
+        ctx.closePath();
+        ctx.fillStyle = '#FAF8F5';
+        ctx.fill();
+        ctx.strokeStyle = '#C8C3BE';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Rim dots
+        for (let a = a1; a <= a2; a += (a2-a1)/6) {
+            ctx.beginPath();
+            ctx.arc(cx+ox+(outerR-15)*Math.cos(a), cy+oy+(outerR-15)*Math.sin(a), 3, 0, 2*Math.PI);
+            ctx.fillStyle = '#A59B8C';
+            ctx.fill();
+        }
+    }
+}
+
+function downloadDemoImage(type) {
+    const canvas = document.getElementById(`demo-canvas-${type}`);
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `demo_${type}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+// ==================================================
+// SHOW APP
+// ==================================================
+function showApp() {
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('app-page').classList.add('active');
+    document.getElementById('sidebar-username').textContent = currentUser;
+    
+    updateAllTranslations();
+    updateDBMetrics();
+    renderChangelog();
+    drawDemoPottery();
+    drawDemoPlate();
+}
+
+function updateDBMetrics() {
+    const data = getUserData();
+    const pc = Object.keys(data.pieces || {}).length;
+    const gc = Object.keys(data.clusters || {}).length;
+    document.getElementById('db-fragments-count').textContent = pc;
+    document.getElementById('db-groups-count').textContent = gc;
+}
+
+// ==================================================
+// SEARCH
+// ==================================================
+function searchFragment() {
+    const id = document.getElementById('search-input').value.trim().toUpperCase();
+    if (!id) return;
+    
+    const result = document.getElementById('search-result');
+    
+    // Search in active pieces
+    let found = activePieces.find(p => p.id === id);
+    
+    // Search in database
+    if (!found) {
+        const data = getUserData();
+        found = data.pieces?.[id];
+    }
+    
+    if (found) {
+        result.innerHTML = `<div style="padding:12px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:var(--radius);margin-top:8px;">
+            <strong style="color:var(--success);">${T('search_found')}</strong><br>
+            <span style="font-family:'JetBrains Mono',monospace;color:var(--accent);">${found.id}</span><br>
+            <span style="color:var(--text-secondary);">${found.name || 'Fragment'} | ${found.material || '-'}</span>
+            ${found.thumbnailDataUrl ? `<br><img src="${found.thumbnailDataUrl}" style="width:80px;margin-top:8px;border-radius:6px;">` : ''}
+        </div>`;
+    } else {
+        result.innerHTML = `<div style="padding:12px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:var(--radius);margin-top:8px;">
+            <strong style="color:var(--error);">${T('search_not_found')}: ${id}</strong>
+        </div>`;
+    }
+}
+
+// ==================================================
+// LABEL SOURCE SELECTION
+// ==================================================
+function selectLabelSource(source) {
+    document.querySelectorAll('.label-option').forEach(o => o.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    document.getElementById('label-session-content').style.display = source === 'session' ? '' : 'none';
+    document.getElementById('label-database-content').style.display = source === 'database' ? '' : 'none';
+    document.getElementById('label-custom-content').style.display = source === 'custom' ? '' : 'none';
+}
+
+function addCustomLabel() {
+    const id = document.getElementById('custom-label-id').value || genId();
+    const name = document.getElementById('custom-label-name').value || 'Custom';
+    const desc = document.getElementById('custom-label-desc').value;
+    const proj = document.getElementById('custom-label-proj').value;
+    
+    customLabels.push({ id, name, description: desc, excavation: proj, material: '', created: new Date().toISOString() });
+    renderCustomLabels();
+    toast(T('saved'), 'success');
+}
+
+function renderCustomLabels() {
+    const list = document.getElementById('custom-labels-list');
+    if (customLabels.length === 0) { list.innerHTML = ''; return; }
+    
+    list.innerHTML = customLabels.map((l, i) =>
+        `<div class="custom-label-item">
+            <span><strong>${l.id}</strong> — ${l.name}</span>
+            <button class="btn btn-sm btn-secondary" onclick="customLabels.splice(${i},1);renderCustomLabels();">✕</button>
+        </div>`
+    ).join('') + `<button class="btn btn-sm btn-danger" style="margin-top:8px;" onclick="customLabels=[];renderCustomLabels();">🗑️ ${T('clear_custom')}</button>`;
+}
+
+// ==================================================
+// GALLERY & GROUPS RENDERING
+// ==================================================
+const CLUSTER_COLORS = ["#E74C3C","#3498DB","#2ECC71","#F39C12","#9B59B6","#1ABC9C","#E67E22","#34495E"];
+
+function renderGallery() {
+    const container = document.getElementById('gallery-content');
+    if (activePieces.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📷</div><p>${T('upload_first')}</p></div>`;
+        return;
+    }
+    
+    let html = '<div class="gallery-grid">';
+    activePieces.forEach(p => {
+        const cid = p.cluster ?? -1;
+        const color = cid >= 0 ? CLUSTER_COLORS[cid % CLUSTER_COLORS.length] : '#B0B0B0';
+        html += `<div class="gallery-item">
+            <div class="gallery-item-border" style="background:${color};"></div>
+            ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}" alt="${p.id}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);"></div>'}
+            <div class="gallery-info">
+                <div class="gallery-id">${p.id.substring(0, 11)}</div>
+                <div class="gallery-name">${(p.name || '').substring(0, 20)}</div>
+            </div>
+        </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function renderGroups() {
+    const container = document.getElementById('groups-content');
+    if (activePieces.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📦</div><p>${T('upload_first')}</p></div>`;
+        return;
+    }
+    
+    const clusterIds = [...new Set(activePieces.map(p => p.cluster ?? -1))].filter(c => c >= 0).sort();
+    
+    if (clusterIds.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📦</div><p>No groups</p></div>`;
+        return;
+    }
+    
+    let html = '';
+    clusterIds.forEach(cid => {
+        const cp = activePieces.filter(p => p.cluster === cid);
+        const mats = cp.map(p => p.material || 'Unknown');
+        const common = mode(mats);
+        const name = clusterNames[cid] || `${common}_Gruppe_${cid + 1}`;
+        const color = CLUSTER_COLORS[cid % CLUSTER_COLORS.length];
+        
+        html += `<div class="group-card" style="border-left:4px solid ${color};">
+            <div class="group-header">
+                <div>
+                    <input type="text" value="${name}" onchange="clusterNames[${cid}]=this.value" 
+                           style="background:transparent;border:none;color:var(--text-primary);font-size:18px;font-weight:600;width:250px;">
+                </div>
+                <span class="group-badge">${cp.length} ${T('pieces')}</span>
+            </div>
+            <div class="group-pieces">
+                ${cp.slice(0, 8).map(p => `<div class="group-piece">
+                    ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}">` : '<div style="width:80px;height:80px;background:var(--bg-secondary);"></div>'}
+                </div>`).join('')}
+            </div>
+            <div class="group-actions">
+                <button class="btn btn-sm btn-primary" onclick="saveGroupToDB(${cid})">💾 ${T('save')}</button>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function mode(arr) {
+    const freq = {};
+    arr.forEach(v => freq[v] = (freq[v]||0) + 1);
+    return Object.entries(freq).sort((a,b) => b[1]-a[1])[0]?.[0] || 'Unknown';
+}
+
+function saveGroupToDB(cid) {
+    const data = getUserData();
+    const cp = activePieces.filter(p => p.cluster === cid);
+    const name = clusterNames[cid] || `Group_${cid+1}`;
+    const key = `${name}_${Date.now()}`;
+    
+    data.clusters[key] = {
+        name, created: new Date().toISOString(),
+        piece_ids: cp.map(p => p.id)
+    };
+    
+    cp.forEach(p => {
+        const saved = { ...p };
+        delete saved.imageData;  // Don't store raw image data
+        data.pieces[p.id] = saved;
+    });
+    
+    saveUserData(data);
+    updateDBMetrics();
+    toast(T('saved'), 'success');
+}
+
+function renderDatabase() {
+    const container = document.getElementById('database-content');
+    const data = getUserData();
+    const pieces = data.pieces || {};
+    const clusters = data.clusters || {};
+    
+    if (Object.keys(pieces).length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">💾</div><p>${T('db_empty')}</p></div>`;
+        return;
+    }
+    
+    let html = `<p style="color:var(--text-secondary);margin-bottom:16px;"><strong>${Object.keys(pieces).length} ${T('fragments')}</strong></p>`;
+    html += '<div class="db-grid">';
+    Object.entries(pieces).slice(0, 24).forEach(([pid, p]) => {
+        html += `<div class="db-item">
+            ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);border-radius:6px;"></div>'}
+            <div class="db-id">${pid.substring(0, 11)}</div>
+        </div>`;
+    });
+    html += '</div>';
+    
+    if (Object.keys(clusters).length > 0) {
+        html += `<hr style="border-color:var(--border);margin:20px 0;">`;
+        html += `<p style="color:var(--text-secondary);margin-bottom:8px;"><strong>${Object.keys(clusters).length} ${T('groups')}</strong></p>`;
+        Object.entries(clusters).forEach(([k, v]) => {
+            html += `<p style="color:var(--text-muted);font-size:13px;">• ${v.name || k} (${(v.piece_ids||[]).length} ${T('pieces')})</p>`;
+        });
+    }
+    
+    container.innerHTML = html;
+}
+
+// ==================================================
+// RECONSTRUCTION RENDERING
+// ==================================================
+function renderReconOptions() {
+    const container = document.getElementById('recon-content');
+    if (activePieces.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">🧩</div><p>${T('upload_first')}</p></div>`;
+        return;
+    }
+    
+    const clusterIds = [...new Set(activePieces.map(p => p.cluster ?? -1))].filter(c => c >= 0).sort();
+    
+    let optionsHtml = '';
+    clusterIds.forEach(cid => {
+        const cp = activePieces.filter(p => p.cluster === cid);
+        const name = clusterNames[cid] || `Group_${cid + 1}`;
+        optionsHtml += `<option value="${cid}">${name} (${cp.length} ${T('pieces')})</option>`;
+    });
+    
+    container.innerHTML = `
+        <div class="recon-container">
+            <div class="recon-main">
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label>${T('select_group')}</label>
+                    <select id="recon-group-select">${optionsHtml}</select>
+                </div>
+                <div class="slider-group" style="margin-bottom:16px;">
+                    <div class="slider-label"><span>${T('canvas_size')}</span><span id="val-canvas-size">800</span></div>
+                    <input type="range" id="slider-canvas-size" min="500" max="1200" value="800" step="50"
+                           oninput="document.getElementById('val-canvas-size').textContent=this.value">
+                </div>
+                <button class="btn btn-primary btn-full" onclick="runReconstruction()">🧩 ${T('reconstruct')}</button>
+                <div class="recon-canvas-wrapper" style="margin-top:16px;" id="recon-canvas-wrapper">
+                    <canvas id="recon-canvas" width="800" height="800"></canvas>
+                </div>
+                <button class="btn btn-secondary btn-full" style="margin-top:8px;" onclick="downloadReconImage()" id="btn-download-recon" style="display:none;">
+                    📥 ${T('export_img')}
+                </button>
+            </div>
+            <div class="recon-sidebar">
+                <h4 style="margin-bottom:12px;">${T('edge_matches')}</h4>
+                <div class="match-list" id="match-list"></div>
+            </div>
+        </div>
+    `;
+}
+
+function downloadReconImage() {
+    const canvas = document.getElementById('recon-canvas');
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = 'reconstruction.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+// ==================================================
+// CHANGELOG RENDERING
+// ==================================================
+function renderChangelog() {
+    const container = document.getElementById('changelog-content');
+    let html = '';
+    
+    const sorted = Object.entries(CHANGELOG).sort((a, b) => b[0].localeCompare(a[0]));
+    sorted.forEach(([version, data]) => {
+        const isCurrent = version === APP_VERSION;
+        html += `<div class="changelog-version ${isCurrent ? 'current' : ''}">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span class="changelog-tag">v${version} — ${data.title} ${isCurrent ? `(${T('changelog_current')})` : ''}</span>
+                <span class="changelog-date">📅 ${data.date}</span>
+            </div>`;
+        if (data.features?.length) {
+            html += `<p style="color:var(--text-secondary);font-size:13px;margin-top:8px;font-weight:600;">${T('changelog_features')}:</p><ul class="changelog-list">`;
+            data.features.forEach(f => html += `<li>${f}</li>`);
+            html += '</ul>';
+        }
+        if (data.fixes?.length) {
+            html += `<p style="color:var(--text-secondary);font-size:13px;margin-top:8px;font-weight:600;">${T('changelog_fixes')}:</p><ul class="changelog-list">`;
+            data.fixes.forEach(f => html += `<li>${f}</li>`);
+            html += '</ul>';
+        }
+        html += '</div>';
+    });
+    
+    container.innerHTML = html;
+}
+
+// ==================================================
+// EXPORT & DELETE ACCOUNT
+// ==================================================
+function exportUserData() {
+    const data = getUserData();
+    const db = getDB();
+    const user = db[currentUser];
+    const exported = {
+        username: currentUser,
+        created: user?.created,
+        pieces_count: Object.keys(data.pieces || {}).length,
+        clusters_count: Object.keys(data.clusters || {}).length,
+        pieces: Object.keys(data.pieces || {}),
+        clusters: Object.keys(data.clusters || {}),
+    };
+    document.getElementById('export-data-output').innerHTML =
+        `<pre style="background:var(--bg-secondary);padding:16px;border-radius:var(--radius);font-size:12px;overflow:auto;max-height:300px;color:var(--text-secondary);font-family:'JetBrains Mono',monospace;">${JSON.stringify(exported, null, 2)}</pre>`;
+}
+
+function showDeleteAccountModal() { document.getElementById('delete-modal').classList.add('show'); }
+function hideDeleteAccountModal() { document.getElementById('delete-modal').classList.remove('show'); }
+
+function confirmDeleteAccount() {
+    const db = getDB();
+    delete db[currentUser];
+    saveDB(db);
+    localStorage.removeItem('shardmind_cookie_consent');
+    hideDeleteAccountModal();
+    handleLogout();
+    toast('Account deleted', 'info');
+}
+
+// ==================================================
+// PDF LABELS (using jsPDF)
+// ==================================================
+function createLabelsPDF() {
+    // Determine which pieces to label
+    const activeSource = document.querySelector('.label-option.active')?.textContent;
+    let pieces = [];
+    
+    if (activeSource?.includes(T('label_session')) || activeSource?.includes('session') || activeSource?.includes('Aktuelle')) {
+        pieces = activePieces;
+    } else if (activeSource?.includes(T('label_database')) || activeSource?.includes('Datenbank') || activeSource?.includes('Database')) {
+        const data = getUserData();
+        pieces = Object.values(data.pieces || {});
+    } else {
+        pieces = customLabels;
+    }
+    
+    if (pieces.length === 0) {
+        toast(T('upload_first'), 'error');
+        return;
+    }
+    
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageW = 210, pageH = 297;
+    const marginL = 12, marginT = 18, marginR = 12, marginB = 12;
+    const cols = 3, rows = 4;
+    const cellW = (pageW - marginL - marginR) / cols;
+    const cellH = (pageH - marginT - marginB) / rows;
+    const qrSize = 22;
+    const padding = 4;
+    const itemsPerPage = cols * rows;
+    
+    pieces.forEach((piece, idx) => {
+        if (idx > 0 && idx % itemsPerPage === 0) doc.addPage();
+        
+        const pageIdx = idx % itemsPerPage;
+        const col = pageIdx % cols;
+        const row = Math.floor(pageIdx / cols);
+        const cellX = marginL + col * cellW;
+        const cellY = marginT + row * cellH;
+        
+        // Header on each new page
+        if (pageIdx === 0) {
+            doc.setFillColor(51, 76, 127);
+            doc.rect(marginL, 4, pageW - marginL - marginR, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(11);
+            doc.text(`🏺 ShardMind - ${currentUser}`, marginL + 3, 11);
+            doc.setFontSize(9);
+            const dateStr = new Date().toLocaleDateString('de-DE');
+            doc.text(`${dateStr} | ${pieces.length} Labels`, pageW - marginR - 3, 11, { align: 'right' });
+        }
+        
+        // Cell background
+        doc.setFillColor((col + row) % 2 === 0 ? 250 : 255, (col + row) % 2 === 0 ? 250 : 255, (col + row) % 2 === 0 ? 250 : 255);
+        doc.rect(cellX, cellY, cellW, cellH, 'F');
+        
+        // Cell border
+        doc.setDrawColor(190, 190, 190);
+        doc.setLineWidth(0.3);
+        doc.rect(cellX, cellY, cellW, cellH, 'S');
+        
+        // QR Code
+        const pieceId = piece.id || genId();
+        const url = `${BASE_URL}/?piece=${pieceId}`;
+        
+        try {
+            const qrDiv = document.createElement('div');
+            qrDiv.style.position = 'absolute';
+            qrDiv.style.left = '-9999px';
+            document.body.appendChild(qrDiv);
+            
+            const qrCode = new QRCode(qrDiv, { text: url, width: 128, height: 128, correctLevel: QRCode.CorrectLevel.M });
+            
+            setTimeout(() => {
+                const qrCanvas = qrDiv.querySelector('canvas');
+                if (qrCanvas) {
+                    const qrData = qrCanvas.toDataURL('image/png');
+                    const qrX = cellX + (cellW - qrSize) / 2;
+                    doc.addImage(qrData, 'PNG', qrX, cellY + padding, qrSize, qrSize);
+                }
+                document.body.removeChild(qrDiv);
+            }, 50);
+        } catch (e) {
+            // QR code fallback - draw a simple placeholder
+            doc.setDrawColor(200, 200, 200);
+            const qrX = cellX + (cellW - qrSize) / 2;
+            doc.rect(qrX, cellY + padding, qrSize, qrSize, 'S');
+        }
+        
+        // Text
+        let textY = cellY + padding + qrSize + 6;
+        
+        doc.setTextColor(30, 30, 30);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text(pieceId, cellX + cellW / 2, textY, { align: 'center' });
+        
+        textY += 4;
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text((piece.name || 'Fragment').substring(0, 28), cellX + cellW / 2, textY, { align: 'center' });
+        
+        if (piece.material) {
+            textY += 3.5;
+            doc.text(`Material: ${piece.material.substring(0, 20)}`, cellX + cellW / 2, textY, { align: 'center' });
+        }
+        
+        if (piece.excavation) {
+            textY += 3.5;
+            doc.setFontSize(6);
+            doc.setTextColor(130, 130, 130);
+            doc.text(`📍 ${piece.excavation.substring(0, 25)}`, cellX + cellW / 2, textY, { align: 'center' });
+        }
+        
+        textY += 3;
+        doc.setFontSize(5);
+        doc.text(new Date().toLocaleDateString('de-DE'), cellX + cellW / 2, textY, { align: 'center' });
+    });
+    
+    // Footer
+    doc.setFontSize(6);
+    doc.setTextColor(130, 130, 130);
+    doc.text(`ShardMind v${APP_VERSION} | ${BASE_URL}`, marginL, pageH - 6);
+    
+    // Small delay to allow QR codes to render, then save
+    setTimeout(() => {
+        doc.save(`labels_${new Date().toISOString().slice(0,10)}.pdf`);
+        toast('PDF created!', 'success');
+    }, 200);
+}
+
+// ==================================================
+// ANALYSIS (calls Python via PyScript)
+// ==================================================
+async function runAnalysis() {
+    if (uploadedFiles.length === 0) {
+        toast(T('upload_first'), 'error');
+        return;
+    }
+    
+    if (!pyReady) {
+        toast('Python environment still loading...', 'info');
+        return;
+    }
+    
+    const progress = document.getElementById('analysis-progress');
+    const progressBar = document.getElementById('progress-bar-inner');
+    const progressText = document.getElementById('progress-text');
+    progress.style.display = '';
+    progressText.textContent = T('analyzing');
+    progressBar.style.width = '10%';
+    
+    const minArea = parseInt(document.getElementById('slider-min-size').value);
+    const threshold = parseInt(document.getElementById('slider-cluster-sens').value);
+    const separation = parseFloat(document.getElementById('slider-separation').value) / 10;
+    const mode = document.getElementById('select-mode').value;
+    const project = document.getElementById('input-project').value;
+    
+    activePieces = [];
+    
+    for (let i = 0; i < uploadedFiles.length; i++) {
+        progressText.textContent = `${T('analyzing')} ${i+1}/${uploadedFiles.length}`;
+        progressBar.style.width = `${(i + 1) / uploadedFiles.length * 80}%`;
+        
+        try {
+            const fileData = await readFileAsArrayBuffer(uploadedFiles[i]);
+            const uint8 = new Uint8Array(fileData);
+            
+            // Call Python analysis
+            const result = await callPyAnalysis(uint8, minArea, mode, separation, project);
+            
+            if (result && result.length > 0) {
+                activePieces.push(...result);
+            }
+        } catch (err) {
+            console.error('Analysis error for file', uploadedFiles[i].name, err);
+        }
+    }
+    
+    // Cluster
+    if (activePieces.length > 1) {
+        try {
+            const labels = await callPyClustering(activePieces, threshold);
+            labels.forEach((label, i) => {
+                if (i < activePieces.length) activePieces[i].cluster = label;
+            });
+        } catch (err) {
+            console.error('Clustering error', err);
+            activePieces.forEach((p, i) => p.cluster = 0);
+        }
+    } else if (activePieces.length === 1) {
+        activePieces[0].cluster = 0;
+    }
+    
+    progressBar.style.width = '100%';
+    progressText.textContent = `✓ ${activePieces.length} ${T('success_fragments')}`;
+    
+    setTimeout(() => {
+        progress.style.display = 'none';
+        
+        // Update metrics
+        const clusterIds = [...new Set(activePieces.map(p => p.cluster ?? -1))].filter(c => c >= 0);
+        document.getElementById('metric-fragments').textContent = activePieces.length;
+        document.getElementById('metric-groups').textContent = clusterIds.length;
+        document.getElementById('metric-project').textContent = project.substring(0, 15);
+        document.getElementById('metrics-row').style.display = '';
+        
+        renderGallery();
+        renderGroups();
+        renderReconOptions();
+        renderDatabase();
+        
+        toast(`${activePieces.length} ${T('success_fragments')}`, 'success');
+    }, 500);
+}
+
+function readFileAsArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function clearAnalysis() {
+    activePieces = [];
+    clusterLabels = [];
+    clusterNames = {};
+    reconImage = null;
+    reconMatches = [];
+    uploadedFiles = [];
+    document.getElementById('file-input').value = '';
+    document.getElementById('upload-files-list').innerHTML = '';
+    document.getElementById('metrics-row').style.display = 'none';
+    
+    renderGallery();
+    renderGroups();
+    renderReconOptions();
+    
+    toast('Cleared', 'info');
+}
+
+// ==================================================
+// RECONSTRUCTION (calls Python)
+// ==================================================
+async function runReconstruction() {
+    const select = document.getElementById('recon-group-select');
+    if (!select) return;
+    const cid = parseInt(select.value);
+    const canvasSize = parseInt(document.getElementById('slider-canvas-size')?.value || 800);
+    
+    const rp = activePieces.filter(p => p.cluster === cid);
+    if (rp.length === 0) { toast('No pieces in group', 'error'); return; }
+    
+    toast('Reconstructing...', 'info');
+    
+    try {
+        const result = await callPyReconstruction(rp, canvasSize);
+        if (result && result.imageDataUrl) {
+            const canvas = document.getElementById('recon-canvas');
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = result.imageDataUrl;
+            
+            const matchList = document.getElementById('match-list');
+            if (result.matches && result.matches.length > 0) {
+                matchList.innerHTML = result.matches.slice(0, 8).map(m =>
+                    `<div class="match-item">
+                        <span>Teil ${m.piece_i + 1} ↔ ${m.piece_j + 1}</span>
+                        <span class="match-score">${m.score.toFixed(0)}%</span>
+                    </div>`
+                ).join('');
+            } else {
+                matchList.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">Circle-fitting reconstruction (no edge matching needed)</p>';
+            }
+            
+            toast(`Reconstruction complete`, 'success');
+        }
+    } catch (err) {
+        console.error('Reconstruction error', err);
+        toast('Reconstruction error: ' + err.message, 'error');
+    }
+}
+
+// ==================================================
+// INIT
+// ==================================================
+function init() {
+    currentLang = localStorage.getItem('shardmind_lang') || 'de';
+    setLanguage(currentLang);
+    checkCookieConsent();
+    
+    // Auto-login if saved
+    const savedUser = localStorage.getItem('shardmind_user');
+    if (savedUser) {
+        const db = getDB();
+        if (db[savedUser]) {
+            currentUser = savedUser;
+            showApp();
+            return;
+        }
+    }
+    
+    // Show login
+    document.getElementById('login-page').style.display = '';
+}
+
+// Wait for DOM
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+<!-- ======================= PYSCRIPT - PYTHON CODE ======================= -->
+<script type="py" config='{"packages":["numpy","opencv-python","scikit-learn","scipy","Pillow"]}'>
+import numpy as np
+import cv2
+from sklearn.cluster import AgglomerativeClustering
+from scipy.spatial.distance import cdist
+import js
+from pyodide.ffi import to_js, create_proxy
+import json
+import base64
+from io import BytesIO
+from PIL import Image
+import uuid
+
+# =============================================================================
+# Signal that Python is ready
+# =============================================================================
+
+def set_py_ready():
+    js.pyReady = True
+    loading = js.document.getElementById('loading-screen')
+    if loading:
+        loading.classList.add('hidden')
+
+def update_loading(msg):
+    el = js.document.getElementById('loading-packages')
+    if el:
+        el.textContent = msg
+
+update_loading("Loading NumPy, OpenCV, scikit-learn...")
+
+# =============================================================================
+# HELPER: Convert images between JS and Python
+# =============================================================================
+
+def uint8_to_cv2(uint8_array):
+    """Convert JS Uint8Array to OpenCV image"""
+    buf = bytes(uint8_array)
+    nparr = np.frombuffer(buf, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    return img
+
+def cv2_to_dataurl(img):
+    """Convert OpenCV image to data URL"""
+    rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    pil = Image.fromarray(rgb)
+    buf = BytesIO()
+    pil.save(buf, format='PNG')
+    b64 = base64.b64encode(buf.getvalue()).decode()
+    return f"data:image/png;base64,{b64}"
+
+def gen_id():
+    return f"SM-{uuid.uuid4().hex[:8].upper()}"
+
+# =============================================================================
+# FRAGMENT DETECTION (full port from Streamlit version)
+# =============================================================================
+
+def separate_touching_fragments(mask, min_area=100, separation_strength=0.5):
+    if mask is None or cv2.countNonZero(mask) == 0:
+        return mask
+    
+    dist = cv2.distanceTransform(mask, cv2.DIST_L2, 5)
+    dist_norm = cv2.normalize(dist, None, 0, 1.0, cv2.NORM_MINMAX)
+    threshold = 0.6 - (separation_strength * 0.4)
+    _, sure_fg = cv2.threshold(dist_norm, threshold, 1.0, cv2.THRESH_BINARY)
+    sure_fg = np.uint8(sure_fg * 255)
+    
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    sure_bg = cv2.dilate(mask, kernel, iterations=3)
+    unknown = cv2.subtract(sure_bg, sure_fg)
+    
+    _, markers = cv2.connectedComponents(sure_fg)
+    markers = markers + 1
+    markers[unknown == 255] = 0
+    
+    mask_color = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+    markers = cv2.watershed(mask_color, markers)
+    
+    separated = np.zeros_like(mask)
+    separated[markers > 1] = 255
+    separated[markers == -1] = 0
+    return separated
+
+
+def segment_fragments(image, min_area=100, project="", mode="auto", separation_strength=0.5):
+    h, w = image.shape[:2]
+    blurred = cv2.GaussianBlur(image, (5, 5), 0)
+    gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
+    lab = cv2.cvtColor(blurred, cv2.COLOR_BGR2Lab)
+    
+    masks = []
+    
+    if mode in ["auto", "light_bg", "porcelain"]:
+        adapt = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 8)
+        masks.append(adapt)
+        _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        masks.append(otsu)
+        l_ch = lab[:, :, 0]
+        _, lab_th = cv2.threshold(l_ch, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        masks.append(lab_th)
+    
+    if mode in ["auto", "dark_bg"]:
+        _, inv = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        masks.append(inv)
+    
+    if mode in ["porcelain"]:
+        margin = 30
+        corners = [
+            gray[margin:2*margin, margin:2*margin],
+            gray[margin:2*margin, w-2*margin:w-margin],
+            gray[h-2*margin:h-margin, margin:2*margin],
+            gray[h-2*margin:h-margin, w-2*margin:w-margin]
+        ]
+        bg_mean = np.mean([c.mean() for c in corners if c.size > 0])
+        bg_std = np.mean([c.std() for c in corners if c.size > 0])
+        
+        shadow_thresh = bg_mean - 20 - bg_std
+        shadow_mask = (gray < shadow_thresh).astype(np.uint8) * 255
+        masks.append(shadow_mask)
+        
+        l_channel = lab[:, :, 0]
+        l_thresh = np.percentile(l_channel, 15)
+        l_mask = (l_channel < l_thresh).astype(np.uint8) * 255
+        masks.append(l_mask)
+        
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        blue_mask = cv2.inRange(hsv, np.array([90, 25, 40]), np.array([130, 255, 255]))
+        green_mask = cv2.inRange(hsv, np.array([35, 25, 40]), np.array([85, 255, 255]))
+        sat_mask = (hsv[:, :, 1] > 30).astype(np.uint8) * 255
+        color_mask = cv2.bitwise_or(blue_mask, green_mask)
+        color_mask = cv2.bitwise_or(color_mask, sat_mask)
+        kernel_dilate = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
+        color_expanded = cv2.dilate(color_mask, kernel_dilate, iterations=2)
+        masks.append(color_expanded)
+    
+    if mode in ["auto", "high_contrast"]:
+        edges = cv2.Canny(gray, 30, 100)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+        edges = cv2.dilate(edges, kernel, iterations=3)
+        contours_e, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        edge_mask = np.zeros_like(gray)
+        cv2.drawContours(edge_mask, contours_e, -1, 255, -1)
+        masks.append(edge_mask)
+        
+        corners_img = [image[0:30, 0:30], image[0:30, w-30:w], image[h-30:h, 0:30], image[h-30:h, w-30:w]]
+        bg_colors = np.vstack([c.reshape(-1, 3) for c in corners_img if c.size > 0])
+        bg_mean_c = np.mean(bg_colors, axis=0)
+        bg_std_c = np.std(bg_colors, axis=0) + 15
+        diff = np.abs(image.astype(float) - bg_mean_c)
+        fg_mask = np.any(diff > bg_std_c * 2, axis=2).astype(np.uint8) * 255
+        masks.append(fg_mask)
+    
+    combined = np.zeros_like(gray)
+    for m in masks:
+        combined = cv2.bitwise_or(combined, m)
+    
+    kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    cleaned = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel_close, iterations=2)
+    cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel_open, iterations=1)
+    cleaned = separate_touching_fragments(cleaned, min_area, separation_strength)
+    
+    kernel_clean = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel_clean, iterations=1)
+    cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, kernel_clean, iterations=1)
+    
+    border = 10
+    cleaned[:border, :] = 0
+    cleaned[-border:, :] = 0
+    cleaned[:, :border] = 0
+    cleaned[:, -border:] = 0
+    
+    contours, _ = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    pieces = []
+    max_area = h * w * 0.6
+    
+    for c in contours:
+        area = cv2.contourArea(c)
+        if area < min_area or area > max_area:
+            continue
+        
+        x, y, bw, bh = cv2.boundingRect(c)
+        aspect = bw / (bh + 1e-6)
+        if aspect < 0.15 or aspect > 7:
+            continue
+        
+        hull = cv2.convexHull(c)
+        hull_area = cv2.contourArea(hull)
+        if hull_area > 0:
+            solidity = area / hull_area
+            if solidity < 0.35:
+                continue
+        
+        mg = 10
+        x1, y1 = max(0, x - mg), max(0, y - mg)
+        x2, y2 = min(w, x + bw + mg), min(h, y + bh + mg)
+        
+        roi = image[y1:y2, x1:x2].copy()
+        piece_mask = np.zeros((h, w), dtype=np.uint8)
+        cv2.drawContours(piece_mask, [c], -1, 255, -1)
+        mask_roi = piece_mask[y1:y2, x1:x2].copy()
+        
+        contour_rel = c.copy()
+        contour_rel[:, :, 0] -= x1
+        contour_rel[:, :, 1] -= y1
+        
+        M = cv2.moments(c)
+        cx = int(M['m10'] / M['m00']) if M['m00'] > 0 else x + bw // 2
+        cy = int(M['m01'] / M['m00']) if M['m00'] > 0 else y + bh // 2
+        
+        # Auto-classify
+        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        mean_hsv = cv2.mean(hsv, mask=mask_roi)
+        h_val, s_val, v_val = mean_hsv[:3]
+        
+        if s_val < 25:
+            color_name = "Weiß" if v_val > 180 else ("Grau" if v_val > 100 else "Schwarz")
+        elif h_val < 10 or h_val > 170: color_name = "Rot"
+        elif h_val < 25: color_name = "Orange"
+        elif h_val < 40: color_name = "Braun"
+        elif h_val < 80: color_name = "Grün"
+        elif h_val < 130: color_name = "Blau"
+        else: color_name = "Violett"
+        
+        if s_val < 20 and v_val > 200: material = "Porzellan"
+        elif 10 < h_val < 35 and s_val > 30: material = "Keramik"
+        elif s_val < 25 and v_val < 100: material = "Metall"
+        else: material = "Keramik"
+        
+        name = f"{material}_{color_name}"
+        
+        # Decoration analysis
+        sat = hsv[:, :, 1]
+        colored_mask = (sat > 30) & (mask_roi > 0)
+        total_px = np.sum(mask_roi > 0)
+        has_decoration = (np.sum(colored_mask) / max(total_px, 1)) > 0.05 if total_px > 0 else False
+        
+        # Curvature
+        pts = c.reshape(-1, 2).astype(float)
+        n_pts = len(pts)
+        curvatures = []
+        step = max(1, n_pts // 20)
+        for ii in range(0, n_pts, step):
+            p_prev = pts[(ii - step) % n_pts]
+            p_curr = pts[ii]
+            p_next = pts[(ii + step) % n_pts]
+            v1 = p_curr - p_prev
+            v2 = p_next - p_curr
+            cross = abs(v1[0] * v2[1] - v1[1] * v2[0])
+            l1 = np.linalg.norm(v1)
+            l2 = np.linalg.norm(v2)
+            if l1 > 0 and l2 > 0:
+                curvatures.append(cross / (l1 * l2 * (l1 + l2) / 2 + 1e-9))
+        curvature = float(np.median(curvatures)) if curvatures else 0.0
+        
+        # Thumbnail as data URL
+        thumb_url = cv2_to_dataurl(roi)
+        
+        # Features for clustering
+        lab_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2Lab)
+        lab_mean, lab_std = cv2.meanStdDev(lab_roi, mask=mask_roi)
+        color_feat = np.concatenate([lab_mean.flatten(), lab_std.flatten()])
+        
+        hull_c = cv2.convexHull(contour_rel)
+        hull_area_c = cv2.contourArea(hull_c)
+        solidity_f = area / (hull_area_c + 1) if hull_area_c > 0 else 0
+        perimeter = cv2.arcLength(contour_rel, True)
+        circularity_f = 4 * np.pi * area / (perimeter ** 2 + 1)
+        
+        piece_data = {
+            'id': gen_id(),
+            'name': name,
+            'material': material,
+            'color_name': color_name,
+            'area': float(area),
+            'centroid': [int(cx), int(cy)],
+            'bbox': [int(x), int(y), int(bw), int(bh)],
+            'excavation': project,
+            'has_decoration': bool(has_decoration),
+            'curvature': curvature,
+            'is_edge_piece': has_decoration or curvature > 0.005,
+            'thumbnailDataUrl': thumb_url,
+            'color_features': color_feat.tolist(),
+            'solidity': float(solidity_f),
+            'circularity': float(circularity_f),
+            # Store contour and offset for reconstruction
+            'contour_global': c.tolist(),
+            'offset': [int(x1), int(y1)],
+            'thumbnail_shape': [int(roi.shape[0]), int(roi.shape[1])],
+        }
+        
+        pieces.append(piece_data)
+    
+    return pieces
+
+
+# =============================================================================
+# CLUSTERING
+# =============================================================================
+
+def calc_similarity(p1, p2):
+    score = 0
+    
+    c1 = np.array(p1.get('color_features', []))
+    c2 = np.array(p2.get('color_features', []))
+    if len(c1) > 0 and len(c2) > 0:
+        dist = np.linalg.norm(c1 - c2)
+        score += max(0, 100 - dist * 2) * 0.4
+    
+    if p1.get('material') == p2.get('material'):
+        score += 30
+    
+    a1, a2 = p1.get('area', 0), p2.get('area', 0)
+    if a1 > 0 and a2 > 0:
+        ratio = min(a1, a2) / max(a1, a2)
+        score += ratio * 20
+    
+    sol_diff = abs(p1.get('solidity', 0) - p2.get('solidity', 0))
+    score += max(0, 10 - sol_diff * 20)
+    
+    return score
+
+
+def cluster_pieces(pieces, threshold=35):
+    n = len(pieces)
+    if n < 2:
+        return [0] if n == 1 else []
+    
+    sim = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i + 1, n):
+            s = calc_similarity(pieces[i], pieces[j])
+            sim[i, j] = sim[j, i] = s
+    
+    dist = 100 - sim
+    np.fill_diagonal(dist, 0)
+    
+    try:
+        cl = AgglomerativeClustering(
+            n_clusters=None,
+            distance_threshold=100 - threshold,
+            metric='precomputed',
+            linkage='average'
+        )
+        labels = cl.fit_predict(dist)
+        return labels.tolist()
+    except:
+        return [0] * n
+
+
+# =============================================================================
+# RECONSTRUCTION (Circle-fitting)
+# =============================================================================
+
+def reconstruct_group(pieces_data, canvas_size=800):
+    """Reconstruct using circle fitting from blue decoration band"""
+    n = len(pieces_data)
+    canvas = np.ones((canvas_size, canvas_size, 3), dtype=np.uint8) * 245
+    canvas_center = canvas_size // 2
+    target_radius = canvas_size * 0.42
+    
+    # Collect blue points from all pieces
+    all_blue_points = []
+    piece_images = []
+    
+    for p in pieces_data:
+        # Decode thumbnail from data URL
+        data_url = p.get('thumbnailDataUrl', '')
+        if not data_url:
+            piece_images.append(None)
+            continue
+        
+        try:
+            b64_data = data_url.split(',')[1]
+            img_bytes = base64.b64decode(b64_data)
+            nparr = np.frombuffer(img_bytes, np.uint8)
+            thumb = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            piece_images.append(thumb)
+        except:
+            piece_images.append(None)
+            continue
+        
+        if thumb is None:
+            continue
+        
+        offset = p.get('offset', [0, 0])
+        hsv = cv2.cvtColor(thumb, cv2.COLOR_BGR2HSV)
+        h_ch = hsv[:, :, 0]
+        s_ch = hsv[:, :, 1]
+        blue_mask = ((h_ch > 90) & (h_ch < 130) & (s_ch > 35))
+        
+        local_pts = np.column_stack(np.where(blue_mask))[:, ::-1]
+        if len(local_pts) > 0:
+            global_pts = local_pts + np.array([offset[0], offset[1]])
+            all_blue_points.extend(global_pts.tolist())
+    
+    all_blue_points = np.array(all_blue_points) if all_blue_points else np.array([])
+    
+    # Circle fitting
+    plate_cx, plate_cy, plate_r = None, None, None
+    
+    if len(all_blue_points) > 50:
+        x = all_blue_points[:, 0].astype(float)
+        y = all_blue_points[:, 1].astype(float)
+        A = np.column_stack([x, y, np.ones_like(x)])
+        b = x**2 + y**2
+        try:
+            result, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+            plate_cx = result[0] / 2
+            plate_cy = result[1] / 2
+            plate_r = np.sqrt(max(0, result[2] + plate_cx**2 + plate_cy**2))
+        except:
+            pass
+    
+    if plate_cx is None or plate_r is None or plate_r < 10:
+        centroids = [p['centroid'] for p in pieces_data if 'centroid' in p]
+        if centroids:
+            plate_cx = np.mean([c[0] for c in centroids])
+            plate_cy = np.mean([c[1] for c in centroids])
+            plate_r = 200
+        else:
+            plate_cx, plate_cy, plate_r = canvas_center, canvas_center, 200
+    
+    scale = target_radius / plate_r if plate_r > 0 else 0.5
+    scale = np.clip(scale, 0.2, 2.0)
+    
+    # Place each piece
+    for idx, p in enumerate(pieces_data):
+        thumb = piece_images[idx] if idx < len(piece_images) else None
+        if thumb is None:
+            continue
+        
+        offset = p.get('offset', [0, 0])
+        h_t, w_t = thumb.shape[:2]
+        
+        nw = max(1, int(w_t * scale))
+        nh = max(1, int(h_t * scale))
+        
+        thumb_s = cv2.resize(thumb, (nw, nh))
+        
+        # Calculate position
+        rel_cx = (plate_cx - offset[0]) * scale
+        rel_cy = (plate_cy - offset[1]) * scale
+        px = int(canvas_center - rel_cx)
+        py = int(canvas_center - rel_cy)
+        
+        # Blend onto canvas
+        dx1 = max(0, px)
+        dy1 = max(0, py)
+        dx2 = min(canvas_size, px + nw)
+        dy2 = min(canvas_size, py + nh)
+        sx1 = dx1 - px
+        sy1 = dy1 - py
+        
+        if dx2 > dx1 and dy2 > dy1:
+            t_h, t_w = dy2 - dy1, dx2 - dx1
+            if sy1 + t_h <= thumb_s.shape[0] and sx1 + t_w <= thumb_s.shape[1]:
+                roi = canvas[dy1:dy2, dx1:dx2]
+                t_roi = thumb_s[sy1:sy1 + t_h, sx1:sx1 + t_w]
+                
+                if roi.shape[:2] == t_roi.shape[:2]:
+                    # Simple mask based on non-white pixels
+                    gray_t = cv2.cvtColor(t_roi, cv2.COLOR_BGR2GRAY)
+                    _, mask = cv2.threshold(gray_t, 240, 255, cv2.THRESH_BINARY_INV)
+                    mask_3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR).astype(float) / 255
+                    blended = t_roi.astype(float) * mask_3ch + roi.astype(float) * (1 - mask_3ch)
+                    canvas[dy1:dy2, dx1:dx2] = blended.astype(np.uint8)
+    
+    # Draw circle
+    cv2.circle(canvas, (canvas_center, canvas_center), int(target_radius), (230, 225, 220), 2)
+    
+    return canvas
+
+
+# =============================================================================
+# EDGE MATCHING (for match display)
+# =============================================================================
+
+def extract_edge_signature(contour_list, num_points=64):
+    contour = np.array(contour_list).reshape(-1, 2).astype(float)
+    if len(contour) < 5:
+        return None
+    
+    diffs = np.diff(contour, axis=0)
+    lengths = np.sqrt((diffs ** 2).sum(axis=1))
+    cumlen = np.concatenate([[0], np.cumsum(lengths)])
+    total_len = cumlen[-1]
+    
+    if total_len < 1:
+        return None
+    
+    target_lens = np.linspace(0, total_len, num_points)
+    resampled = np.zeros((num_points, 2))
+    
+    for i, target in enumerate(target_lens):
+        idx = np.searchsorted(cumlen, target)
+        idx = min(idx, len(cumlen) - 1)
+        if idx == 0:
+            resampled[i] = contour[0]
+        else:
+            t = (target - cumlen[idx - 1]) / (cumlen[idx] - cumlen[idx - 1] + 1e-6)
+            resampled[i] = contour[idx - 1] + t * (contour[idx] - contour[idx - 1])
+    
+    curvature = np.zeros(num_points)
+    for i in range(num_points):
+        p_prev = resampled[(i - 2) % num_points]
+        p_curr = resampled[i]
+        p_next = resampled[(i + 2) % num_points]
+        v1 = p_curr - p_prev
+        v2 = p_next - p_curr
+        cross = v1[0] * v2[1] - v1[1] * v2[0]
+        dot = v1[0] * v2[0] + v1[1] * v2[1]
+        curvature[i] = np.arctan2(cross, dot + 1e-6)
+    
+    return curvature
+
+
+def find_edge_matches(pieces_data, min_match_score=0.3):
+    n = len(pieces_data)
+    matches = []
+    
+    sigs = []
+    for p in pieces_data:
+        contour = p.get('contour_global')
+        if contour:
+            sig = extract_edge_signature(contour)
+        else:
+            sig = None
+        sigs.append(sig)
+    
+    for i in range(n):
+        if sigs[i] is None:
+            continue
+        for j in range(i + 1, n):
+            if sigs[j] is None:
+                continue
+            
+            best_score = 0
+            best_rotation = 0
+            curv_i = sigs[i]
+            curv_j = sigs[j]
+            num_pts = len(curv_i)
+            
+            for rot in range(0, num_pts, num_pts // 8):
+                curv_j_rot = np.roll(-curv_j[::-1], rot)
+                correlation = np.correlate(curv_i, curv_j_rot, mode='same')
+                max_corr = np.max(correlation)
+                if max_corr > best_score:
+                    best_score = max_corr
+                    best_rotation = rot
+            
+            score = best_score / (num_pts * np.pi)
+            
+            c1 = np.array(pieces_data[i].get('color_features', []))
+            c2 = np.array(pieces_data[j].get('color_features', []))
+            if len(c1) > 0 and len(c2) > 0:
+                color_dist = np.linalg.norm(c1 - c2)
+                score += max(0, 0.3 - color_dist / 500)
+            
+            if score > min_match_score:
+                matches.append({
+                    'piece_i': i,
+                    'piece_j': j,
+                    'score': score * 100,
+                    'rotation': best_rotation * 360 / num_pts
+                })
+    
+    matches.sort(key=lambda x: x['score'], reverse=True)
+    return matches
+
+
+# =============================================================================
+# EXPOSED FUNCTIONS (called from JavaScript)
+# =============================================================================
+
+def py_analyze(uint8_data, min_area, mode, separation, project):
+    """Main analysis function called from JS"""
+    # Convert Uint8Array to numpy
+    buf = bytes(uint8_data)
+    nparr = np.frombuffer(buf, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    
+    if img is None:
+        return to_js([])
+    
+    pieces = segment_fragments(img, min_area, project, mode, separation)
+    return to_js(pieces, dict_converter=js.Object.fromEntries)
+
+def py_cluster(pieces_json, threshold):
+    """Clustering function called from JS"""
+    pieces = pieces_json.to_py()
+    labels = cluster_pieces(pieces, threshold)
+    return to_js(labels)
+
+def py_reconstruct(pieces_json, canvas_size):
+    """Reconstruction function called from JS"""
+    pieces = pieces_json.to_py()
+    
+    canvas = reconstruct_group(pieces, canvas_size)
+    
+    if canvas is None:
+        return to_js({'imageDataUrl': None, 'matches': []})
+    
+    data_url = cv2_to_dataurl(canvas)
+    
+    # Edge matches
+    matches = find_edge_matches(pieces)
+    
+    return to_js({
+        'imageDataUrl': data_url,
+        'matches': matches[:10]
+    }, dict_converter=js.Object.fromEntries)
+
+# Make functions available to JavaScript
+js.window.py_analyze = create_proxy(py_analyze)
+js.window.py_cluster = create_proxy(py_cluster)
+js.window.py_reconstruct = create_proxy(py_reconstruct)
+
+# Signal ready
+set_py_ready()
+print("ShardMind Python engine ready!")
+</script>
+
+<!-- Bridge functions between JS and Python -->
+<script>
+// These async functions bridge JS <-> PyScript
+
+async function callPyAnalysis(uint8Array, minArea, mode, separation, project) {
+    if (!window.py_analyze) {
+        console.error("Python not ready");
+        return [];
+    }
+    try {
+        const result = window.py_analyze(uint8Array, minArea, mode, separation, project);
+        // Convert PyProxy to plain JS array
+        if (result && typeof result.toJs === 'function') {
+            return result.toJs({dict_converter: Object.fromEntries});
+        }
+        // Try to convert proxy to array
+        const arr = [];
+        if (result && result.length !== undefined) {
+            for (let i = 0; i < result.length; i++) {
+                const item = result[i];
+                if (typeof item.toJs === 'function') {
+                    arr.push(item.toJs({dict_converter: Object.fromEntries}));
+                } else {
+                    arr.push(item);
+                }
+            }
+        }
+        return arr;
+    } catch (err) {
+        console.error("Analysis error:", err);
+        return [];
+    }
+}
+
+async function callPyClustering(pieces, threshold) {
+    if (!window.py_cluster) {
+        console.error("Python not ready");
+        return pieces.map(() => 0);
+    }
+    try {
+        // Convert pieces to simple objects for Python
+        const simplified = pieces.map(p => ({
+            color_features: p.color_features || [],
+            material: p.material || '',
+            area: p.area || 0,
+            solidity: p.solidity || 0,
+        }));
+        const result = window.py_cluster(simplified, threshold);
+        if (result && typeof result.toJs === 'function') {
+            return result.toJs();
+        }
+        const arr = [];
+        for (let i = 0; i < result.length; i++) arr.push(result[i]);
+        return arr;
+    } catch (err) {
+        console.error("Clustering error:", err);
+        return pieces.map(() => 0);
+    }
+}
+
+async function callPyReconstruction(pieces, canvasSize) {
+    if (!window.py_reconstruct) {
+        console.error("Python not ready");
+        return null;
+    }
+    try {
+        const simplified = pieces.map(p => ({
+            thumbnailDataUrl: p.thumbnailDataUrl || '',
+            offset: p.offset || [0, 0],
+            centroid: p.centroid || [0, 0],
+            contour_global: p.contour_global || [],
+            color_features: p.color_features || [],
+        }));
+        const result = window.py_reconstruct(simplified, canvasSize);
+        if (result && typeof result.toJs === 'function') {
+            return result.toJs({dict_converter: Object.fromEntries});
+        }
+        return result;
+    } catch (err) {
+        console.error("Reconstruction error:", err);
+        return null;
+    }
+}
+</script>
+
+</body>
+</html>
