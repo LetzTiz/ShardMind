@@ -802,6 +802,33 @@
         }
 
         /* === DECORATION LINE DRAWING === */
+        .deco-draw-toolbar {
+            display: flex; gap: 6px; align-items: center;
+            margin-top: 8px; flex-wrap: wrap;
+        }
+        .draw-tool-btn {
+            padding: 5px 10px; border-radius: 16px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary); color: var(--text-secondary);
+            font-size: 12px; cursor: pointer;
+            transition: var(--transition); font-family: 'DM Sans', sans-serif;
+        }
+        .draw-tool-btn.active {
+            border-color: var(--accent); color: var(--accent);
+            background: rgba(201,149,107,0.1);
+        }
+        .draw-color-swatch {
+            width: 22px; height: 22px; border-radius: 50%;
+            border: 2px solid var(--border); cursor: pointer;
+            transition: var(--transition);
+        }
+        .draw-color-swatch.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(201,149,107,0.3); }
+        .deco-draw-container { position: relative; display: inline-block; width: 100%; }
+        .deco-draw-container canvas.draw-layer {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            cursor: crosshair; z-index: 2;
+        }
         .deco-viewer {
             display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
         }
@@ -1533,7 +1560,23 @@
                             </div>
                             <div class="deco-panel line-drawing">
                                 <h4 id="deco-line-title">✏️ Strichzeichnung (maßstäblich)</h4>
-                                <canvas id="deco-canvas-lineart" width="400" height="400"></canvas>
+                                <div class="deco-draw-container" id="deco-draw-container">
+                                    <canvas id="deco-canvas-lineart" width="400" height="400"></canvas>
+                                    <canvas id="deco-canvas-draw" class="draw-layer" width="400" height="400"></canvas>
+                                </div>
+                                <div class="deco-draw-toolbar">
+                                    <button class="draw-tool-btn active" onclick="setDrawTool('pen',this)" title="Zeichnen">✏️ Stift</button>
+                                    <button class="draw-tool-btn" onclick="setDrawTool('eraser',this)" title="Radieren">🧹 Radierer</button>
+                                    <input type="range" min="1" max="12" value="2" style="width:60px;"
+                                           id="draw-brush-size" title="Pinselgröße"
+                                           oninput="drawBrushSize=parseInt(this.value)">
+                                    <div class="draw-color-swatch active" style="background:#222" onclick="setDrawColor('#222',this)"></div>
+                                    <div class="draw-color-swatch" style="background:#c00" onclick="setDrawColor('#c00',this)"></div>
+                                    <div class="draw-color-swatch" style="background:#0066cc" onclick="setDrawColor('#0066cc',this)"></div>
+                                    <div class="draw-color-swatch" style="background:#2a7" onclick="setDrawColor('#2a7',this)"></div>
+                                    <button class="draw-tool-btn" onclick="clearDrawing()" title="Zeichnung löschen">🗑️</button>
+                                    <button class="draw-tool-btn" onclick="mergeDrawingAndDownload()" title="Zusammenführen & Download">💾</button>
+                                </div>
                                 <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
                                     <span class="scale-badge" id="deco-scale-info">1:1</span>
                                     <span style="font-size:11px;color:var(--text-muted);" id="deco-dimensions"></span>
@@ -1564,7 +1607,7 @@
                             </div>
                         </div>
 
-                        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
                             <button class="btn btn-secondary" onclick="downloadDecoImage('lineart')">
                                 📥 <span id="txt-dl-lineart">Strichzeichnung (PNG)</span>
                             </button>
@@ -2139,7 +2182,31 @@ function genId() {
 function getDB() {
     try { return JSON.parse(localStorage.getItem('shardmind_db') || '{}'); } catch { return {}; }
 }
-function saveDB(db) { localStorage.setItem('shardmind_db', JSON.stringify(db)); }
+function saveDB(db) { 
+    try {
+        const json = JSON.stringify(db);
+        localStorage.setItem('shardmind_db', json);
+        console.log(`[ShardMind] Saved DB (${(json.length / 1024).toFixed(1)} KB)`);
+    } catch (e) {
+        console.error('localStorage save error:', e);
+        toast(currentLang === 'de' 
+            ? `Speicherfehler: ${e.message || 'Speicher voll?'}. Versuche weniger Daten zu speichern.`
+            : `Save error: ${e.message || 'Storage full?'}. Try saving less data.`, 'error');
+        throw e;
+    }
+}
+
+// Check localStorage availability at startup
+function checkLocalStorage() {
+    try {
+        localStorage.setItem('_sm_test', '1');
+        localStorage.removeItem('_sm_test');
+        return true;
+    } catch {
+        console.error('localStorage not available');
+        return false;
+    }
+}
 
 function getUserData() {
     const db = getDB();
@@ -2150,6 +2217,14 @@ function saveUserData(data) {
     const db = getDB();
     if (currentUser && db[currentUser]) {
         db[currentUser].data = data;
+        saveDB(db);
+    } else if (currentUser) {
+        // User exists but no DB entry - create it
+        db[currentUser] = {
+            pw_hash: '',
+            created: new Date().toISOString(),
+            data: data
+        };
         saveDB(db);
     }
 }
@@ -2701,26 +2776,85 @@ function mode(arr) {
     return Object.entries(freq).sort((a,b) => b[1]-a[1])[0]?.[0] || 'Unknown';
 }
 
-function saveGroupToDB(cid) {
+async function saveGroupToDB(cid) {
     const data = getUserData();
     const cp = activePieces.filter(p => p.cluster === cid);
+    if (cp.length === 0) { toast('Keine Fragmente in Gruppe', 'error'); return; }
+    
     const name = clusterNames[cid] || `Group_${cid+1}`;
     const key = `${name}_${Date.now()}`;
+    
+    data.clusters = data.clusters || {};
+    data.pieces = data.pieces || {};
     
     data.clusters[key] = {
         name, created: new Date().toISOString(),
         piece_ids: cp.map(p => p.id)
     };
     
-    cp.forEach(p => {
+    for (const p of cp) {
         const saved = { ...p };
-        delete saved.imageData;  // Don't store raw image data
+        delete saved.imageData;
+        delete saved.contour_global; // too large for localStorage
+        delete saved.color_features;
+        // Compress thumbnail synchronously (small JPEG)
+        if (saved.thumbnailDataUrl) {
+            try {
+                const compressed = await compressThumbnailAsync(saved.thumbnailDataUrl, 80);
+                saved.thumbnailDataUrl = compressed;
+            } catch { /* keep original */ }
+        }
         data.pieces[p.id] = saved;
-    });
+    }
     
-    saveUserData(data);
-    updateDBMetrics();
-    toast(T('saved'), 'success');
+    try {
+        saveUserData(data);
+        updateDBMetrics();
+        renderDatabase();
+        toast(T('saved'), 'success');
+    } catch (e) {
+        console.error('Save error:', e);
+        // If quota exceeded, try without thumbnails
+        if (e.name === 'QuotaExceededError' || String(e).includes('quota') || String(e).includes('storage')) {
+            toast(currentLang === 'de' 
+                ? 'Versuche ohne Bilder zu speichern...'
+                : 'Trying to save without images...', 'info');
+            for (const pid in data.pieces) {
+                delete data.pieces[pid].thumbnailDataUrl;
+            }
+            try {
+                saveUserData(data);
+                updateDBMetrics();
+                renderDatabase();
+                toast(T('saved') + ' (ohne Bilder)', 'success');
+            } catch (e2) {
+                toast(currentLang === 'de' 
+                    ? 'Speicher voll! Bitte alte Daten in der Datenbank löschen.'
+                    : 'Storage full! Delete old data in database.', 'error');
+            }
+        } else {
+            toast('Speicherfehler: ' + (e.message || e), 'error');
+        }
+    }
+}
+
+function compressThumbnailAsync(dataUrl, maxSize) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+                canvas.width = Math.max(1, Math.round(img.width * scale));
+                canvas.height = Math.max(1, Math.round(img.height * scale));
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.5));
+            } catch (e) { reject(e); }
+        };
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = dataUrl;
+    });
 }
 
 function renderDatabase() {
@@ -3606,68 +3740,44 @@ function createPlateTexture(pieces, plateRadius, plateCX, plateCY) {
     ctx.fill();
 
     // Add subtle ceramic texture
-    for (let i = 0; i < 5000; i++) {
+    for (let i = 0; i < 3000; i++) {
         const angle = Math.random() * Math.PI * 2;
         const r = Math.random() * texSize / 2;
         const x = texSize / 2 + r * Math.cos(angle);
         const y = texSize / 2 + r * Math.sin(angle);
         const shade = 180 + Math.random() * 40;
-        ctx.fillStyle = `rgba(${shade}, ${shade - 15}, ${shade - 30}, 0.05)`;
+        ctx.fillStyle = `rgba(${shade}, ${shade - 15}, ${shade - 30}, 0.04)`;
         ctx.fillRect(x, y, 2 + Math.random() * 3, 2 + Math.random() * 3);
     }
 
-    // Mark missing area with subtle pattern
-    ctx.strokeStyle = 'rgba(100,90,75,0.08)';
-    ctx.lineWidth = 1;
-    for (let r = 0; r < texSize / 2; r += 20) {
-        ctx.beginPath();
-        ctx.arc(texSize / 2, texSize / 2, r, 0, Math.PI * 2);
-        ctx.stroke();
-    }
+    // Scale: map plate radius to texture radius
+    const texScale = (texSize * 0.45) / Math.max(plateRadius, 50);
 
-    // Scale factor: how to map original pixel coords to texture coords
-    const scale = (texSize / 2) / (plateRadius || 200);
-
-    // Draw each fragment onto the texture
+    // Collect fragment info for async drawing
+    const fragBounds = [];
     let placedCount = 0;
-    const fragBounds = []; // for boundary visualization
 
     pieces.forEach((piece, idx) => {
         if (!piece.thumbnailDataUrl) return;
-
-        const img = new Image();
-        img.src = piece.thumbnailDataUrl;
-
-        // We need synchronous drawing, so we use a temp canvas
-        const tmpCanvas = document.createElement('canvas');
-        const tmpCtx = tmpCanvas.getContext('2d');
-
-        // Fragment position relative to plate center
         const offset = piece.offset || [0, 0];
-        const cx = piece.centroid || [offset[0] + 30, offset[1] + 30];
+        const centroid = piece.centroid || [offset[0] + 30, offset[1] + 30];
 
-        // Position on texture
-        const relX = (cx[0] - (plateCX || 0)) * scale;
-        const relY = (cx[1] - (plateCY || 0)) * scale;
-        const texX = texSize / 2 + relX;
-        const texY = texSize / 2 + relY;
+        // Where the centroid maps on texture (plate center → texture center)
+        const texCX = texSize / 2 + (centroid[0] - (plateCX || 0)) * texScale;
+        const texCY = texSize / 2 + (centroid[1] - (plateCY || 0)) * texScale;
 
-        // Store for later async painting
-        fragBounds.push({
-            idx, texX, texY, scale,
-            offset, dataUrl: piece.thumbnailDataUrl,
-            bbox: piece.bbox || [0, 0, 60, 60]
-        });
+        // Centroid position within the thumbnail (local coords)
+        const localCX = centroid[0] - offset[0];
+        const localCY = centroid[1] - offset[1];
 
+        fragBounds.push({ idx, texCX, texCY, localCX, localCY, texScale, dataUrl: piece.thumbnailDataUrl });
         placedCount++;
     });
 
-    // Since Image loading is async, we return a promise
     plateTextureCanvas = canvas;
 
     return new Promise((resolve) => {
         let loaded = 0;
-
         if (fragBounds.length === 0) {
             resolve({ canvas, coverage: 0, placedCount: 0 });
             return;
@@ -3677,64 +3787,59 @@ function createPlateTexture(pieces, plateRadius, plateCX, plateCY) {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.onload = () => {
-                const w = img.width * fb.scale;
-                const h = img.height * fb.scale;
-                const dx = fb.texX - (fb.bbox[0] - fb.offset[0]) * fb.scale - w / 2;
-                const dy = fb.texY - (fb.bbox[1] - fb.offset[1]) * fb.scale - h / 2;
+                const scaledW = img.width * fb.texScale;
+                const scaledH = img.height * fb.texScale;
 
-                // Draw with transparency for non-ceramic pixels
+                // Draw with transparency for white background
                 const tmpC = document.createElement('canvas');
                 tmpC.width = img.width;
                 tmpC.height = img.height;
                 const tmpX = tmpC.getContext('2d');
                 tmpX.drawImage(img, 0, 0);
 
-                // Get pixel data and mask out white background
                 const idata = tmpX.getImageData(0, 0, img.width, img.height);
                 const d = idata.data;
                 for (let px = 0; px < d.length; px += 4) {
-                    if (d[px] > 235 && d[px + 1] > 235 && d[px + 2] > 235) {
-                        d[px + 3] = 0; // transparent
+                    const r = d[px], g = d[px + 1], b = d[px + 2];
+                    // White or near-white → transparent
+                    if (r > 230 && g > 230 && b > 230) {
+                        d[px + 3] = 0;
                     }
+                    // Also handle colored pixels that aren't part of fragment
+                    // by checking if they're very similar to a typical background
                 }
                 tmpX.putImageData(idata, 0, 0);
 
-                // Draw onto texture at correct position
-                const posX = fb.texX - w * 0.5;
-                const posY = fb.texY - h * 0.5;
-                ctx.drawImage(tmpC, posX, posY, w, h);
+                // Position so CENTROID of fragment aligns with texture position
+                const posX = fb.texCX - fb.localCX * fb.texScale;
+                const posY = fb.texCY - fb.localCY * fb.texScale;
+                ctx.drawImage(tmpC, posX, posY, scaledW, scaledH);
 
                 loaded++;
                 if (loaded >= fragBounds.length) {
-                    // Calculate coverage
-                    const totalPx = texSize * texSize;
+                    // Calculate coverage (approximate)
                     const texData = ctx.getImageData(0, 0, texSize, texSize).data;
-                    let ceramicPx = 0;
-                    const centerX = texSize / 2, centerY = texSize / 2;
-                    const maxR = texSize / 2;
+                    let fragPx = 0;
+                    const ctr = texSize / 2, maxR = texSize * 0.45;
                     for (let y = 0; y < texSize; y += 4) {
                         for (let x = 0; x < texSize; x += 4) {
-                            const dr = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                            const dr = Math.sqrt((x - ctr) ** 2 + (y - ctr) ** 2);
                             if (dr > maxR) continue;
                             const pi = (y * texSize + x) * 4;
                             const r = texData[pi], g = texData[pi + 1], b = texData[pi + 2];
-                            // Check if this pixel is from a fragment (not the background clay color)
-                            if (Math.abs(r - 212) > 15 || Math.abs(g - 196) > 15 || Math.abs(b - 168) > 15) {
-                                ceramicPx++;
+                            if (Math.abs(r - 212) > 20 || Math.abs(g - 196) > 20 || Math.abs(b - 168) > 20) {
+                                fragPx++;
                             }
                         }
                     }
-                    const platePxTotal = Math.PI * (maxR / 4) ** 2; // approx circle area at sampled resolution
-                    const coverage = Math.min(100, (ceramicPx / platePxTotal * 100).toFixed(0));
-
+                    const plateArea = Math.PI * (maxR / 4) ** 2;
+                    const coverage = Math.min(100, Math.round(fragPx / plateArea * 100));
                     resolve({ canvas, coverage, placedCount });
                 }
             };
             img.onerror = () => {
                 loaded++;
-                if (loaded >= fragBounds.length) {
-                    resolve({ canvas, coverage: 0, placedCount });
-                }
+                if (loaded >= fragBounds.length) resolve({ canvas, coverage: 0, placedCount });
             };
             img.src = fb.dataUrl;
         });
@@ -3813,11 +3918,12 @@ async function run3DReconstruction() {
     texture.magFilter = THREE.LinearFilter;
 
     // Inner surface material (glazed with fragment texture)
+    // DoubleSide ensures texture visible from both directions
     const innerMat = new THREE.MeshStandardMaterial({
         map: texture,
         roughness: 0.3,
         metalness: 0.02,
-        side: THREE.FrontSide,
+        side: THREE.DoubleSide,
     });
 
     // Fix UV mapping for LatheGeometry to be radial (center-to-rim)
@@ -3832,7 +3938,7 @@ async function run3DReconstruction() {
         color: 0xc4a882,
         roughness: 0.85,
         metalness: 0.0,
-        side: THREE.FrontSide,
+        side: THREE.DoubleSide,
     });
 
     // Flip outer normals
@@ -4239,6 +4345,46 @@ const CULTURE_DB = {
 // ==================================================
 let selectedCultureOverride = null;
 
+const CRITERIA_LABELS = {
+    de: {
+        'has_decoration': 'Verzierung vorhanden',
+        'high_curvature': 'Hohe Krümmung (dünne Wandung)',
+        'low_curvature': 'Niedrige Krümmung (dicke Wandung)',
+        'thick_walls': 'Dicke Wandung',
+        'thin_walls': 'Dünne Wandung',
+        'very_thin_walls': 'Sehr dünne Wandung',
+        'regular_shape': 'Regelmäßige Form (Drehscheibe)',
+        'irregular_shape': 'Unregelmäßige Form (Handarbeit)',
+        'circular': 'Kreisförmig',
+        'manual_override': 'Manuell zugeordnet',
+    },
+    en: {
+        'has_decoration': 'Decoration present',
+        'high_curvature': 'High curvature (thin walls)',
+        'low_curvature': 'Low curvature (thick walls)',
+        'thick_walls': 'Thick walls',
+        'thin_walls': 'Thin walls',
+        'very_thin_walls': 'Very thin walls',
+        'regular_shape': 'Regular shape (wheel-thrown)',
+        'irregular_shape': 'Irregular shape (hand-built)',
+        'circular': 'Circular',
+        'manual_override': 'Manual assignment',
+    }
+};
+
+function formatCriteria(raw) {
+    const labels = CRITERIA_LABELS[currentLang] || CRITERIA_LABELS.de;
+    if (raw.startsWith('color:')) {
+        const color = raw.split(':')[1];
+        return (currentLang === 'de' ? 'Farbe: ' : 'Color: ') + color;
+    }
+    if (raw.startsWith('material:')) {
+        const mat = raw.split(':')[1];
+        return 'Material: ' + mat;
+    }
+    return labels[raw] || raw.replace(/_/g, ' ');
+}
+
 function toggleCultureChip(el) {
     document.querySelectorAll('.culture-chip').forEach(c => c.classList.remove('selected'));
     if (el.classList.contains('selected')) {
@@ -4387,7 +4533,7 @@ function runCultureClassification() {
             <div class="culture-criteria">
                 <h5>${T('culture_criteria_used')}</h5>
                 <ul>
-                    ${topCriteria.map(c => `<li class="match">✓ ${c.replace(/_/g,' ')}</li>`).join('')}
+                    ${topCriteria.map(c => `<li class="match">✓ ${formatCriteria(c)}</li>`).join('')}
                 </ul>
                 ${topMatches.length > 1 ? `<p style="margin-top:8px;font-size:11px;color:var(--text-muted);">
                     ${lang === 'de' ? 'Weitere Möglichkeiten' : 'Other possibilities'}: 
@@ -4548,6 +4694,16 @@ async function runDecoExtraction() {
 
             document.getElementById('deco-result').style.display = '';
             updateDecoOverlay();
+            
+            // Init drawing layer
+            const drawCanvas = document.getElementById('deco-canvas-draw');
+            const lineartCanvas = document.getElementById('deco-canvas-lineart');
+            if (drawCanvas && lineartCanvas) {
+                drawCanvas.width = lineartCanvas.width;
+                drawCanvas.height = lineartCanvas.height;
+            }
+            initDrawCanvas();
+            clearDrawing();
 
             toast(currentLang === 'de' ? 'Strichzeichnung erstellt!' : 'Line drawing created!', 'success');
         }
@@ -4615,6 +4771,163 @@ function downloadDecoSVG() {
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
+}
+
+// ==================================================
+// DECORATION DRAWING TOOLS
+// ==================================================
+
+let drawTool = 'pen';
+let drawColor = '#222';
+let drawBrushSize = 2;
+let drawIsDrawing = false;
+let drawLastX = 0, drawLastY = 0;
+let drawInitialized = false;
+
+function initDrawCanvas() {
+    const canvas = document.getElementById('deco-canvas-draw');
+    if (!canvas || drawInitialized) return;
+    
+    // Make draw canvas match lineart canvas size
+    const lineartCanvas = document.getElementById('deco-canvas-lineart');
+    if (lineartCanvas) {
+        canvas.width = lineartCanvas.width;
+        canvas.height = lineartCanvas.height;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // Mouse events
+    canvas.addEventListener('mousedown', (e) => {
+        drawIsDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        drawLastX = (e.clientX - rect.left) * scaleX;
+        drawLastY = (e.clientY - rect.top) * scaleY;
+    });
+    
+    canvas.addEventListener('mousemove', (e) => {
+        if (!drawIsDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.moveTo(drawLastX, drawLastY);
+        ctx.lineTo(x, y);
+        
+        if (drawTool === 'eraser') {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.strokeStyle = 'rgba(0,0,0,1)';
+            ctx.lineWidth = drawBrushSize * 4;
+        } else {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = drawColor;
+            ctx.lineWidth = drawBrushSize;
+        }
+        ctx.stroke();
+        
+        drawLastX = x;
+        drawLastY = y;
+    });
+    
+    canvas.addEventListener('mouseup', () => { drawIsDrawing = false; });
+    canvas.addEventListener('mouseleave', () => { drawIsDrawing = false; });
+    
+    // Touch events
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        drawIsDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        drawLastX = (e.touches[0].clientX - rect.left) * scaleX;
+        drawLastY = (e.touches[0].clientY - rect.top) * scaleY;
+    }, { passive: false });
+    
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!drawIsDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.touches[0].clientX - rect.left) * scaleX;
+        const y = (e.touches[0].clientY - rect.top) * scaleY;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.moveTo(drawLastX, drawLastY);
+        ctx.lineTo(x, y);
+        if (drawTool === 'eraser') {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.strokeStyle = 'rgba(0,0,0,1)';
+            ctx.lineWidth = drawBrushSize * 4;
+        } else {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = drawColor;
+            ctx.lineWidth = drawBrushSize;
+        }
+        ctx.stroke();
+        drawLastX = x;
+        drawLastY = y;
+    }, { passive: false });
+    
+    canvas.addEventListener('touchend', () => { drawIsDrawing = false; });
+    
+    drawInitialized = true;
+}
+
+function setDrawTool(tool, btn) {
+    drawTool = tool;
+    document.querySelectorAll('.draw-tool-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const canvas = document.getElementById('deco-canvas-draw');
+    if (canvas) canvas.style.cursor = tool === 'eraser' ? 'cell' : 'crosshair';
+}
+
+function setDrawColor(color, swatch) {
+    drawColor = color;
+    document.querySelectorAll('.draw-color-swatch').forEach(s => s.classList.remove('active'));
+    swatch.classList.add('active');
+    // Also switch to pen tool
+    drawTool = 'pen';
+    document.querySelectorAll('.draw-tool-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.draw-tool-btn')?.classList.add('active');
+}
+
+function clearDrawing() {
+    const canvas = document.getElementById('deco-canvas-draw');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function mergeDrawingAndDownload() {
+    const lineartCanvas = document.getElementById('deco-canvas-lineart');
+    const drawCanvas = document.getElementById('deco-canvas-draw');
+    if (!lineartCanvas || !drawCanvas) return;
+    
+    // Create merged canvas
+    const merged = document.createElement('canvas');
+    merged.width = lineartCanvas.width;
+    merged.height = lineartCanvas.height;
+    const ctx = merged.getContext('2d');
+    
+    // Draw lineart first, then drawing on top
+    ctx.drawImage(lineartCanvas, 0, 0);
+    ctx.drawImage(drawCanvas, 0, 0);
+    
+    const link = document.createElement('a');
+    link.download = `shardmind_annotated_${Date.now()}.png`;
+    link.href = merged.toDataURL('image/png');
+    link.click();
+    toast(currentLang === 'de' ? 'Annotierte Zeichnung gespeichert!' : 'Annotated drawing saved!', 'success');
 }
 
 // ==================================================
@@ -4976,7 +5289,7 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
     cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel_clean, iterations=1)
     cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, kernel_clean, iterations=1)
     
-    border = 10
+    border = 5
     cleaned[:border, :] = 0
     cleaned[-border:, :] = 0
     cleaned[:, :border] = 0
@@ -4994,14 +5307,14 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
         
         x, y, bw, bh = cv2.boundingRect(c)
         aspect = bw / (bh + 1e-6)
-        if aspect < 0.15 or aspect > 7:
+        if aspect < 0.12 or aspect > 8:
             continue
         
         hull = cv2.convexHull(c)
         hull_area = cv2.contourArea(hull)
         if hull_area > 0:
             solidity = area / hull_area
-            if solidity < 0.35:
+            if solidity < 0.25:  # lower threshold for triangular pieces
                 continue
         
         mg = 10
@@ -5021,32 +5334,91 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
         cx = int(M['m10'] / M['m00']) if M['m00'] > 0 else x + bw // 2
         cy = int(M['m01'] / M['m00']) if M['m00'] > 0 else y + bh // 2
         
-        # Auto-classify
+        # Auto-classify - use DOMINANT color from STRONGLY saturated pixels
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        mean_hsv = cv2.mean(hsv, mask=mask_roi)
-        h_val, s_val, v_val = mean_hsv[:3]
         
+        # Separate saturated (colored) vs unsaturated (ceramic body) pixels
+        h_ch = hsv[:, :, 0]
+        s_ch = hsv[:, :, 1]
+        v_ch = hsv[:, :, 2]
+        
+        # Use strong saturation to isolate clearly colored pixels
+        strong_colored = (s_ch > 70) & (mask_roi > 0)
+        medium_colored = (s_ch > 35) & (mask_roi > 0)
+        total_masked = np.sum(mask_roi > 0)
+        strong_ratio = np.sum(strong_colored) / max(total_masked, 1)
+        medium_ratio = np.sum(medium_colored) / max(total_masked, 1)
+        
+        if np.sum(strong_colored) > 30:
+            # Use histogram peak for robust hue detection (not mean/median)
+            hue_vals = h_ch[strong_colored]
+            hist, bin_edges = np.histogram(hue_vals, bins=36, range=(0, 180))
+            peak_bin = np.argmax(hist)
+            h_val = float(bin_edges[peak_bin] + 2.5)  # center of 5-degree bin
+            s_val = float(np.mean(s_ch[strong_colored]))
+            v_val = float(np.mean(v_ch[strong_colored]))
+        elif np.sum(medium_colored) > 30:
+            hue_vals = h_ch[medium_colored]
+            hist, bin_edges = np.histogram(hue_vals, bins=36, range=(0, 180))
+            peak_bin = np.argmax(hist)
+            h_val = float(bin_edges[peak_bin] + 2.5)
+            s_val = float(np.mean(s_ch[medium_colored]))
+            v_val = float(np.mean(v_ch[medium_colored]))
+        else:
+            mean_hsv = cv2.mean(hsv, mask=mask_roi)
+            h_val, s_val, v_val = mean_hsv[:3]
+        
+        # OpenCV HSV: H=0-180, S=0-255, V=0-255
+        # Corrected hue ranges with no gaps:
+        # Red=0-8 or 170-180, Orange=8-18, Brown=18-30,
+        # Yellow=30-38, Green=38-75, Blue=75-135, Violet=135-170
         if s_val < 25:
             color_name = "Weiß" if v_val > 180 else ("Grau" if v_val > 100 else "Schwarz")
-        elif h_val < 10 or h_val > 170: color_name = "Rot"
-        elif h_val < 25: color_name = "Orange"
-        elif h_val < 40: color_name = "Braun"
-        elif h_val < 80: color_name = "Grün"
-        elif h_val < 130: color_name = "Blau"
+        elif h_val < 8 or h_val > 170: color_name = "Rot"
+        elif h_val < 18: color_name = "Orange"
+        elif h_val < 30: color_name = "Braun"
+        elif h_val < 38: color_name = "Gelb"
+        elif h_val < 75: color_name = "Grün"
+        elif h_val < 135: color_name = "Blau"
         else: color_name = "Violett"
         
         if s_val < 20 and v_val > 200: material = "Porzellan"
-        elif 10 < h_val < 35 and s_val > 30: material = "Keramik"
+        elif 10 < h_val < 30 and s_val > 30: material = "Keramik"
         elif s_val < 25 and v_val < 100: material = "Metall"
         else: material = "Keramik"
         
         name = f"{material}_{color_name}"
         
-        # Decoration analysis
-        sat = hsv[:, :, 1]
-        colored_mask = (sat > 30) & (mask_roi > 0)
-        total_px = np.sum(mask_roi > 0)
-        has_decoration = (np.sum(colored_mask) / max(total_px, 1)) > 0.05 if total_px > 0 else False
+        # ---- Decoration analysis ----
+        # Decoration = VARIED/PATTERNED painted areas
+        # NOT: uniform solid color areas (like a solid blue wedge)
+        colored_frac = medium_ratio
+        
+        has_decoration = False
+        if colored_frac > 0.03 and total_masked > 100:
+            if np.sum(medium_colored) > 20:
+                h_colored = h_ch[medium_colored]
+                s_colored = s_ch[medium_colored]
+                h_std = float(np.std(h_colored))
+                s_std = float(np.std(s_colored))
+                
+                # Count distinct color clusters using hue histogram
+                hue_hist, _ = np.histogram(h_colored, bins=18, range=(0, 180))
+                significant_bins = np.sum(hue_hist > (len(h_colored) * 0.05))  # bins with >5% of pixels
+                
+                # SOLID COLOR = single dominant hue (1-2 bins), low hue variation
+                is_solid_color = (h_std < 15 and significant_bins <= 2)
+                
+                if is_solid_color:
+                    # Uniform solid color = body color/glaze, NOT decoration
+                    # Exception: if there are multiple SEPARATE colored regions (e.g. bands + dots)
+                    has_decoration = False
+                elif colored_frac > 0.10 and (h_std > 12 or significant_bins > 2):
+                    # Varied colors or multiple color clusters = decoration
+                    has_decoration = True
+                elif colored_frac > 0.15 and colored_frac < 0.65 and not is_solid_color:
+                    # Mixed colored/uncolored with some variation = painted decoration
+                    has_decoration = True
         
         # Curvature
         pts = c.reshape(-1, 2).astype(float)
@@ -5166,121 +5538,202 @@ def cluster_pieces(pieces, threshold=35):
 # =============================================================================
 
 def reconstruct_group(pieces_data, canvas_size=800):
-    """Reconstruct using circle fitting from blue decoration band"""
+    """Reconstruct using circle fitting — places fragments using centroids and contour masks"""
     n = len(pieces_data)
-    canvas = np.ones((canvas_size, canvas_size, 3), dtype=np.uint8) * 245
+    canvas = np.ones((canvas_size, canvas_size, 3), dtype=np.uint8) * 240
     canvas_center = canvas_size // 2
     target_radius = canvas_size * 0.42
     
-    # Collect blue points from all pieces
-    all_blue_points = []
+    # Decode all piece images first
     piece_images = []
-    
+    piece_masks = []
     for p in pieces_data:
-        # Decode thumbnail from data URL
         data_url = p.get('thumbnailDataUrl', '')
-        if not data_url:
+        if not data_url or len(data_url) < 50:
             piece_images.append(None)
+            piece_masks.append(None)
             continue
-        
         try:
             b64_data = data_url.split(',')[1]
             img_bytes = base64.b64decode(b64_data)
             nparr = np.frombuffer(img_bytes, np.uint8)
-            thumb = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            piece_images.append(thumb)
+            thumb = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)  # UNCHANGED to get alpha if present
+            if thumb is None:
+                piece_images.append(None)
+                piece_masks.append(None)
+                continue
+            
+            # Handle RGBA (use alpha as mask)
+            if thumb.shape[2] == 4:
+                alpha = thumb[:, :, 3]
+                bgr = thumb[:, :, :3]
+                piece_images.append(bgr)
+                piece_masks.append(alpha)
+            else:
+                piece_images.append(thumb)
+                # Create mask from non-white pixels (multi-channel check)
+                gray = cv2.cvtColor(thumb, cv2.COLOR_BGR2GRAY)
+                # Use both brightness AND color difference from white
+                b, g, r = cv2.split(thumb)
+                not_white = (gray < 235) | (np.abs(b.astype(int) - g.astype(int)) > 10) | (np.abs(b.astype(int) - r.astype(int)) > 10)
+                mask = (not_white.astype(np.uint8)) * 255
+                # Clean up mask
+                kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+                mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
+                mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
+                piece_masks.append(mask)
         except:
             piece_images.append(None)
+            piece_masks.append(None)
+    
+    # Get all centroids for positioning
+    centroids = []
+    valid_indices = []
+    for idx, p in enumerate(pieces_data):
+        if piece_images[idx] is None:
             continue
-        
-        if thumb is None:
-            continue
-        
-        offset = p.get('offset', [0, 0])
-        hsv = cv2.cvtColor(thumb, cv2.COLOR_BGR2HSV)
-        h_ch = hsv[:, :, 0]
-        s_ch = hsv[:, :, 1]
-        blue_mask = ((h_ch > 90) & (h_ch < 130) & (s_ch > 35))
-        
-        local_pts = np.column_stack(np.where(blue_mask))[:, ::-1]
-        if len(local_pts) > 0:
-            global_pts = local_pts + np.array([offset[0], offset[1]])
-            all_blue_points.extend(global_pts.tolist())
+        centroid = p.get('centroid')
+        if centroid and len(centroid) == 2:
+            centroids.append(centroid)
+            valid_indices.append(idx)
     
-    all_blue_points = np.array(all_blue_points) if all_blue_points else np.array([])
+    if len(centroids) == 0:
+        return canvas
     
-    # Circle fitting
-    plate_cx, plate_cy, plate_r = None, None, None
+    centroids = np.array(centroids, dtype=float)
     
-    if len(all_blue_points) > 50:
-        x = all_blue_points[:, 0].astype(float)
-        y = all_blue_points[:, 1].astype(float)
-        A = np.column_stack([x, y, np.ones_like(x)])
-        b = x**2 + y**2
+    # Circle fitting from centroids (more robust than blue-pixel detection)
+    # All fragments of a plate should have centroids on a circle
+    if len(centroids) >= 3:
+        x_arr = centroids[:, 0]
+        y_arr = centroids[:, 1]
+        A = np.column_stack([x_arr, y_arr, np.ones_like(x_arr)])
+        b_arr = x_arr**2 + y_arr**2
         try:
-            result, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+            result, _, _, _ = np.linalg.lstsq(A, b_arr, rcond=None)
             plate_cx = result[0] / 2
             plate_cy = result[1] / 2
             plate_r = np.sqrt(max(0, result[2] + plate_cx**2 + plate_cy**2))
+            if plate_r < 20:
+                raise ValueError("too small")
+        except:
+            plate_cx = float(np.mean(x_arr))
+            plate_cy = float(np.mean(y_arr))
+            dists = np.sqrt((x_arr - plate_cx)**2 + (y_arr - plate_cy)**2)
+            plate_r = float(max(100, np.max(dists) * 1.4))
+    else:
+        plate_cx = float(np.mean(centroids[:, 0]))
+        plate_cy = float(np.mean(centroids[:, 1]))
+        plate_r = 200.0
+    
+    # Also try blue-pixel circle fitting for better accuracy
+    all_blue_pts = []
+    for idx in valid_indices:
+        p = pieces_data[idx]
+        thumb = piece_images[idx]
+        offset = p.get('offset', [0, 0])
+        hsv = cv2.cvtColor(thumb, cv2.COLOR_BGR2HSV)
+        # Blue pixels: H=75-135, S>50
+        blue_mask = (hsv[:, :, 0] > 75) & (hsv[:, :, 0] < 135) & (hsv[:, :, 1] > 50)
+        if piece_masks[idx] is not None:
+            blue_mask = blue_mask & (piece_masks[idx] > 128)
+        local_pts = np.column_stack(np.where(blue_mask))[:, ::-1]  # x, y
+        if len(local_pts) > 10:
+            step = max(1, len(local_pts) // 300)
+            global_pts = local_pts[::step] + np.array([offset[0], offset[1]])
+            all_blue_pts.extend(global_pts.tolist())
+    
+    if len(all_blue_pts) > 50:
+        bp = np.array(all_blue_pts, dtype=float)
+        A2 = np.column_stack([bp[:, 0], bp[:, 1], np.ones(len(bp))])
+        b2 = bp[:, 0]**2 + bp[:, 1]**2
+        try:
+            res2, _, _, _ = np.linalg.lstsq(A2, b2, rcond=None)
+            bcx = res2[0] / 2
+            bcy = res2[1] / 2
+            br = np.sqrt(max(0, res2[2] + bcx**2 + bcy**2))
+            if br > 30:
+                plate_cx, plate_cy, plate_r = float(bcx), float(bcy), float(br)
         except:
             pass
     
-    if plate_cx is None or plate_r is None or plate_r < 10:
-        centroids = [p['centroid'] for p in pieces_data if 'centroid' in p]
-        if centroids:
-            plate_cx = np.mean([c[0] for c in centroids])
-            plate_cy = np.mean([c[1] for c in centroids])
-            plate_r = 200
-        else:
-            plate_cx, plate_cy, plate_r = canvas_center, canvas_center, 200
+    scale = float(target_radius / max(plate_r, 1))
+    scale = float(np.clip(scale, 0.1, 4.0))
     
-    scale = target_radius / plate_r if plate_r > 0 else 0.5
-    scale = np.clip(scale, 0.2, 2.0)
-    
-    # Place each piece
-    for idx, p in enumerate(pieces_data):
-        thumb = piece_images[idx] if idx < len(piece_images) else None
+    # Place each fragment
+    for idx in valid_indices:
+        p = pieces_data[idx]
+        thumb = piece_images[idx]
+        mask = piece_masks[idx]
         if thumb is None:
             continue
         
         offset = p.get('offset', [0, 0])
+        centroid = p.get('centroid', [offset[0] + thumb.shape[1]//2, offset[1] + thumb.shape[0]//2])
         h_t, w_t = thumb.shape[:2]
         
         nw = max(1, int(w_t * scale))
         nh = max(1, int(h_t * scale))
+        thumb_s = cv2.resize(thumb, (nw, nh), interpolation=cv2.INTER_AREA)
         
-        thumb_s = cv2.resize(thumb, (nw, nh))
+        # Scale mask
+        if mask is not None:
+            mask_s = cv2.resize(mask, (nw, nh), interpolation=cv2.INTER_NEAREST)
+        else:
+            gray_t = cv2.cvtColor(thumb_s, cv2.COLOR_BGR2GRAY)
+            _, mask_s = cv2.threshold(gray_t, 235, 255, cv2.THRESH_BINARY_INV)
         
-        # Calculate position
-        rel_cx = (plate_cx - offset[0]) * scale
-        rel_cy = (plate_cy - offset[1]) * scale
-        px = int(canvas_center - rel_cx)
-        py = int(canvas_center - rel_cy)
+        # Use contour mask if available (most accurate)
+        contour_data = p.get('contour_global')
+        if contour_data and len(contour_data) > 4:
+            try:
+                contour_arr = np.array(contour_data).reshape(-1, 1, 2).astype(float)
+                local_contour = contour_arr.copy()
+                local_contour[:, :, 0] = (local_contour[:, :, 0] - offset[0]) * scale
+                local_contour[:, :, 1] = (local_contour[:, :, 1] - offset[1]) * scale
+                local_contour = local_contour.astype(np.int32)
+                contour_mask = np.zeros((nh, nw), dtype=np.uint8)
+                cv2.drawContours(contour_mask, [local_contour], -1, 255, -1)
+                if np.sum(contour_mask > 0) > 50:
+                    mask_s = contour_mask
+            except:
+                pass
         
-        # Blend onto canvas
+        # Fragment centroid in local thumbnail coords
+        local_cx = (centroid[0] - offset[0]) * scale
+        local_cy = (centroid[1] - offset[1]) * scale
+        
+        # Where the centroid maps to on canvas
+        canvas_cx = canvas_center + (centroid[0] - plate_cx) * scale
+        canvas_cy = canvas_center + (centroid[1] - plate_cy) * scale
+        
+        # Top-left of fragment on canvas
+        px = int(canvas_cx - local_cx)
+        py_pos = int(canvas_cy - local_cy)
+        
+        # Clip to canvas bounds
         dx1 = max(0, px)
-        dy1 = max(0, py)
+        dy1 = max(0, py_pos)
         dx2 = min(canvas_size, px + nw)
-        dy2 = min(canvas_size, py + nh)
+        dy2 = min(canvas_size, py_pos + nh)
         sx1 = dx1 - px
-        sy1 = dy1 - py
+        sy1 = dy1 - py_pos
         
         if dx2 > dx1 and dy2 > dy1:
             t_h, t_w = dy2 - dy1, dx2 - dx1
             if sy1 + t_h <= thumb_s.shape[0] and sx1 + t_w <= thumb_s.shape[1]:
                 roi = canvas[dy1:dy2, dx1:dx2]
                 t_roi = thumb_s[sy1:sy1 + t_h, sx1:sx1 + t_w]
+                m_roi = mask_s[sy1:sy1 + t_h, sx1:sx1 + t_w]
                 
                 if roi.shape[:2] == t_roi.shape[:2]:
-                    # Simple mask based on non-white pixels
-                    gray_t = cv2.cvtColor(t_roi, cv2.COLOR_BGR2GRAY)
-                    _, mask = cv2.threshold(gray_t, 240, 255, cv2.THRESH_BINARY_INV)
-                    mask_3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR).astype(float) / 255
-                    blended = t_roi.astype(float) * mask_3ch + roi.astype(float) * (1 - mask_3ch)
+                    alpha = cv2.cvtColor(m_roi, cv2.COLOR_GRAY2BGR).astype(float) / 255
+                    blended = t_roi.astype(float) * alpha + roi.astype(float) * (1 - alpha)
                     canvas[dy1:dy2, dx1:dx2] = blended.astype(np.uint8)
     
-    # Draw circle
-    cv2.circle(canvas, (canvas_center, canvas_center), int(target_radius), (230, 225, 220), 2)
+    # Draw plate circle guide
+    cv2.circle(canvas, (canvas_center, canvas_center), int(target_radius), (200, 195, 190), 2, cv2.LINE_AA)
+    cv2.circle(canvas, (canvas_center, canvas_center), 3, (180, 175, 170), -1)
     
     return canvas
 
