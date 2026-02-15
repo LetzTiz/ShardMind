@@ -484,22 +484,74 @@
         /* Database */
         .db-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
         }
         .db-item {
             background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: var(--radius); padding: 8px;
-            text-align: center;
+            border-radius: var(--radius-lg); padding: 12px;
+            position: relative; transition: border-color 0.2s;
         }
+        .db-item:hover { border-color: var(--accent); }
         .db-item img {
             width: 100%; aspect-ratio: 1; object-fit: cover;
-            border-radius: 6px;
+            border-radius: 8px; margin-bottom: 8px;
         }
         .db-item .db-id {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 10px; color: var(--text-muted); margin-top: 4px;
+            font-size: 10px; color: var(--text-muted); margin-bottom: 2px;
         }
+        .db-item .db-name {
+            font-size: 13px; font-weight: 600; color: var(--text-primary);
+            margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .db-item .db-tags {
+            display: flex; flex-wrap: wrap; gap: 4px;
+        }
+        .db-tag {
+            font-size: 10px; padding: 2px 7px;
+            border-radius: 10px; background: var(--bg-secondary);
+            color: var(--text-muted); white-space: nowrap;
+        }
+        .db-tag.color { border-left: 3px solid var(--accent); }
+        .db-tag.material { border-left: 3px solid var(--info); }
+        .db-delete {
+            position: absolute; top: 8px; right: 8px;
+            width: 24px; height: 24px; border-radius: 50%;
+            background: rgba(0,0,0,0.4); border: none; color: #fff;
+            font-size: 12px; cursor: pointer; display: none;
+            align-items: center; justify-content: center;
+        }
+        .db-item:hover .db-delete { display: flex; }
+        .db-stats-bar {
+            display: flex; gap: 20px; padding: 14px 18px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .db-stat { text-align: center; }
+        .db-stat-value { font-size: 24px; font-weight: 700; color: var(--accent); }
+        .db-stat-label { font-size: 11px; color: var(--text-muted); }
+        
+        /* Similarity matching */
+        .sim-section { margin-top: 24px; }
+        .sim-match-card {
+            display: flex; gap: 16px; padding: 14px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); margin-bottom: 12px;
+            align-items: center;
+        }
+        .sim-match-card img {
+            width: 80px; height: 80px; object-fit: cover;
+            border-radius: 8px; flex-shrink: 0;
+        }
+        .sim-match-info { flex: 1; min-width: 0; }
+        .sim-match-score {
+            font-size: 24px; font-weight: 700; color: var(--accent);
+            flex-shrink: 0; min-width: 50px; text-align: center;
+        }
+        .sim-arrow { font-size: 20px; color: var(--text-muted); flex-shrink: 0; }
+        .sim-pair { display: flex; align-items: center; gap: 12px; }
 
         /* Labels */
         .label-options {
@@ -1992,11 +2044,47 @@
 
         <div class="tab-content" id="tab-database">
             <h2 class="section-header" id="database-header">Meine Sammlung</h2>
+            
+            <!-- DB stats bar -->
+            <div class="db-stats-bar" id="db-stats-bar" style="display:none;">
+                <div class="db-stat">
+                    <div class="db-stat-value" id="db-stat-pieces">0</div>
+                    <div class="db-stat-label" id="db-stat-pieces-lbl">Fragmente</div>
+                </div>
+                <div class="db-stat">
+                    <div class="db-stat-value" id="db-stat-groups">0</div>
+                    <div class="db-stat-label" id="db-stat-groups-lbl">Gruppen</div>
+                </div>
+                <div class="db-stat">
+                    <div class="db-stat-value" id="db-stat-materials">0</div>
+                    <div class="db-stat-label" id="db-stat-materials-lbl">Materialien</div>
+                </div>
+                <div class="db-stat">
+                    <div class="db-stat-value" id="db-stat-size">0</div>
+                    <div class="db-stat-label">KB in localStorage</div>
+                </div>
+            </div>
+            
             <div id="database-content">
                 <div class="empty-state">
                     <div class="icon">💾</div>
-                    <p id="database-empty-text">Noch leer</p>
+                    <p id="database-empty-text">Noch leer — speichere Gruppen im „Gruppen"-Tab</p>
                 </div>
+            </div>
+            
+            <!-- Similarity comparison section -->
+            <div class="sim-section" id="sim-section" style="display:none;">
+                <hr style="border-color:var(--border);margin:24px 0;">
+                <h3 style="font-size:18px;margin-bottom:8px;color:var(--accent);">🔍 <span id="sim-header-text">Ähnlichkeitsvergleich</span></h3>
+                <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;" id="sim-explain">
+                    Vergleicht die aktuell analysierten Fragmente mit gespeicherten Fragmenten in der Datenbank. 
+                    Die Ähnlichkeit basiert auf Material, Farbe, Fläche, Krümmung, Rundheit und Kompaktheit — 
+                    <em>nicht</em> auf exakter Kantenpassung. „Sehr ähnlich" bedeutet: vergleichbare Machart, nicht identisches Objekt.
+                </p>
+                <button class="btn btn-primary" onclick="runSimilarityComparison()" id="btn-run-similarity" style="margin-bottom:20px;">
+                    🔍 <span id="txt-compare">Mit Datenbank vergleichen</span>
+                </button>
+                <div id="sim-results"></div>
             </div>
         </div>
 
@@ -2660,6 +2748,9 @@ function switchTab(name) {
     if (name === 'context') {
         loadContextFromDB();
     }
+    if (name === 'database') {
+        renderDatabase();
+    }
 }
 
 function toggleMobileSidebar() {
@@ -3204,34 +3295,291 @@ function compressThumbnailAsync(dataUrl, maxSize) {
 
 function renderDatabase() {
     const container = document.getElementById('database-content');
+    const statsBar = document.getElementById('db-stats-bar');
+    const simSection = document.getElementById('sim-section');
     const data = getUserData();
     const pieces = data.pieces || {};
     const clusters = data.clusters || {};
+    const pieceCount = Object.keys(pieces).length;
+    const clusterCount = Object.keys(clusters).length;
     
-    if (Object.keys(pieces).length === 0) {
-        container.innerHTML = `<div class="empty-state"><div class="icon">💾</div><p>${T('db_empty')}</p></div>`;
+    // Show/hide similarity section based on whether we have both active pieces and saved pieces
+    if (simSection) {
+        simSection.style.display = (activePieces.length > 0 && pieceCount > 0) ? '' : 'none';
+    }
+    
+    if (pieceCount === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">💾</div>
+            <p id="database-empty-text">${currentLang === 'de' ? 'Noch leer — speichere Gruppen im „Gruppen"-Tab' : 'Empty — save groups in the "Groups" tab'}</p></div>`;
+        if (statsBar) statsBar.style.display = 'none';
         return;
     }
     
-    let html = `<p style="color:var(--text-secondary);margin-bottom:16px;"><strong>${Object.keys(pieces).length} ${T('fragments')}</strong></p>`;
-    html += '<div class="db-grid">';
-    Object.entries(pieces).slice(0, 24).forEach(([pid, p]) => {
-        html += `<div class="db-item">
-            ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);border-radius:6px;"></div>'}
-            <div class="db-id">${pid.substring(0, 11)}</div>
-        </div>`;
-    });
-    html += '</div>';
+    // Stats
+    if (statsBar) {
+        statsBar.style.display = 'flex';
+        const materials = new Set(Object.values(pieces).map(p => p.material).filter(Boolean));
+        const dbJson = JSON.stringify(data);
+        const sizeKB = Math.round(dbJson.length / 1024);
+        
+        document.getElementById('db-stat-pieces').textContent = pieceCount;
+        document.getElementById('db-stat-groups').textContent = clusterCount;
+        document.getElementById('db-stat-materials').textContent = materials.size;
+        document.getElementById('db-stat-size').textContent = sizeKB;
+    }
     
-    if (Object.keys(clusters).length > 0) {
-        html += `<hr style="border-color:var(--border);margin:20px 0;">`;
-        html += `<p style="color:var(--text-secondary);margin-bottom:8px;"><strong>${Object.keys(clusters).length} ${T('groups')}</strong></p>`;
-        Object.entries(clusters).forEach(([k, v]) => {
-            html += `<p style="color:var(--text-muted);font-size:13px;">• ${v.name || k} (${(v.piece_ids||[]).length} ${T('pieces')})</p>`;
+    // Render clusters with their pieces
+    let html = '';
+    
+    if (clusterCount > 0) {
+        Object.entries(clusters).forEach(([key, cluster]) => {
+            const cPieces = (cluster.piece_ids || []).map(pid => pieces[pid]).filter(Boolean);
+            if (cPieces.length === 0) return;
+            
+            html += `<div style="margin-bottom:24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <div>
+                        <h3 style="font-size:16px;color:var(--text-primary);margin:0;">${cluster.name || key}</h3>
+                        <span style="font-size:12px;color:var(--text-muted);">${cPieces.length} ${T('pieces')} · ${cluster.created ? new Date(cluster.created).toLocaleDateString('de-DE') : ''}</span>
+                    </div>
+                    <button class="btn btn-sm btn-secondary" onclick="deleteClusterFromDB('${key}')" title="Gruppe löschen">🗑️</button>
+                </div>
+                <div class="db-grid">`;
+            
+            cPieces.forEach(p => {
+                const colorMap = {'Blau':'#4488cc','Rot':'#cc4444','Grün':'#44aa66','Braun':'#a0774a','Orange':'#dd8833','Gelb':'#ccaa33','Weiß':'#e8e4de','Grau':'#888','Schwarz':'#333','Violett':'#8855aa','Cyan':'#44aaaa'};
+                const colorDot = colorMap[p.color_name] || '#999';
+                
+                html += `<div class="db-item">
+                    <button class="db-delete" onclick="deletePieceFromDB('${p.id}','${key}')" title="Löschen">✕</button>
+                    ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}" alt="${p.id}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);border-radius:8px;"></div>'}
+                    <div class="db-id">${(p.id || '').substring(0, 11)}</div>
+                    <div class="db-name">${p.name || 'Fragment'}</div>
+                    <div class="db-tags">
+                        <span class="db-tag material">${p.material || '?'}</span>
+                        <span class="db-tag color" style="border-left-color:${colorDot};">${p.color_name || '?'}</span>
+                        ${p.area ? `<span class="db-tag">${Math.round(p.area)} px²</span>` : ''}
+                        ${p.has_decoration ? `<span class="db-tag" style="border-left:3px solid var(--warning);">Deko</span>` : ''}
+                    </div>
+                </div>`;
+            });
+            
+            html += '</div></div>';
         });
     }
     
+    // Orphan pieces (saved but not in any cluster)
+    const clusteredIds = new Set();
+    Object.values(clusters).forEach(c => (c.piece_ids || []).forEach(id => clusteredIds.add(id)));
+    const orphans = Object.entries(pieces).filter(([pid]) => !clusteredIds.has(pid));
+    
+    if (orphans.length > 0) {
+        html += `<div style="margin-top:24px;">
+            <h3 style="font-size:16px;color:var(--text-muted);margin-bottom:12px;">${currentLang === 'de' ? 'Einzelfragmente' : 'Individual fragments'} (${orphans.length})</h3>
+            <div class="db-grid">`;
+        orphans.forEach(([pid, p]) => {
+            html += `<div class="db-item">
+                <button class="db-delete" onclick="deletePieceFromDB('${pid}',null)" title="Löschen">✕</button>
+                ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);border-radius:8px;"></div>'}
+                <div class="db-id">${pid.substring(0, 11)}</div>
+                <div class="db-name">${p.name || 'Fragment'}</div>
+                <div class="db-tags">
+                    <span class="db-tag material">${p.material || '?'}</span>
+                    <span class="db-tag color">${p.color_name || '?'}</span>
+                </div>
+            </div>`;
+        });
+        html += '</div></div>';
+    }
+    
     container.innerHTML = html;
+}
+
+function deletePieceFromDB(pid, clusterKey) {
+    if (!confirm(currentLang === 'de' ? `Fragment ${pid} wirklich löschen?` : `Delete fragment ${pid}?`)) return;
+    const data = getUserData();
+    if (data.pieces) delete data.pieces[pid];
+    if (clusterKey && data.clusters && data.clusters[clusterKey]) {
+        data.clusters[clusterKey].piece_ids = (data.clusters[clusterKey].piece_ids || []).filter(id => id !== pid);
+        if (data.clusters[clusterKey].piece_ids.length === 0) delete data.clusters[clusterKey];
+    }
+    saveUserData(data);
+    renderDatabase();
+    toast(currentLang === 'de' ? 'Fragment gelöscht' : 'Fragment deleted', 'info');
+}
+
+function deleteClusterFromDB(key) {
+    if (!confirm(currentLang === 'de' ? 'Gruppe und alle Fragmente löschen?' : 'Delete group and all fragments?')) return;
+    const data = getUserData();
+    if (data.clusters && data.clusters[key]) {
+        const pids = data.clusters[key].piece_ids || [];
+        pids.forEach(pid => { if (data.pieces) delete data.pieces[pid]; });
+        delete data.clusters[key];
+    }
+    saveUserData(data);
+    renderDatabase();
+    toast(currentLang === 'de' ? 'Gruppe gelöscht' : 'Group deleted', 'info');
+}
+
+// ==================================================
+// SIMILARITY COMPARISON
+// ==================================================
+
+function calcPieceSimilarity(a, b) {
+    // Compare two pieces based on available features
+    // Returns 0..1 score (1 = identical)
+    let score = 0;
+    let weights = 0;
+    
+    // Material match (weight: 3)
+    if (a.material && b.material) {
+        score += (a.material === b.material ? 1 : 0) * 3;
+        weights += 3;
+    }
+    
+    // Color match (weight: 2.5)
+    if (a.color_name && b.color_name) {
+        if (a.color_name === b.color_name) {
+            score += 2.5;
+        } else {
+            // Partial match for similar colors
+            const similar = {
+                'Braun': ['Orange', 'Rot'], 'Orange': ['Braun', 'Rot', 'Gelb'],
+                'Rot': ['Orange', 'Braun'], 'Gelb': ['Orange', 'Braun'],
+                'Grau': ['Schwarz', 'Weiß'], 'Schwarz': ['Grau'],
+                'Weiß': ['Grau'], 'Blau': ['Cyan', 'Violett'],
+                'Violett': ['Blau'], 'Grün': ['Cyan'],
+            };
+            if ((similar[a.color_name] || []).includes(b.color_name)) {
+                score += 1.2; // partial match
+            }
+        }
+        weights += 2.5;
+    }
+    
+    // Area similarity (weight: 2) — ratio-based
+    if (a.area && b.area && a.area > 0 && b.area > 0) {
+        const ratio = Math.min(a.area, b.area) / Math.max(a.area, b.area);
+        score += ratio * 2;
+        weights += 2;
+    }
+    
+    // Curvature similarity (weight: 1.5)
+    if (a.curvature !== undefined && b.curvature !== undefined) {
+        const diff = Math.abs(a.curvature - b.curvature);
+        const sim = Math.max(0, 1 - diff / 0.02); // 0.02 = max expected difference
+        score += sim * 1.5;
+        weights += 1.5;
+    }
+    
+    // Solidity similarity (weight: 1)
+    if (a.solidity && b.solidity) {
+        const diff = Math.abs(a.solidity - b.solidity);
+        score += Math.max(0, 1 - diff / 0.3) * 1;
+        weights += 1;
+    }
+    
+    // Circularity similarity (weight: 1)
+    if (a.circularity && b.circularity) {
+        const diff = Math.abs(a.circularity - b.circularity);
+        score += Math.max(0, 1 - diff / 0.3) * 1;
+        weights += 1;
+    }
+    
+    // Decoration match (weight: 1.5)
+    if (a.has_decoration !== undefined && b.has_decoration !== undefined) {
+        score += (a.has_decoration === b.has_decoration ? 1 : 0) * 1.5;
+        weights += 1.5;
+    }
+    
+    return weights > 0 ? score / weights : 0;
+}
+
+function runSimilarityComparison() {
+    const data = getUserData();
+    const dbPieces = data.pieces || {};
+    const dbPieceList = Object.entries(dbPieces);
+    const resultsDiv = document.getElementById('sim-results');
+    
+    if (activePieces.length === 0 || dbPieceList.length === 0) {
+        resultsDiv.innerHTML = `<p style="color:var(--text-muted);">${currentLang === 'de' ? 'Keine Vergleichsdaten vorhanden.' : 'No comparison data available.'}</p>`;
+        return;
+    }
+    
+    // For each active piece, find best matches in DB
+    const allMatches = [];
+    
+    activePieces.forEach(active => {
+        const matches = [];
+        dbPieceList.forEach(([dbId, dbPiece]) => {
+            // Skip if same piece
+            if (dbPiece.id === active.id) return;
+            const sim = calcPieceSimilarity(active, dbPiece);
+            if (sim > 0.3) { // minimum threshold
+                matches.push({ dbId, dbPiece, similarity: sim });
+            }
+        });
+        matches.sort((a, b) => b.similarity - a.similarity);
+        if (matches.length > 0) {
+            allMatches.push({ active, topMatches: matches.slice(0, 3) });
+        }
+    });
+    
+    // Sort by best match score
+    allMatches.sort((a, b) => (b.topMatches[0]?.similarity || 0) - (a.topMatches[0]?.similarity || 0));
+    
+    if (allMatches.length === 0) {
+        resultsDiv.innerHTML = `<div class="empty-state" style="padding:30px;">
+            <div class="icon">🔍</div>
+            <p>${currentLang === 'de' ? 'Keine ähnlichen Fragmente in der Datenbank gefunden (Schwelle: 30%).' : 'No similar fragments found in database (threshold: 30%).'}</p>
+        </div>`;
+        return;
+    }
+    
+    let html = `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
+        ${allMatches.length} ${currentLang === 'de' ? 'Fragmente mit Übereinstimmungen gefunden' : 'fragments with matches found'}
+    </p>`;
+    
+    allMatches.forEach(({ active, topMatches }) => {
+        topMatches.forEach(match => {
+            const pct = Math.round(match.similarity * 100);
+            const scoreColor = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--warning)' : 'var(--text-muted)';
+            const scoreLabel = pct >= 80 ? (currentLang === 'de' ? 'Sehr ähnlich' : 'Very similar') :
+                               pct >= 60 ? (currentLang === 'de' ? 'Ähnlich' : 'Similar') :
+                               (currentLang === 'de' ? 'Mäßig ähnlich' : 'Somewhat similar');
+            
+            // What matched?
+            const reasons = [];
+            if (active.material === match.dbPiece.material) reasons.push(active.material);
+            if (active.color_name === match.dbPiece.color_name) reasons.push(active.color_name);
+            if (active.has_decoration === match.dbPiece.has_decoration && active.has_decoration) reasons.push(currentLang === 'de' ? 'Verzierung' : 'Decoration');
+            
+            html += `<div class="sim-match-card">
+                <div class="sim-pair">
+                    ${active.thumbnailDataUrl ? `<img src="${active.thumbnailDataUrl}" title="${active.id}">` : '<div style="width:80px;height:80px;background:var(--bg-secondary);border-radius:8px;"></div>'}
+                    <div class="sim-arrow">⟷</div>
+                    ${match.dbPiece.thumbnailDataUrl ? `<img src="${match.dbPiece.thumbnailDataUrl}" title="${match.dbId}">` : '<div style="width:80px;height:80px;background:var(--bg-secondary);border-radius:8px;"></div>'}
+                </div>
+                <div class="sim-match-info">
+                    <div style="font-size:12px;color:var(--text-muted);">
+                        <strong>${(active.id || '').substring(0, 11)}</strong> → <strong>${(match.dbId || '').substring(0, 11)}</strong>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                        ${active.name || ''} → ${match.dbPiece.name || ''}
+                    </div>
+                    ${reasons.length ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+                        ${currentLang === 'de' ? 'Übereinstimmung' : 'Match'}: ${reasons.join(', ')}</div>` : ''}
+                </div>
+                <div class="sim-match-score" style="color:${scoreColor};">
+                    ${pct}%
+                    <div style="font-size:10px;font-weight:400;">${scoreLabel}</div>
+                </div>
+            </div>`;
+        });
+    });
+    
+    resultsDiv.innerHTML = html;
+    toast(currentLang === 'de' ? `${allMatches.length} Vergleiche gefunden` : `${allMatches.length} matches found`, 'success');
 }
 
 // ==================================================
