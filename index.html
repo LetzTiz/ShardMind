@@ -1286,8 +1286,10 @@
         <nav class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('start')">🏠 <span class="tab-label" data-key="tab_start">Start</span></button>
             <button class="tab-btn" onclick="switchTab('gallery')">🏺 <span class="tab-label" data-key="tab_gallery">Galerie</span></button>
+            <button class="tab-btn" onclick="switchTab('context')">📋 <span class="tab-label" data-key="tab_context">Fundkontext</span></button>
             <button class="tab-btn" onclick="switchTab('groups')">📦 <span class="tab-label" data-key="tab_groups">Gruppen</span></button>
             <button class="tab-btn" onclick="switchTab('reconstruction')">🧩 <span class="tab-label" data-key="tab_reconstruction">Rekonstruktion</span></button>
+            <button class="tab-btn" onclick="switchTab('profile')">✏️ <span class="tab-label" data-key="tab_profile">Profilschnitt</span></button>
             <button class="tab-btn" onclick="switchTab('decoration')">🎨 <span class="tab-label" data-key="tab_decoration">Verzierung</span></button>
             <button class="tab-btn" onclick="switchTab('culture')">🏛️ <span class="tab-label" data-key="tab_culture">Kulturstufe</span></button>
             <button class="tab-btn" onclick="switchTab('database')">💾 <span class="tab-label" data-key="tab_database">Datenbank</span></button>
@@ -1347,6 +1349,214 @@
             </div>
         </div>
 
+        <!-- TAB: Find Context / Fundkontext -->
+        <div class="tab-content" id="tab-context">
+            <h2 class="section-header">📋 <span id="context-header-text">Fundkontext-Dokumentation</span></h2>
+
+            <div class="feature-explanation" style="border-left:3px solid var(--warning);">
+                <p>
+                    <strong id="context-explain-title">⚠️ Warum Kontext entscheidend ist:</strong>
+                    <span id="context-explain-text">Keramikfragmente ohne archäologischen Kontext verlieren bis zu 99% ihrer Informationsgehalt. 
+                    Es macht einen wesentlichen Unterschied, ob Scherben in einem Grab, einer Latrine oder einem Straßenunterbau gefunden werden. 
+                    Im Regelfall weiß der Ausgräber bereits vor dem Fund, in welcher Kultur er gräbt. 
+                    Diese Felder ermöglichen die strukturierte Dokumentation des Fundkontextes.</span>
+                </p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;">
+                <!-- Left column: Find context -->
+                <div class="card" style="padding:20px;">
+                    <h3 style="font-size:16px;margin-bottom:16px;color:var(--accent);">🗺️ <span id="ctx-location-title">Fundort & Grabung</span></h3>
+                    
+                    <div class="form-row" style="margin-bottom:12px;">
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ctx-lbl-site">Grabungsort / Fundstelle</label>
+                        <input type="text" id="ctx-site" placeholder="z.B. Köln-Altstadt, Grabung 2024/15" 
+                               style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;"
+                               onchange="updateContextData()">
+                    </div>
+                    
+                    <div class="form-row" style="margin-bottom:12px;">
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ctx-lbl-befund">Befundtyp</label>
+                        <select id="ctx-befund" style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;"
+                                onchange="updateContextData()">
+                            <option value="">— Bitte wählen —</option>
+                            <option value="grab">⚰️ Grab / Bestattung</option>
+                            <option value="grube">🕳️ Grube / Abfallgrube</option>
+                            <option value="latrine">🚽 Latrine / Kloake</option>
+                            <option value="brunnen">💧 Brunnen</option>
+                            <option value="graben">🏗️ Graben / Befestigung</option>
+                            <option value="fundament">🧱 Fundament / Mauerwerk</option>
+                            <option value="kulturschicht">📊 Kulturschicht / Planum</option>
+                            <option value="strasse">🛤️ Straßenunterbau</option>
+                            <option value="ofen">🔥 Ofen / Brennstelle</option>
+                            <option value="werkstatt">🔨 Werkstatt / Produktionsstätte</option>
+                            <option value="oberflaechenfund">🌾 Oberflächenfund / Lesefund</option>
+                            <option value="sonstiges">📌 Sonstiges</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row" style="margin-bottom:12px;">
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ctx-lbl-stratum">Schicht / Stratum</label>
+                        <input type="text" id="ctx-stratum" placeholder="z.B. Schicht 3b, Planum 2" 
+                               style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;"
+                               onchange="updateContextData()">
+                    </div>
+                    
+                    <div class="form-row" style="margin-bottom:12px;">
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ctx-lbl-fundnr">Fundnummer</label>
+                        <input type="text" id="ctx-fundnr" placeholder="z.B. F-2024-0342" 
+                               style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;"
+                               onchange="updateContextData()">
+                    </div>
+                    
+                    <div style="display:flex;gap:12px;">
+                        <div style="flex:1;">
+                            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ctx-lbl-date">Funddatum</label>
+                            <input type="date" id="ctx-date" style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;"
+                                   onchange="updateContextData()">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ctx-lbl-finder">Ausgräber</label>
+                            <input type="text" id="ctx-finder" placeholder="Name" 
+                                   style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;"
+                                   onchange="updateContextData()">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right column: Context details -->
+                <div class="card" style="padding:20px;">
+                    <h3 style="font-size:16px;margin-bottom:16px;color:var(--accent);">🔍 <span id="ctx-details-title">Fundumstände</span></h3>
+                    
+                    <div class="form-row" style="margin-bottom:12px;">
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ctx-lbl-closed">Geschlossener Fund?</label>
+                        <div style="display:flex;gap:8px;">
+                            <button class="three-toggle" id="ctx-closed-yes" onclick="setContextClosed('yes',this)">✅ Ja (ungestört)</button>
+                            <button class="three-toggle" id="ctx-closed-no" onclick="setContextClosed('no',this)">❌ Nein (gestört)</button>
+                            <button class="three-toggle active" id="ctx-closed-unknown" onclick="setContextClosed('unknown',this)">❓ Unbekannt</button>
+                        </div>
+                        <p style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="ctx-closed-hint">
+                            Ein geschlossener Fund bedeutet gleichzeitig niedergelegte Objekte ohne spätere Störung. 
+                            Dies ist entscheidend für die chronologische Einordnung.
+                        </p>
+                    </div>
+                    
+                    <div class="form-row" style="margin-bottom:12px;">
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ctx-lbl-associated">Vergesellschaftete Funde</label>
+                        <textarea id="ctx-associated" rows="3" placeholder="z.B. Münze (Denar, Augustus), Fibel (Typ Almgren 68), Tierknochen..."
+                                  style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;resize:vertical;"
+                                  onchange="updateContextData()"></textarea>
+                    </div>
+                    
+                    <div class="form-row" style="margin-bottom:12px;">
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ctx-lbl-notes">Bemerkungen zum Kontext</label>
+                        <textarea id="ctx-notes" rows="4" placeholder="z.B. Grabstörung durch rezenten Leitungsbau erkennbar, Fragment lag in situ auf Steinsetzung..."
+                                  style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;resize:vertical;"
+                                  onchange="updateContextData()"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Material Analysis Fields -->
+            <div style="margin-top:24px;">
+                <h3 style="font-size:18px;margin-bottom:16px;color:var(--accent);">🔬 <span id="ctx-material-title">Materialanalyse (manuell)</span></h3>
+                
+                <div class="feature-explanation">
+                    <p>
+                        <span id="ctx-material-explain">Die Analyse von Ton, Magerung, Brenntechnik und Oberflächenbehandlung kann nicht aus Bildmaterial erfolgen und erfordert physische Untersuchung 
+                        (z.B. Dünnschliff, p-RFA). Diese Felder dienen der manuellen Dokumentation solcher Befunde.</span>
+                    </p>
+                </div>
+                
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Tonart / Warenart</label>
+                        <select id="ctx-clay" style="width:100%;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;"
+                                onchange="updateContextData()">
+                            <option value="">— nicht bestimmt —</option>
+                            <option value="irdenware">Irdenware</option>
+                            <option value="steinzeug">Steinzeug</option>
+                            <option value="fayence">Fayence</option>
+                            <option value="porzellan">Porzellan</option>
+                            <option value="terra-sigillata">Terra Sigillata</option>
+                            <option value="grauware">Grauware</option>
+                            <option value="rotware">Rotware / Gelbware</option>
+                            <option value="schwarzware">Schwarzware (reduziert)</option>
+                            <option value="sonstiges">Sonstiges</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Magerung / Beischläge</label>
+                        <select id="ctx-temper" style="width:100%;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;"
+                                onchange="updateContextData()">
+                            <option value="">— nicht bestimmt —</option>
+                            <option value="quarz">Quarzsand</option>
+                            <option value="schamotte">Schamotte</option>
+                            <option value="glimmer">Glimmer</option>
+                            <option value="muschelgrus">Muschelgrus</option>
+                            <option value="organisch">Organisch</option>
+                            <option value="kalkstein">Kalkstein</option>
+                            <option value="granit">Granit / Feldspat</option>
+                            <option value="fein">Fein gemagert</option>
+                            <option value="ungemagert">Ungemagert</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Brenntechnik</label>
+                        <select id="ctx-firing" style="width:100%;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;"
+                                onchange="updateContextData()">
+                            <option value="">— nicht bestimmt —</option>
+                            <option value="oxidierend">Oxidierend (rötlich)</option>
+                            <option value="reduzierend">Reduzierend (grau/schwarz)</option>
+                            <option value="wechsel">Wechselbrand</option>
+                            <option value="niedrig">Niedrigbrand (&lt;600°C)</option>
+                            <option value="mittel">Mittelbrand (600-900°C)</option>
+                            <option value="hoch">Hochbrand (&gt;900°C)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;">
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Oberflächenbehandlung</label>
+                        <select id="ctx-surface" style="width:100%;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;"
+                                onchange="updateContextData()">
+                            <option value="">— nicht bestimmt —</option>
+                            <option value="glatt">Glatt / Verstrichen</option>
+                            <option value="poliert">Poliert / Geglättet</option>
+                            <option value="rau">Rauwandig</option>
+                            <option value="glasur">Glasur</option>
+                            <option value="engobe">Engobe / Überzug</option>
+                            <option value="schlicker">Schlickerüberzug</option>
+                            <option value="kammstrich">Kammstrich / Rillen</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Wandstärke (mm)</label>
+                        <input type="number" id="ctx-wallthick" min="1" max="50" step="0.5" placeholder="z.B. 6.5"
+                               style="width:100%;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;"
+                               onchange="updateContextData()">
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Herstellungstechnik</label>
+                        <select id="ctx-technique" style="width:100%;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;"
+                                onchange="updateContextData()">
+                            <option value="">— nicht bestimmt —</option>
+                            <option value="handaufbau">Handaufbau</option>
+                            <option value="wulst">Wulsttechnik</option>
+                            <option value="drehscheibe-langsam">Langsame Drehscheibe</option>
+                            <option value="drehscheibe-schnell">Schnelle Drehscheibe</option>
+                            <option value="form">Formkeramik / Model</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top:20px;display:flex;gap:12px;">
+                <button class="btn btn-primary" onclick="saveContextToDB()">💾 Kontext speichern</button>
+                <button class="btn btn-secondary" onclick="exportContextPDF()">📄 Als PDF exportieren</button>
+            </div>
+        </div>
+
         <!-- TAB: Groups -->
         <div class="tab-content" id="tab-groups">
             <h2 class="section-header" id="groups-header">Gruppierung</h2>
@@ -1361,6 +1571,16 @@
         <!-- TAB: Reconstruction -->
         <div class="tab-content" id="tab-reconstruction">
             <h2 class="section-header" id="recon-header">🧩 Rekonstruktion</h2>
+            
+            <div class="feature-explanation" style="border-left:3px solid var(--warning);">
+                <p>
+                    <strong>⚠️ Hinweis zur digitalen Rekonstruktion:</strong>
+                    <span id="recon-disclaimer-text">Keramik verändert sich nach dem Bruch — Bruchkanten erodieren, splittern ab oder werden verrundet 
+                    durch Feuchtigkeit und mechanische Reibung. Eine perfekte Passung ist daher selten möglich; Restauratoren müssen 
+                    „Lücken" und „Löcher" in Kauf nehmen. Diese 2D/3D-Rekonstruktion basiert auf Bildmaterial und bietet eine 
+                    Annäherung — für eine präzise Rekonstruktion ist physische Anpassung und ggf. 3D-Vermessung erforderlich.</span>
+                </p>
+            </div>
             
             <div class="recon-mode-toggle">
                 <button class="recon-mode-btn active" onclick="setReconMode('2d', this)">📐 2D-Ansicht</button>
@@ -1483,6 +1703,99 @@
                     <div style="display:none;gap:8px;margin-top:16px;flex-wrap:wrap;" id="three-export-btns">
                         <button class="btn btn-secondary" onclick="export3DScreenshot()">📸 Screenshot</button>
                         <button class="btn btn-secondary" onclick="reset3DCamera()">🎯 Kamera zurücksetzen</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Profile / Profilschnitt -->
+        <div class="tab-content" id="tab-profile">
+            <h2 class="section-header">✏️ <span id="profile-header-text">Profilschnitt-Zeichnung</span></h2>
+
+            <div class="feature-explanation">
+                <p>
+                    <strong id="profile-explain-title">Archäologische Gefäßzeichnung:</strong>
+                    <span id="profile-explain-text">Die Schnittzeichnung (Profilschnitt) ist die Standardmethode der archäologischen Keramikdokumentation.
+                    Sie zeigt den Gefäßquerschnitt und ermöglicht die Rekonstruktion der vollständigen Gefäßform aus einzelnen Fragmenten.
+                    Traditionell wird diese Zeichnung von spezialisierten archäologischen Zeichnern erstellt.
+                    Dieses Tool bietet eine vereinfachte digitale Version.</span>
+                </p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;margin-top:20px;">
+                <!-- Drawing canvas -->
+                <div class="card" style="padding:16px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <h4 style="font-size:14px;color:var(--text-secondary);">Querschnitt zeichnen</h4>
+                        <div style="display:flex;gap:6px;">
+                            <button class="three-toggle active" id="profile-tool-pen" onclick="setProfileTool('pen',this)">✏️ Stift</button>
+                            <button class="three-toggle" id="profile-tool-line" onclick="setProfileTool('line',this)">📏 Linie</button>
+                            <button class="three-toggle" id="profile-tool-curve" onclick="setProfileTool('curve',this)">〰️ Kurve</button>
+                            <button class="three-toggle" id="profile-tool-eraser" onclick="setProfileTool('eraser',this)">🧹 Radieren</button>
+                        </div>
+                    </div>
+                    
+                    <div style="position:relative;background:#faf8f5;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);">
+                        <canvas id="profile-canvas" width="800" height="600" style="width:100%;cursor:crosshair;display:block;"></canvas>
+                        <!-- Center line and scale overlay drawn by JS -->
+                    </div>
+                    
+                    <div style="display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap;">
+                        <input type="color" id="profile-color" value="#222222" style="width:32px;height:28px;border:1px solid var(--border);border-radius:4px;" onchange="profileDrawColor=this.value">
+                        <input type="range" id="profile-brush" min="1" max="8" value="2" style="width:80px;" title="Strichstärke" oninput="profileBrushSize=parseInt(this.value)">
+                        <span style="font-size:11px;color:var(--text-muted);">Stärke</span>
+                        <div style="margin-left:auto;display:flex;gap:6px;">
+                            <button class="btn btn-sm btn-secondary" onclick="undoProfile()">↩ Undo</button>
+                            <button class="btn btn-sm btn-secondary" onclick="clearProfile()">🗑️ Leeren</button>
+                            <button class="btn btn-sm btn-secondary" onclick="toggleProfileGrid()">📐 Raster</button>
+                            <button class="btn btn-sm btn-secondary" onclick="toggleProfileSymmetry()">↔️ Symmetrie</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings & reference -->
+                <div style="display:flex;flex-direction:column;gap:16px;">
+                    <div class="card" style="padding:16px;">
+                        <h4 style="font-size:14px;color:var(--text-secondary);margin-bottom:12px;">📐 Maßstab</h4>
+                        <div style="margin-bottom:8px;">
+                            <label style="font-size:12px;color:var(--text-muted);">Maßstab</label>
+                            <select id="profile-scale" style="width:100%;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);"
+                                    onchange="updateProfileScale()">
+                                <option value="1:1">1:1</option>
+                                <option value="1:2" selected>1:2</option>
+                                <option value="1:3">1:3</option>
+                                <option value="1:4">1:4</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom:8px;">
+                            <label style="font-size:12px;color:var(--text-muted);">Ø Durchmesser (mm)</label>
+                            <input type="number" id="profile-diameter" value="200" min="10" max="1000" 
+                                   style="width:100%;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);"
+                                   onchange="updateProfileScale()">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;color:var(--text-muted);">Höhe (mm)</label>
+                            <input type="number" id="profile-height" value="80" min="5" max="500" 
+                                   style="width:100%;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);"
+                                   onchange="updateProfileScale()">
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="padding:16px;">
+                        <h4 style="font-size:14px;color:var(--text-secondary);margin-bottom:12px;">🏺 Referenz-Fragment</h4>
+                        <select id="profile-fragment-select" style="width:100%;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);margin-bottom:8px;"
+                                onchange="loadProfileReference()">
+                            <option value="">— Fragment wählen —</option>
+                        </select>
+                        <div id="profile-reference-img" style="text-align:center;">
+                            <p style="font-size:12px;color:var(--text-muted);">Fragment als Vorlage einblenden</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="padding:16px;">
+                        <h4 style="font-size:14px;color:var(--text-secondary);margin-bottom:12px;">💾 Export</h4>
+                        <button class="btn btn-primary btn-full" onclick="downloadProfile('png')" style="margin-bottom:8px;">📥 PNG herunterladen</button>
+                        <button class="btn btn-secondary btn-full" onclick="downloadProfile('svg')">📥 SVG herunterladen</button>
                     </div>
                 </div>
             </div>
@@ -1625,12 +1938,16 @@
 
         <!-- TAB: Culture Period / Kulturstufe -->
         <div class="tab-content" id="tab-culture">
-            <h2 class="section-header">🏛️ <span id="culture-header-text">Kulturstufen-Klassifikation</span></h2>
+            <h2 class="section-header">🏛️ <span id="culture-header-text">Kulturstufen — Orientierungshilfe</span></h2>
 
-            <div class="feature-explanation">
+            <div class="feature-explanation" style="border-left:3px solid var(--warning);">
                 <p>
-                    <strong id="culture-explain-title">Archäologische Einordnung:</strong>
-                    <span id="culture-explain-text">Basierend auf Materialeigenschaften, Farbgebung, Wandstärke, Oberflächenbehandlung und Verzierungsmerkmalen schlägt ShardMind eine Zuordnung zu archäologischen Kulturstufen vor. Die Klassifikation dient als Orientierungshilfe — die endgültige Bestimmung erfordert archäologische Fachkenntnisse.</span>
+                    <strong id="culture-explain-title">⚠️ Hinweis zur automatischen Klassifikation:</strong>
+                    <span id="culture-explain-text">Im Regelfall weiß der Ausgräber bereits vor dem Fund, in welcher Kultur er gräbt — 
+                    der stratigraphische und räumliche Kontext liefert diese Information. Die automatische Klassifikation hier basiert 
+                    ausschließlich auf visuellen Merkmalen (Farbe, Form, Oberfläche) und kann eine facharchäologische Bestimmung 
+                    unter Einbeziehung von Materialanalyse (Dünnschliff, p-RFA), Stratigraphie und Fundvergesellschaftung nicht ersetzen.
+                    Sie dient lediglich als erste Orientierungshilfe, z.B. für Lesefunde oder Sammlungsmaterial ohne Kontextinformation.</span>
                 </p>
             </div>
 
@@ -1832,8 +2149,9 @@ const TRANSLATIONS = {
         detection_mode: 'Erkennungsmodus', project: 'Projekt/Grabung',
         analyze: 'Analysieren', clear: 'Leeren',
         fragments: 'Fragmente', groups: 'Gruppen',
-        tab_start: 'Start', tab_gallery: 'Galerie', tab_groups: 'Gruppen',
-        tab_reconstruction: 'Rekonstruktion', tab_database: 'Datenbank',
+        tab_start: 'Start', tab_gallery: 'Galerie', tab_context: 'Fundkontext', tab_groups: 'Gruppen',
+        tab_reconstruction: 'Rekonstruktion', tab_profile: 'Profilschnitt', tab_database: 'Datenbank',
+        tab_decoration: 'Verzierung', tab_culture: 'Kulturstufe',
         tab_labels: 'Etiketten', tab_changelog: 'Changelog',
         tab_privacy: 'Datenschutz', tab_help: 'Hilfe',
         gallery_header: 'Erkannte Fragmente',
@@ -1924,8 +2242,9 @@ const TRANSLATIONS = {
         detection_mode: 'Detection Mode', project: 'Project/Excavation',
         analyze: 'Analyze', clear: 'Clear',
         fragments: 'Fragments', groups: 'Groups',
-        tab_start: 'Start', tab_gallery: 'Gallery', tab_groups: 'Groups',
-        tab_reconstruction: 'Reconstruction', tab_database: 'Database',
+        tab_start: 'Start', tab_gallery: 'Gallery', tab_context: 'Find Context', tab_groups: 'Groups',
+        tab_reconstruction: 'Reconstruction', tab_profile: 'Profile', tab_database: 'Database',
+        tab_decoration: 'Decoration', tab_culture: 'Culture',
         tab_labels: 'Labels', tab_changelog: 'Changelog',
         tab_privacy: 'Privacy', tab_help: 'Help',
         gallery_header: 'Detected Fragments',
@@ -2004,6 +2323,23 @@ function T(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || 
 // CHANGELOG DATA
 // ==================================================
 const CHANGELOG = {
+    '2.1': { date: '2025-02-13', title: 'Fach-Feedback: Fundkontext, Materialanalyse & Profilschnitt', features: [
+        '📋 FUNDKONTEXT-DOKUMENTATION: Befundtyp, Stratigraphie, geschlossener Fund, vergesellschaftete Funde',
+        '🔬 MATERIALANALYSE-FELDER: Tonart, Magerung, Brenntechnik, Oberflächenbehandlung, Herstellungstechnik',
+        '✏️ PROFILSCHNITT-ZEICHENTOOL: Digitale Gefäßquerschnitt-Zeichnung mit Symmetrie-Modus',
+        '⚠️ FACH-DISCLAIMER: Hinweise zur Aussagekraft automatischer Klassifikation und Rekonstruktion',
+        '📄 KONTEXT-PDF-EXPORT: Strukturierte Fundkontextdokumentation als PDF',
+        '🎨 FARBDETEKTION VERBESSERT: Histogram-Peak-Detection statt Median (Blau nicht mehr als Grün erkannt)',
+        '🔍 VERZIERUNGSERKENNUNG: Einfarbige Flächen werden korrekt als Glasur/Körperfarbe erkannt',
+        '🧩 2D-REKONSTRUKTION: Bessere Maskierung, robusteres Circle-Fitting, Centroid-basierte Positionierung',
+        '🔮 3D-TEXTUR: Fragmente jetzt korrekt auf Innenseite projiziert (nicht mehr auf Unterseite)',
+    ], fixes: [
+        'Farbklassifikation: Histogram-basiert statt Median-basiert — Blau/Grün-Verwechslung behoben',
+        'Verzierung: Einfarbig-blaue Fragmente werden nicht mehr als „hat Verzierung" klassifiziert',
+        '2D-Rekonstruktion: Multi-Channel-Maskierung behebt weiße Rechtecke',
+        '3D-Textur: Normal-Flip entfernt, DoubleSide-Material — Fragmente auf richtiger Seite',
+        'PyScript-Ladescreen: Nicht-blockierend mit Timeout, Retry-Button und Statusanzeige'
+    ] },
     '2.0': { date: '2025-02-07', title: 'Verzierungsanalyse, Kulturstufen & 3D-Rekonstruktion', features: [
         '🔮 3D-REKONSTRUKTION: Interaktives 3D-Tellermodell mit Three.js WebGL-Rendering',
         '🍽️ GEFÄSSTYPEN: Flachteller, Suppenteller, Schüssel, Tasse — parametrisch anpassbar',
@@ -2315,6 +2651,15 @@ function switchTab(name) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.getElementById(`tab-${name}`).classList.add('active');
     event.target.closest('.tab-btn').classList.add('active');
+    
+    // Initialize tab-specific features
+    if (name === 'profile') {
+        initProfileCanvas();
+        updateProfileFragmentSelect();
+    }
+    if (name === 'context') {
+        loadContextFromDB();
+    }
 }
 
 function toggleMobileSidebar() {
@@ -4341,6 +4686,401 @@ const CULTURE_DB = {
 };
 
 // ==================================================
+// ==================================================
+// FUNDKONTEXT (Archaeological Context Documentation)
+// ==================================================
+
+let contextData = {
+    site: '', befund: '', stratum: '', fundnr: '', date: '', finder: '',
+    closed: 'unknown', associated: '', notes: '',
+    clay: '', temper: '', firing: '', surface: '', wallthick: '', technique: ''
+};
+
+function updateContextData() {
+    contextData.site = document.getElementById('ctx-site')?.value || '';
+    contextData.befund = document.getElementById('ctx-befund')?.value || '';
+    contextData.stratum = document.getElementById('ctx-stratum')?.value || '';
+    contextData.fundnr = document.getElementById('ctx-fundnr')?.value || '';
+    contextData.date = document.getElementById('ctx-date')?.value || '';
+    contextData.finder = document.getElementById('ctx-finder')?.value || '';
+    contextData.associated = document.getElementById('ctx-associated')?.value || '';
+    contextData.notes = document.getElementById('ctx-notes')?.value || '';
+    contextData.clay = document.getElementById('ctx-clay')?.value || '';
+    contextData.temper = document.getElementById('ctx-temper')?.value || '';
+    contextData.firing = document.getElementById('ctx-firing')?.value || '';
+    contextData.surface = document.getElementById('ctx-surface')?.value || '';
+    contextData.wallthick = document.getElementById('ctx-wallthick')?.value || '';
+    contextData.technique = document.getElementById('ctx-technique')?.value || '';
+}
+
+function setContextClosed(val, btn) {
+    contextData.closed = val;
+    ['ctx-closed-yes', 'ctx-closed-no', 'ctx-closed-unknown'].forEach(id => {
+        document.getElementById(id)?.classList.remove('active');
+    });
+    btn.classList.add('active');
+}
+
+function saveContextToDB() {
+    updateContextData();
+    const data = getUserData();
+    data.context = contextData;
+    try {
+        saveUserData(data);
+        toast(currentLang === 'de' ? 'Fundkontext gespeichert!' : 'Find context saved!', 'success');
+    } catch (e) {
+        toast('Speicherfehler: ' + e.message, 'error');
+    }
+}
+
+function loadContextFromDB() {
+    const data = getUserData();
+    if (data.context) {
+        contextData = { ...contextData, ...data.context };
+        // Populate form fields
+        const fields = ['site', 'befund', 'stratum', 'fundnr', 'date', 'finder', 'associated', 'notes',
+                        'clay', 'temper', 'firing', 'surface', 'wallthick', 'technique'];
+        fields.forEach(f => {
+            const el = document.getElementById('ctx-' + f);
+            if (el && contextData[f]) el.value = contextData[f];
+        });
+        // Set closed state
+        if (contextData.closed) {
+            ['yes', 'no', 'unknown'].forEach(v => {
+                const btn = document.getElementById('ctx-closed-' + v);
+                if (btn) btn.classList.toggle('active', contextData.closed === v);
+            });
+        }
+    }
+}
+
+function exportContextPDF() {
+    updateContextData();
+    if (typeof jspdf === 'undefined' && typeof window.jspdf === 'undefined') {
+        toast('PDF library not loaded', 'error');
+        return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    
+    doc.setFontSize(18);
+    doc.text('ShardMind — Fundkontext-Dokumentation', 20, 25);
+    doc.setFontSize(10);
+    doc.text(`Erstellt: ${new Date().toLocaleDateString('de-DE')}`, 20, 32);
+    
+    let y = 45;
+    const entries = [
+        ['Grabungsort', contextData.site],
+        ['Befundtyp', contextData.befund],
+        ['Schicht/Stratum', contextData.stratum],
+        ['Fundnummer', contextData.fundnr],
+        ['Funddatum', contextData.date],
+        ['Ausgräber', contextData.finder],
+        ['Geschlossener Fund', contextData.closed === 'yes' ? 'Ja' : contextData.closed === 'no' ? 'Nein' : 'Unbekannt'],
+        ['Vergesellschaftete Funde', contextData.associated],
+        ['Bemerkungen', contextData.notes],
+        ['---', ''],
+        ['Tonart/Warenart', contextData.clay],
+        ['Magerung', contextData.temper],
+        ['Brenntechnik', contextData.firing],
+        ['Oberflächenbehandlung', contextData.surface],
+        ['Wandstärke', contextData.wallthick ? contextData.wallthick + ' mm' : ''],
+        ['Herstellungstechnik', contextData.technique],
+    ];
+    
+    doc.setFontSize(11);
+    entries.forEach(([label, val]) => {
+        if (label === '---') { y += 5; doc.line(20, y, 190, y); y += 5; return; }
+        if (!val) return;
+        doc.setFont(undefined, 'bold');
+        doc.text(label + ':', 20, y);
+        doc.setFont(undefined, 'normal');
+        const lines = doc.splitTextToSize(String(val), 120);
+        doc.text(lines, 65, y);
+        y += Math.max(7, lines.length * 5);
+    });
+    
+    doc.save(`shardmind_fundkontext_${Date.now()}.pdf`);
+    toast('PDF exportiert!', 'success');
+}
+
+// ==================================================
+// PROFILE DRAWING (Cross-section / Profilschnitt)
+// ==================================================
+
+let profileDrawColor = '#222222';
+let profileBrushSize = 2;
+let profileTool = 'pen';
+let profileIsDrawing = false;
+let profileLastX = 0, profileLastY = 0;
+let profileHistory = [];
+let profileShowGrid = true;
+let profileShowSymmetry = false;
+let profileInitialized = false;
+
+function initProfileCanvas() {
+    const canvas = document.getElementById('profile-canvas');
+    if (!canvas || profileInitialized) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Draw initial grid and center line
+    drawProfileBackground(ctx, canvas.width, canvas.height);
+    
+    // Mouse events
+    canvas.addEventListener('mousedown', (e) => {
+        profileIsDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        const sx = canvas.width / rect.width;
+        const sy = canvas.height / rect.height;
+        profileLastX = (e.clientX - rect.left) * sx;
+        profileLastY = (e.clientY - rect.top) * sy;
+        // Save state for undo
+        profileHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        if (profileHistory.length > 30) profileHistory.shift();
+    });
+    
+    canvas.addEventListener('mousemove', (e) => {
+        if (!profileIsDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const sx = canvas.width / rect.width;
+        const sy = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * sx;
+        const y = (e.clientY - rect.top) * sy;
+        
+        ctx.beginPath();
+        ctx.moveTo(profileLastX, profileLastY);
+        ctx.lineTo(x, y);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        if (profileTool === 'eraser') {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.strokeStyle = 'rgba(0,0,0,1)';
+            ctx.lineWidth = profileBrushSize * 5;
+        } else {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = profileDrawColor;
+            ctx.lineWidth = profileBrushSize;
+        }
+        ctx.stroke();
+        
+        // Mirror for symmetry mode
+        if (profileShowSymmetry && profileTool !== 'eraser') {
+            const centerX = canvas.width / 2;
+            const mirrorX1 = centerX - (profileLastX - centerX);
+            const mirrorX2 = centerX - (x - centerX);
+            ctx.beginPath();
+            ctx.moveTo(mirrorX1, profileLastY);
+            ctx.lineTo(mirrorX2, y);
+            ctx.strokeStyle = profileDrawColor;
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.lineWidth = profileBrushSize;
+            ctx.stroke();
+        }
+        
+        profileLastX = x;
+        profileLastY = y;
+    });
+    
+    canvas.addEventListener('mouseup', () => { profileIsDrawing = false; });
+    canvas.addEventListener('mouseleave', () => { profileIsDrawing = false; });
+    
+    // Touch events
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        profileIsDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        const sx = canvas.width / rect.width;
+        const sy = canvas.height / rect.height;
+        profileLastX = (e.touches[0].clientX - rect.left) * sx;
+        profileLastY = (e.touches[0].clientY - rect.top) * sy;
+        profileHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        if (profileHistory.length > 30) profileHistory.shift();
+    }, { passive: false });
+    
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!profileIsDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const sx = canvas.width / rect.width;
+        const sy = canvas.height / rect.height;
+        const x = (e.touches[0].clientX - rect.left) * sx;
+        const y = (e.touches[0].clientY - rect.top) * sy;
+        ctx.beginPath();
+        ctx.moveTo(profileLastX, profileLastY);
+        ctx.lineTo(x, y);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        if (profileTool === 'eraser') {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.strokeStyle = 'rgba(0,0,0,1)';
+            ctx.lineWidth = profileBrushSize * 5;
+        } else {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = profileDrawColor;
+            ctx.lineWidth = profileBrushSize;
+        }
+        ctx.stroke();
+        profileLastX = x;
+        profileLastY = y;
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => { profileIsDrawing = false; });
+    
+    profileInitialized = true;
+}
+
+function drawProfileBackground(ctx, w, h) {
+    // Clear
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#faf8f5';
+    ctx.fillRect(0, 0, w, h);
+    
+    // Grid
+    if (profileShowGrid) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+        ctx.lineWidth = 0.5;
+        for (let x = 0; x <= w; x += 20) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+        for (let y = 0; y <= h; y += 20) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+    }
+    
+    // Center line (vertical)
+    ctx.strokeStyle = 'rgba(200,50,50,0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([8, 4]);
+    ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Baseline
+    const baseY = h * 0.85;
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(20, baseY); ctx.lineTo(w - 20, baseY); ctx.stroke();
+    
+    // Scale label
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.font = '11px "DM Sans", sans-serif';
+    ctx.textAlign = 'center';
+    const scaleSelect = document.getElementById('profile-scale');
+    const scale = scaleSelect ? scaleSelect.value : '1:2';
+    ctx.fillText(`M. ${scale}`, w / 2, h - 8);
+    ctx.fillText('Mittellinie', w / 2, 14);
+    
+    // Symmetry indicator
+    if (profileShowSymmetry) {
+        ctx.fillStyle = 'rgba(200,50,50,0.25)';
+        ctx.fillText('↔ Symmetrie aktiv', w / 2, 28);
+    }
+}
+
+function setProfileTool(tool, btn) {
+    profileTool = tool;
+    document.querySelectorAll('#tab-profile .three-toggle').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const canvas = document.getElementById('profile-canvas');
+    if (canvas) canvas.style.cursor = tool === 'eraser' ? 'cell' : 'crosshair';
+}
+
+function undoProfile() {
+    if (profileHistory.length === 0) return;
+    const canvas = document.getElementById('profile-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const prev = profileHistory.pop();
+    ctx.putImageData(prev, 0, 0);
+}
+
+function clearProfile() {
+    const canvas = document.getElementById('profile-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    profileHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    drawProfileBackground(ctx, canvas.width, canvas.height);
+}
+
+function toggleProfileGrid() {
+    profileShowGrid = !profileShowGrid;
+    // Redraw background while preserving drawing
+    toast(profileShowGrid ? 'Raster ein' : 'Raster aus', 'info');
+}
+
+function toggleProfileSymmetry() {
+    profileShowSymmetry = !profileShowSymmetry;
+    toast(profileShowSymmetry ? 'Symmetrie-Modus ein' : 'Symmetrie-Modus aus', 'info');
+    // Update label
+    const canvas = document.getElementById('profile-canvas');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        // Redraw symmetry indicator
+        if (profileShowSymmetry) {
+            ctx.fillStyle = 'rgba(200,50,50,0.25)';
+            ctx.font = '11px "DM Sans", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('↔ Symmetrie aktiv', canvas.width / 2, 28);
+        }
+    }
+}
+
+function updateProfileScale() {
+    // Just a label update for now
+}
+
+function loadProfileReference() {
+    const select = document.getElementById('profile-fragment-select');
+    const container = document.getElementById('profile-reference-img');
+    if (!select || !container) return;
+    
+    const idx = parseInt(select.value);
+    if (isNaN(idx) || !activePieces[idx]) {
+        container.innerHTML = '<p style="font-size:12px;color:var(--text-muted);">Fragment als Vorlage einblenden</p>';
+        return;
+    }
+    
+    const piece = activePieces[idx];
+    if (piece.thumbnailDataUrl) {
+        container.innerHTML = `<img src="${piece.thumbnailDataUrl}" style="max-width:100%;border-radius:var(--radius);opacity:0.7;">`;
+    }
+}
+
+function updateProfileFragmentSelect() {
+    const select = document.getElementById('profile-fragment-select');
+    if (!select) return;
+    select.innerHTML = '<option value="">— Fragment wählen —</option>';
+    activePieces.forEach((p, i) => {
+        select.innerHTML += `<option value="${i}">${p.id} — ${p.name || 'Fragment'}</option>`;
+    });
+}
+
+function downloadProfile(format) {
+    const canvas = document.getElementById('profile-canvas');
+    if (!canvas) return;
+    
+    if (format === 'png') {
+        const link = document.createElement('a');
+        link.download = `shardmind_profil_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    } else if (format === 'svg') {
+        // Simple SVG export — convert canvas to image in SVG
+        const w = canvas.width, h = canvas.height;
+        const dataUrl = canvas.toDataURL('image/png');
+        const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <image width="${w}" height="${h}" xlink:href="${dataUrl}"/>
+</svg>`;
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        const link = document.createElement('a');
+        link.download = `shardmind_profil_${Date.now()}.svg`;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+    }
+    toast('Profilschnitt exportiert!', 'success');
+}
+
 // CULTURE CLASSIFICATION
 // ==================================================
 let selectedCultureOverride = null;
