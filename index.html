@@ -381,27 +381,26 @@
         /* Fragment Gallery */
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 16px;
         }
         .gallery-item {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden; cursor: pointer;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
             transition: var(--transition);
         }
         .gallery-item:hover {
-            transform: translateY(-4px);
             box-shadow: 0 8px 24px rgba(0,0,0,0.3);
             border-color: var(--accent);
         }
-        .gallery-item img {
+        .gallery-item img.gallery-thumb {
             width: 100%; aspect-ratio: 1;
             object-fit: cover; display: block;
         }
         .gallery-item .gallery-info {
-            padding: 10px;
+            padding: 10px 12px 4px;
         }
         .gallery-item .gallery-id {
             font-family: 'JetBrains Mono', monospace;
@@ -416,6 +415,32 @@
         .gallery-item-border {
             height: 4px; width: 100%;
         }
+        .gallery-props {
+            padding: 6px 12px 12px; display: flex; flex-direction: column; gap: 6px;
+        }
+        .gallery-prop-row {
+            display: flex; align-items: center; gap: 6px;
+        }
+        .gallery-prop-row label {
+            font-size: 10px; color: var(--text-muted); min-width: 28px;
+            font-weight: 600; letter-spacing: 0.3px;
+        }
+        .gallery-prop-row select {
+            flex: 1; padding: 4px 6px; font-size: 11px;
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 6px; color: var(--text-primary);
+        }
+        .gallery-tags {
+            display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 10px;
+        }
+        .gallery-tag {
+            font-size: 10px; padding: 2px 7px; border-radius: 10px;
+            background: var(--bg-secondary); color: var(--text-muted);
+        }
+        .gallery-tag.t-color { border-left: 3px solid var(--accent); }
+        .gallery-tag.t-mat { border-left: 3px solid var(--info); }
+        .gallery-tag.t-deco { border-left: 3px solid var(--warning); }
+        .gallery-tag.t-part { border-left: 3px solid #8b5cf6; }
 
         /* Group Cards */
         .group-card {
@@ -3139,6 +3164,62 @@ function renderCustomLabels() {
 // ==================================================
 const CLUSTER_COLORS = ["#E74C3C","#3498DB","#2ECC71","#F39C12","#9B59B6","#1ABC9C","#E67E22","#34495E"];
 
+// Vessel part definitions
+const VESSEL_PARTS = [
+    { value: '', label_de: '— Bereich —', label_en: '— Part —', icon: '' },
+    { value: 'rand', label_de: 'Rand', label_en: 'Rim', icon: '🔘' },
+    { value: 'hals', label_de: 'Hals', label_en: 'Neck', icon: '📏' },
+    { value: 'schulter', label_de: 'Schulter', label_en: 'Shoulder', icon: '🔶' },
+    { value: 'bauch', label_de: 'Bauch', label_en: 'Body', icon: '⭕' },
+    { value: 'boden', label_de: 'Boden', label_en: 'Base', icon: '⬇️' },
+    { value: 'standfuss', label_de: 'Standfuß', label_en: 'Foot', icon: '🔽' },
+    { value: 'henkel', label_de: 'Henkel', label_en: 'Handle', icon: '🔗' },
+    { value: 'knubbe', label_de: 'Knubbe', label_en: 'Lug/Knob', icon: '⚫' },
+    { value: 'ausguss', label_de: 'Ausguss', label_en: 'Spout', icon: '💧' },
+    { value: 'deckel', label_de: 'Deckel', label_en: 'Lid', icon: '🔝' },
+];
+
+// Decoration type definitions
+const DECO_TYPES = [
+    { value: '', label_de: '— Dekor —', label_en: '— Decor —' },
+    { value: 'keine', label_de: 'Keine Verzierung', label_en: 'No decoration' },
+    { value: 'ritzlinien', label_de: 'Ritzlinien', label_en: 'Incised lines' },
+    { value: 'stiche', label_de: 'Stiche / Einstiche', label_en: 'Stab marks' },
+    { value: 'dellen', label_de: 'Dellen / Fingertupfen', label_en: 'Impressions' },
+    { value: 'gurtfurchen', label_de: 'Gurtfurchen', label_en: 'Groove bands' },
+    { value: 'kornstich', label_de: 'Kornstich', label_en: 'Grain impressions' },
+    { value: 'bemalung', label_de: 'Bemalung', label_en: 'Painting' },
+    { value: 'kammstrich', label_de: 'Kammstrich', label_en: 'Comb stroke' },
+    { value: 'stempel', label_de: 'Stempel', label_en: 'Stamped' },
+    { value: 'rollraedchen', label_de: 'Rollrädchen', label_en: 'Roulette' },
+    { value: 'appliken', label_de: 'Appliken', label_en: 'Appliqué' },
+    { value: 'glasur', label_de: 'Glasur (bemalt)', label_en: 'Painted glaze' },
+    { value: 'engobe', label_de: 'Engobe / Überzug', label_en: 'Slip coating' },
+    { value: 'leisten', label_de: 'Leisten / Rippen', label_en: 'Cordons / Ribs' },
+    { value: 'schlickrauhung', label_de: 'Schlickrauhung', label_en: 'Roughcast' },
+    { value: 'sonstiges', label_de: 'Sonstiges', label_en: 'Other' },
+];
+
+function getPartLabel(val) {
+    const p = VESSEL_PARTS.find(v => v.value === val);
+    return p ? (currentLang === 'de' ? p.label_de : p.label_en) : '';
+}
+function getDecoLabel(val) {
+    const d = DECO_TYPES.find(v => v.value === val);
+    return d ? (currentLang === 'de' ? d.label_de : d.label_en) : '';
+}
+
+function setVesselPart(pieceIdx, value) {
+    if (activePieces[pieceIdx]) {
+        activePieces[pieceIdx].vessel_part = value;
+    }
+}
+function setDecoType(pieceIdx, value) {
+    if (activePieces[pieceIdx]) {
+        activePieces[pieceIdx].deco_type = value;
+    }
+}
+
 function renderGallery() {
     const container = document.getElementById('gallery-content');
     if (activePieces.length === 0) {
@@ -3146,21 +3227,63 @@ function renderGallery() {
         return;
     }
     
+    const partOpts = VESSEL_PARTS.map(p => 
+        `<option value="${p.value}">${p.icon ? p.icon + ' ' : ''}${currentLang === 'de' ? p.label_de : p.label_en}</option>`
+    ).join('');
+    
+    const decoOpts = DECO_TYPES.map(d => 
+        `<option value="${d.value}">${currentLang === 'de' ? d.label_de : d.label_en}</option>`
+    ).join('');
+    
     let html = '<div class="gallery-grid">';
-    activePieces.forEach(p => {
+    activePieces.forEach((p, idx) => {
         const cid = p.cluster ?? -1;
         const color = cid >= 0 ? CLUSTER_COLORS[cid % CLUSTER_COLORS.length] : '#B0B0B0';
+        const colorMap = {'Blau':'#4488cc','Rot':'#cc4444','Grün':'#44aa66','Braun':'#a0774a','Orange':'#dd8833','Gelb':'#ccaa33','Weiß':'#e8e4de','Grau':'#888','Schwarz':'#444','Violett':'#8855aa'};
+        
         html += `<div class="gallery-item">
             <div class="gallery-item-border" style="background:${color};"></div>
-            ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}" alt="${p.id}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);"></div>'}
+            ${p.thumbnailDataUrl ? `<img class="gallery-thumb" src="${p.thumbnailDataUrl}" alt="${p.id}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);"></div>'}
             <div class="gallery-info">
                 <div class="gallery-id">${p.id.substring(0, 11)}</div>
-                <div class="gallery-name">${(p.name || '').substring(0, 20)}</div>
+                <div class="gallery-name">${(p.name || '').substring(0, 25)}</div>
+            </div>
+            <div class="gallery-tags">
+                <span class="gallery-tag t-mat">${p.material || '?'}</span>
+                <span class="gallery-tag t-color" style="border-left-color:${colorMap[p.color_name] || '#999'};">${p.color_name || '?'}</span>
+                ${p.vessel_part ? `<span class="gallery-tag t-part">${getPartLabel(p.vessel_part)}</span>` : ''}
+                ${p.deco_type && p.deco_type !== 'keine' ? `<span class="gallery-tag t-deco">${getDecoLabel(p.deco_type)}</span>` : ''}
+                ${p.has_decoration && !p.deco_type ? `<span class="gallery-tag t-deco">Deko?</span>` : ''}
+            </div>
+            <div class="gallery-props">
+                <div class="gallery-prop-row">
+                    <label>🏺</label>
+                    <select onchange="setVesselPart(${idx}, this.value)" title="${currentLang === 'de' ? 'Gefäßbereich' : 'Vessel part'}">
+                        ${partOpts.replace(`value="${p.vessel_part || ''}"`, `value="${p.vessel_part || ''}" selected`)}
+                    </select>
+                </div>
+                <div class="gallery-prop-row">
+                    <label>🎨</label>
+                    <select onchange="setDecoType(${idx}, this.value)" title="${currentLang === 'de' ? 'Dekorationsart' : 'Decoration type'}">
+                        ${decoOpts.replace(`value="${p.deco_type || ''}"`, `value="${p.deco_type || ''}" selected`)}
+                    </select>
+                </div>
             </div>
         </div>`;
     });
     html += '</div>';
     container.innerHTML = html;
+    
+    // Fix: set correct selected values after innerHTML (replace trick doesn't always work)
+    setTimeout(() => {
+        activePieces.forEach((p, idx) => {
+            const item = container.querySelectorAll('.gallery-item')[idx];
+            if (!item) return;
+            const selects = item.querySelectorAll('select');
+            if (selects[0] && p.vessel_part) selects[0].value = p.vessel_part;
+            if (selects[1] && p.deco_type) selects[1].value = p.deco_type;
+        });
+    }, 50);
 }
 
 function renderGroups() {
@@ -3359,7 +3482,8 @@ function renderDatabase() {
                         <span class="db-tag material">${p.material || '?'}</span>
                         <span class="db-tag color" style="border-left-color:${colorDot};">${p.color_name || '?'}</span>
                         ${p.area ? `<span class="db-tag">${Math.round(p.area)} px²</span>` : ''}
-                        ${p.has_decoration ? `<span class="db-tag" style="border-left:3px solid var(--warning);">Deko</span>` : ''}
+                        ${p.has_decoration ? `<span class="db-tag" style="border-left:3px solid var(--warning);">${p.deco_type ? getDecoLabel(p.deco_type) : 'Deko'}</span>` : ''}
+                        ${p.vessel_part ? `<span class="db-tag" style="border-left:3px solid #8b5cf6;">${getPartLabel(p.vessel_part)}</span>` : ''}
                     </div>
                 </div>`;
             });
@@ -3492,6 +3616,18 @@ function calcPieceSimilarity(a, b) {
         weights += 1.5;
     }
     
+    // Decoration TYPE match (weight: 2) — more specific than just has/hasn't
+    if (a.deco_type && b.deco_type && a.deco_type !== '' && b.deco_type !== '') {
+        score += (a.deco_type === b.deco_type ? 1 : 0.2) * 2;
+        weights += 2;
+    }
+    
+    // Vessel part match (weight: 1.5)
+    if (a.vessel_part && b.vessel_part && a.vessel_part !== '' && b.vessel_part !== '') {
+        score += (a.vessel_part === b.vessel_part ? 1 : 0) * 1.5;
+        weights += 1.5;
+    }
+    
     return weights > 0 ? score / weights : 0;
 }
 
@@ -3553,6 +3689,8 @@ function runSimilarityComparison() {
             if (active.material === match.dbPiece.material) reasons.push(active.material);
             if (active.color_name === match.dbPiece.color_name) reasons.push(active.color_name);
             if (active.has_decoration === match.dbPiece.has_decoration && active.has_decoration) reasons.push(currentLang === 'de' ? 'Verzierung' : 'Decoration');
+            if (active.deco_type && active.deco_type === match.dbPiece.deco_type) reasons.push(getDecoLabel(active.deco_type));
+            if (active.vessel_part && active.vessel_part === match.dbPiece.vessel_part) reasons.push(getPartLabel(active.vessel_part));
             
             html += `<div class="sim-match-card">
                 <div class="sim-pair">
@@ -3817,6 +3955,16 @@ function createLabelsPDF() {
         if (piece.material) {
             textY += 3.5;
             doc.text(`Material: ${piece.material.substring(0, 20)}`, cellX + cellW / 2, textY, { align: 'center' });
+        }
+        
+        if (piece.vessel_part) {
+            textY += 3.5;
+            doc.text(`Bereich: ${getPartLabel(piece.vessel_part).substring(0, 20)}`, cellX + cellW / 2, textY, { align: 'center' });
+        }
+        
+        if (piece.deco_type && piece.deco_type !== 'keine') {
+            textY += 3.5;
+            doc.text(`Dekor: ${getDecoLabel(piece.deco_type).substring(0, 20)}`, cellX + cellW / 2, textY, { align: 'center' });
         }
         
         if (piece.excavation) {
@@ -4928,6 +5076,7 @@ const CULTURE_DB = {
         color_hints: ['Braun', 'Schwarz', 'Grau', 'Orange'],
         material_hints: ['Keramik'],
         decoration_hints: ['incised', 'stamped'],
+        deco_type_hints: ['ritzlinien', 'stiche', 'kornstich', 'dellen', 'leisten'],
     },
     'bronze-age': {
         name_de: 'Bronzezeit', name_en: 'Bronze Age',
@@ -4945,6 +5094,7 @@ const CULTURE_DB = {
         color_hints: ['Braun', 'Orange', 'Rot'],
         material_hints: ['Keramik'],
         decoration_hints: ['ornamental', 'band', 'stamped'],
+        deco_type_hints: ['gurtfurchen', 'dellen', 'ritzlinien', 'leisten', 'appliken'],
     },
     'iron-age': {
         name_de: 'Eisenzeit', name_en: 'Iron Age',
@@ -4962,6 +5112,7 @@ const CULTURE_DB = {
         color_hints: ['Schwarz', 'Grau', 'Braun'],
         material_hints: ['Keramik'],
         decoration_hints: ['stamped', 'painted', 'ornamental'],
+        deco_type_hints: ['kammstrich', 'stempel', 'bemalung', 'leisten', 'ritzlinien'],
     },
     roman: {
         name_de: 'Römisch', name_en: 'Roman',
@@ -4979,6 +5130,7 @@ const CULTURE_DB = {
         color_hints: ['Rot', 'Orange'],
         material_hints: ['Keramik', 'Porzellan'],
         decoration_hints: ['figural', 'stamped', 'ornamental'],
+        deco_type_hints: ['stempel', 'rollraedchen', 'appliken', 'engobe'],
     },
     medieval: {
         name_de: 'Mittelalter', name_en: 'Medieval',
@@ -4996,6 +5148,7 @@ const CULTURE_DB = {
         color_hints: ['Grau', 'Braun', 'Grün'],
         material_hints: ['Keramik'],
         decoration_hints: ['band', 'stamped', 'ornamental', 'incised'],
+        deco_type_hints: ['rollraedchen', 'stempel', 'glasur', 'ritzlinien', 'leisten', 'gurtfurchen'],
     },
     'early-modern': {
         name_de: 'Frühe Neuzeit', name_en: 'Early Modern',
@@ -5013,6 +5166,7 @@ const CULTURE_DB = {
         color_hints: ['Weiß', 'Blau', 'Braun'],
         material_hints: ['Keramik', 'Porzellan'],
         decoration_hints: ['painted', 'figural', 'ornamental'],
+        deco_type_hints: ['bemalung', 'glasur', 'engobe', 'appliken', 'stempel'],
     },
     modern: {
         name_de: 'Neuzeit (Industriezeitalter)', name_en: 'Modern (Industrial)',
@@ -5030,6 +5184,7 @@ const CULTURE_DB = {
         color_hints: ['Weiß', 'Blau'],
         material_hints: ['Porzellan'],
         decoration_hints: ['painted', 'band', 'figural', 'ornamental'],
+        deco_type_hints: ['bemalung', 'glasur', 'engobe'],
     }
 };
 
@@ -5506,6 +5661,24 @@ function classifyPieceCulture(piece) {
         if (piece.has_decoration) {
             score += 10;
             matchedCriteria.push('has_decoration');
+        }
+        
+        // Decoration TYPE matching (much more specific)
+        if (piece.deco_type && piece.deco_type !== '' && piece.deco_type !== 'keine' && culture.deco_type_hints) {
+            if (culture.deco_type_hints.includes(piece.deco_type)) {
+                score += 20;
+                matchedCriteria.push(`deco_type:${piece.deco_type}`);
+            }
+        }
+        
+        // Vessel part can also hint at culture (e.g. Knubbe = neolithic/bronze age)
+        if (piece.vessel_part) {
+            if (piece.vessel_part === 'knubbe' && (key === 'neolithic' || key === 'bronze-age')) {
+                score += 10; matchedCriteria.push('vessel_part:knubbe');
+            }
+            if (piece.vessel_part === 'henkel' && (key === 'medieval' || key === 'early-modern' || key === 'roman')) {
+                score += 5; matchedCriteria.push('vessel_part:henkel');
+            }
         }
 
         // Curvature analysis (thin walls = higher curvature often)
