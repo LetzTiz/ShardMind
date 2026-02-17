@@ -1256,10 +1256,28 @@
         <div class="sidebar-section-title" id="sidebar-upload-title">📤 FOTOS HOCHLADEN</div>
         <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
             <div class="icon">📷</div>
-            <div class="label" id="upload-label">JPG, PNG — Scherben auf hellem Hintergrund</div>
+            <div class="label" id="upload-label">JPG, PNG — Fragmente auf hellem Hintergrund</div>
             <input type="file" id="file-input" multiple accept=".png,.jpg,.jpeg">
         </div>
+        <div style="padding:4px 8px 8px;font-size:10px;color:var(--text-muted);line-height:1.4;" id="lab-hint">
+            💡 Beste Ergebnisse mit gereinigten, getrockneten Fragmenten im Labor. Gelände-Aufnahmen mit Verschmutzung können die Segmentierung beeinträchtigen.
+        </div>
         <div class="upload-files-list" id="upload-files-list"></div>
+
+        <!-- Material type selector -->
+        <div style="padding:0 12px 8px;">
+            <label style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:4px;" id="lbl-material-type">MATERIALART</label>
+            <select id="material-type-select" style="width:100%;padding:6px 8px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);"
+                    onchange="setMaterialType(this.value)">
+                <option value="keramik" selected>🏺 Keramik / Pottery</option>
+                <option value="glas">🪟 Glas / Glass</option>
+                <option value="stein">🪨 Stein / Lithik</option>
+                <option value="metall">⚙️ Metall / Metal</option>
+                <option value="knochen">🦴 Knochen / Bone</option>
+                <option value="holz">🪵 Holz / Wood</option>
+                <option value="sonstiges">📦 Sonstiges / Other</option>
+            </select>
+        </div>
 
         <div class="sidebar-divider"></div>
 
@@ -1379,7 +1397,7 @@
         <!-- TAB: Start -->
         <div class="tab-content active" id="tab-start">
             <h2 class="section-header">🏺 ShardMind</h2>
-            <p class="section-sub" id="start-tagline">Analysiere und rekonstruiere zerbrochene Objekte</p>
+            <p class="section-sub" id="start-tagline">Analysiere und rekonstruiere archäologische Fundobjekte — Keramik, Glas, Stein, Metall und mehr</p>
 
             <div style="margin-bottom:24px;">
                 <h3 style="font-size:18px;margin-bottom:12px;" id="search-title">🔍 Fragment suchen</h3>
@@ -2116,6 +2134,41 @@
         <!-- TAB: Labels -->
         <div class="tab-content" id="tab-labels">
             <h2 class="section-header" id="labels-header">Etiketten erstellen</h2>
+            
+            <div class="feature-explanation">
+                <p>
+                    <strong id="labels-explain-title">📋 Etikettierungssystem:</strong>
+                    <span id="labels-explain-text">Generiert druckbare Etiketten mit QR-Code für die physische Beschriftung von Fundstücken. 
+                    Jedes Fragment erhält eine eindeutige ShardMind-ID (SM-XXXXXXXX). Zusätzlich können Inventarnummer, 
+                    Fundnummer und Grabungskürzel vergeben werden — diese erscheinen auf dem Etikett und im QR-Code.</span>
+                </p>
+            </div>
+            
+            <!-- Inventory prefix settings -->
+            <div class="card" style="padding:14px;margin-bottom:16px;">
+                <h4 style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;">🏷️ Nummerierungs-Schema</h4>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                    <div>
+                        <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px;">Grabungskürzel</label>
+                        <input type="text" id="label-prefix-excavation" placeholder="z.B. KOE-2024" value=""
+                               style="width:100%;padding:5px 8px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                    </div>
+                    <div>
+                        <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px;">Inventarnr.-Präfix</label>
+                        <input type="text" id="label-prefix-inventory" placeholder="z.B. INV-" value=""
+                               style="width:100%;padding:5px 8px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                    </div>
+                    <div>
+                        <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px;">Startnummer</label>
+                        <input type="number" id="label-start-number" placeholder="1" value="1" min="1"
+                               style="width:100%;padding:5px 8px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                    </div>
+                </div>
+                <p style="font-size:10px;color:var(--text-muted);margin-top:6px;">
+                    Beispiel: KOE-2024 / INV-0001 → auf Etikett + QR-Code
+                </p>
+            </div>
+            
             <div id="labels-content">
                 <div class="label-options" id="label-source-options">
                     <div class="label-option active" onclick="selectLabelSource('session')" id="lbl-opt-session">Aktuelle Analyse</div>
@@ -2230,6 +2283,64 @@ const BASE_URL = "https://shardmind.streamlit.app";
 let currentLang = 'de';
 let currentUser = null;
 let activePieces = [];
+let selectedMaterialType = 'keramik';
+
+// Material type definitions with specific features per material
+const MATERIAL_TYPES = {
+    keramik: { 
+        name_de: 'Keramik', name_en: 'Pottery', icon: '🏺',
+        features_de: 'Ton, Magerung, Brand, Glasur, Engobe, Dekor',
+        features_en: 'Clay, temper, firing, glaze, slip, decoration',
+        has_culture: true, has_reconstruction: true, has_decoration: true,
+    },
+    glas: {
+        name_de: 'Glas', name_en: 'Glass', icon: '🪟',
+        features_de: 'Farbe, Transparenz, Blasen, Irisierung, Patina',
+        features_en: 'Color, transparency, bubbles, iridescence, patina',
+        has_culture: true, has_reconstruction: true, has_decoration: true,
+    },
+    stein: {
+        name_de: 'Stein / Lithik', name_en: 'Stone / Lithics', icon: '🪨',
+        features_de: 'Gesteinsart, Bearbeitungsspuren, Retuschen, Schliff',
+        features_en: 'Rock type, tool marks, retouching, polish',
+        has_culture: true, has_reconstruction: false, has_decoration: false,
+    },
+    metall: {
+        name_de: 'Metall', name_en: 'Metal', icon: '⚙️',
+        features_de: 'Legierung, Korrosion, Patina, Herstellungstechnik',
+        features_en: 'Alloy, corrosion, patina, manufacturing technique',
+        has_culture: true, has_reconstruction: false, has_decoration: true,
+    },
+    knochen: {
+        name_de: 'Knochen', name_en: 'Bone', icon: '🦴',
+        features_de: 'Tierart, Knochen-Element, Bearbeitungsspuren, Schnittmarken',
+        features_en: 'Species, bone element, tool marks, cut marks',
+        has_culture: false, has_reconstruction: false, has_decoration: false,
+    },
+    holz: {
+        name_de: 'Holz', name_en: 'Wood', icon: '🪵',
+        features_de: 'Holzart, Bearbeitungsspuren, Erhaltungszustand',
+        features_en: 'Wood type, tool marks, preservation state',
+        has_culture: false, has_reconstruction: false, has_decoration: false,
+    },
+    sonstiges: {
+        name_de: 'Sonstiges', name_en: 'Other', icon: '📦',
+        features_de: 'Form, Farbe, Textur',
+        features_en: 'Shape, color, texture',
+        has_culture: false, has_reconstruction: true, has_decoration: false,
+    },
+};
+
+function setMaterialType(type) {
+    selectedMaterialType = type;
+    const mat = MATERIAL_TYPES[type];
+    if (mat) {
+        const msg = currentLang === 'de' 
+            ? `${mat.icon} ${mat.name_de} — Analysierbare Merkmale: ${mat.features_de}`
+            : `${mat.icon} ${mat.name_en} — Features: ${mat.features_en}`;
+        toast(msg, 'info');
+    }
+}
 let clusterLabels = [];
 let clusterNames = {};
 let customLabels = [];
@@ -2436,17 +2547,19 @@ function T(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || 
 // CHANGELOG DATA
 // ==================================================
 const CHANGELOG = {
-    '2.1': { date: '2025-02-17', title: 'Fach-Feedback: Datierung, Fundkontext, Materialanalyse & Profilschnitt', features: [
-        '📅 DATIERUNG: Jahrgenaue Datierungsvorschläge (nicht nur Kulturperiode) — verfeinert durch Dekortyp',
-        '📄 TECHNISCHER SCHNELLBERICHT: PDF-Export mit Fragmenttabelle, Datierung und Fundkontext für Firmenarchäologie',
+    '2.1': { date: '2025-02-17', title: 'Fach-Feedback: Datierung, Multi-Material, Fundkontext & Profilschnitt', features: [
+        '📅 DATIERUNG: Jahrgenaue Datierungsvorschläge — verfeinert durch Dekortyp (Sub-Dating)',
+        '🪟 MULTI-MATERIAL: Keramik, Glas, Stein, Metall, Knochen, Holz — Materialart pro Analyse wählbar',
+        '📄 TECHNISCHER SCHNELLBERICHT: PDF-Export für Firmenarchäologie mit Fundkontext und Datierung',
         '🏺 GEFÄSSBEREICH: Rand, Hals, Schulter, Bauch, Boden, Henkel, Knubbe — pro Fragment zuweisbar',
         '🎨 DEKORATIONSARTEN: 17 spezifische Typen (Ritzlinien, Stiche, Dellen, Gurtfurchen, Kornstich, Bemalung, Kammstrich etc.)',
+        '🏷️ ETIKETTEN: Inventarnummer, Grabungskürzel und fortlaufende Nummerierung auf Etiketten und QR-Code',
         '📋 FUNDKONTEXT-DOKUMENTATION: Befundtyp, Stratigraphie, geschlossener Fund, vergesellschaftete Funde',
         '🔬 MATERIALANALYSE-FELDER: Tonart, Magerung, Brenntechnik, Oberflächenbehandlung, Herstellungstechnik',
         '✏️ PROFILSCHNITT-ZEICHENTOOL: Digitale Gefäßquerschnitt-Zeichnung mit Symmetrie-Modus',
         '🔍 ÄHNLICHKEITSVERGLEICH: Aktuelle Fragmente mit Datenbankeinträgen vergleichen',
         '💾 DATENBANK: Reichere Kartenansicht mit Tags, Statistiken und Löschfunktion',
-        '⚠️ FACH-DISCLAIMER: Hinweise zur Aussagekraft automatischer Klassifikation und Rekonstruktion',
+        '💡 LABOR-HINWEIS: Empfehlung für gereinigte/getrocknete Fragmente bei Segmentierung',
     ], fixes: [
         'Farbklassifikation: Histogram-basiert statt Median-basiert — Blau/Grün-Verwechslung behoben',
         'Verzierung: Einfarbig-blaue Fragmente werden nicht mehr als „hat Verzierung" klassifiziert',
@@ -3250,7 +3363,7 @@ function renderGallery() {
                 <div class="gallery-name">${(p.name || '').substring(0, 25)}</div>
             </div>
             <div class="gallery-tags">
-                <span class="gallery-tag t-mat">${p.material || '?'}</span>
+                <span class="gallery-tag t-mat">${(MATERIAL_TYPES[p.material_type] || {}).icon || '🏺'} ${p.material || '?'}</span>
                 <span class="gallery-tag t-color" style="border-left-color:${colorMap[p.color_name] || '#999'};">${p.color_name || '?'}</span>
                 ${p.vessel_part ? `<span class="gallery-tag t-part">${getPartLabel(p.vessel_part)}</span>` : ''}
                 ${p.deco_type && p.deco_type !== 'keine' ? `<span class="gallery-tag t-deco">${getDecoLabel(p.deco_type)}</span>` : ''}
@@ -3911,9 +4024,15 @@ function createLabelsPDF() {
         doc.setLineWidth(0.3);
         doc.rect(cellX, cellY, cellW, cellH, 'S');
         
-        // QR Code
+        // QR Code — include inventory number if set
         const pieceId = piece.id || genId();
-        const url = `${BASE_URL}/?piece=${pieceId}`;
+        const excavationPrefix = document.getElementById('label-prefix-excavation')?.value || '';
+        const inventoryPrefix = document.getElementById('label-prefix-inventory')?.value || '';
+        const startNum = parseInt(document.getElementById('label-start-number')?.value || '1');
+        const inventoryNr = inventoryPrefix ? `${inventoryPrefix}${String(startNum + idx).padStart(4, '0')}` : '';
+        const qrData = inventoryNr 
+            ? `${BASE_URL}/?piece=${pieceId}&inv=${encodeURIComponent(inventoryNr)}${excavationPrefix ? '&exc=' + encodeURIComponent(excavationPrefix) : ''}`
+            : `${BASE_URL}/?piece=${pieceId}`;
         
         try {
             const qrDiv = document.createElement('div');
@@ -3921,7 +4040,7 @@ function createLabelsPDF() {
             qrDiv.style.left = '-9999px';
             document.body.appendChild(qrDiv);
             
-            const qrCode = new QRCode(qrDiv, { text: url, width: 128, height: 128, correctLevel: QRCode.CorrectLevel.M });
+            const qrCode = new QRCode(qrDiv, { text: qrData, width: 128, height: 128, correctLevel: QRCode.CorrectLevel.M });
             
             setTimeout(() => {
                 const qrCanvas = qrDiv.querySelector('canvas');
@@ -3946,6 +4065,16 @@ function createLabelsPDF() {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.text(pieceId, cellX + cellW / 2, textY, { align: 'center' });
+        
+        // Inventory number line
+        if (inventoryNr || excavationPrefix) {
+            textY += 3.5;
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(51, 76, 127);
+            const invLine = [excavationPrefix, inventoryNr].filter(Boolean).join(' / ');
+            doc.text(invLine.substring(0, 30), cellX + cellW / 2, textY, { align: 'center' });
+        }
         
         textY += 4;
         doc.setFontSize(7);
@@ -4071,6 +4200,13 @@ async function runAnalysis() {
     
     progressBar.style.width = '100%';
     progressText.textContent = `✓ ${activePieces.length} ${T('success_fragments')}`;
+    
+    // Tag each piece with selected material type
+    const matType = MATERIAL_TYPES[selectedMaterialType];
+    activePieces.forEach(p => {
+        p.material_type = selectedMaterialType;
+        p.material_type_name = matType ? (currentLang === 'de' ? matType.name_de : matType.name_en) : selectedMaterialType;
+    });
     
     setTimeout(() => {
         progress.style.display = 'none';
