@@ -1670,10 +1670,10 @@
             <div class="feature-explanation" style="border-left:3px solid var(--warning);">
                 <p>
                     <strong>⚠️ Hinweis zur digitalen Rekonstruktion:</strong>
-                    <span id="recon-disclaimer-text">Keramik verändert sich nach dem Bruch — Bruchkanten erodieren, splittern ab oder werden verrundet 
-                    durch Feuchtigkeit und mechanische Reibung. Eine perfekte Passung ist daher selten möglich; Restauratoren müssen 
-                    „Lücken" und „Löcher" in Kauf nehmen. Diese 2D/3D-Rekonstruktion basiert auf Bildmaterial und bietet eine 
-                    Annäherung — für eine präzise Rekonstruktion ist physische Anpassung und ggf. 3D-Vermessung erforderlich.</span>
+                    <span id="recon-disclaimer-text">Bruchkanten erodieren und verrunden — eine perfekte Passung ist selten möglich. 
+                    Bei einfachen Problemen mit gut abstrahierbarem Kantenverlauf kann eine maschinelle Zuordnung schneller sein als der Mensch. 
+                    Komplexe Rekonstruktionen (z.B. über Schriftmerkmale oder Dekor-Logik) erfordern jedoch weiterhin menschliche Expertise.
+                    Diese 2D/3D-Rekonstruktion bietet eine Annäherung — für eine präzise Rekonstruktion ist physische Anpassung erforderlich.</span>
                 </p>
             </div>
             
@@ -1811,9 +1811,9 @@
                 <p>
                     <strong id="profile-explain-title">Archäologische Gefäßzeichnung:</strong>
                     <span id="profile-explain-text">Die Schnittzeichnung (Profilschnitt) ist die Standardmethode der archäologischen Keramikdokumentation.
-                    Sie zeigt den Gefäßquerschnitt und ermöglicht die Rekonstruktion der vollständigen Gefäßform aus einzelnen Fragmenten.
-                    Traditionell wird diese Zeichnung von spezialisierten archäologischen Zeichnern erstellt.
-                    Dieses Tool bietet eine vereinfachte digitale Version.</span>
+                    Traditionell wird sie von spezialisierten archäologischen Zeichnern erstellt — allerdings schleicht sich bei erfahrenen 
+                    Zeichnern ein Bias ein: Man „gewöhnt sich" an bestimmte Formen, und untergeordnete aber relevante Merkmale werden 
+                    unbewusst „verschliffen". Eine maschinenunterstützte Zeichnung kann hier präzisere, reproduzierbare Ergebnisse liefern.</span>
                 </p>
             </div>
 
@@ -2040,9 +2040,9 @@
                     <strong id="culture-explain-title">⚠️ Hinweis zur automatischen Klassifikation:</strong>
                     <span id="culture-explain-text">Im Regelfall weiß der Ausgräber bereits vor dem Fund, in welcher Kultur er gräbt — 
                     der stratigraphische und räumliche Kontext liefert diese Information. Die automatische Klassifikation hier basiert 
-                    ausschließlich auf visuellen Merkmalen (Farbe, Form, Oberfläche) und kann eine facharchäologische Bestimmung 
-                    unter Einbeziehung von Materialanalyse (Dünnschliff, p-RFA), Stratigraphie und Fundvergesellschaftung nicht ersetzen.
-                    Sie dient lediglich als erste Orientierungshilfe, z.B. für Lesefunde oder Sammlungsmaterial ohne Kontextinformation.</span>
+                    ausschließlich auf visuellen Merkmalen (Farbe, Form, Oberfläche) und kann wesentliche Informationen nicht erfassen: 
+                    Haptik, Klang, technischer Aufbau, Magerung im Bruch — und vor allem die Erfahrung aus der Bearbeitung tausender Scherben. 
+                    Sie dient als Sortier- und Orientierungshilfe, z.B. bei Massenverarbeitung oder Sammlungsmaterial ohne Kontextinformation.</span>
                 </p>
             </div>
 
@@ -3368,6 +3368,7 @@ function renderGallery() {
                 ${p.vessel_part ? `<span class="gallery-tag t-part">${getPartLabel(p.vessel_part)}</span>` : ''}
                 ${p.deco_type && p.deco_type !== 'keine' ? `<span class="gallery-tag t-deco">${getDecoLabel(p.deco_type)}</span>` : ''}
                 ${p.has_decoration && !p.deco_type ? `<span class="gallery-tag t-deco">Deko?</span>` : ''}
+                ${p.orientation_hint ? `<span class="gallery-tag" style="border-left:3px solid #6b7280;font-style:italic;" title="${p.orientation_hint.confidence}">${p.orientation_hint.hint}</span>` : ''}
             </div>
             <div class="gallery-props">
                 <div class="gallery-prop-row">
@@ -4163,6 +4164,7 @@ async function runAnalysis() {
     const project = document.getElementById('input-project').value;
     
     activePieces = [];
+    const analysisStartTime = Date.now();
     
     for (let i = 0; i < uploadedFiles.length; i++) {
         progressText.textContent = `${T('analyzing')} ${i+1}/${uploadedFiles.length}`;
@@ -4199,13 +4201,17 @@ async function runAnalysis() {
     }
     
     progressBar.style.width = '100%';
-    progressText.textContent = `✓ ${activePieces.length} ${T('success_fragments')}`;
+    const analysisTime = ((Date.now() - analysisStartTime) / 1000).toFixed(1);
+    const timePerFragment = activePieces.length > 0 ? ((Date.now() - analysisStartTime) / activePieces.length / 1000).toFixed(2) : '?';
+    progressText.textContent = `✓ ${activePieces.length} ${T('success_fragments')} (${analysisTime}s)`;
     
     // Tag each piece with selected material type
     const matType = MATERIAL_TYPES[selectedMaterialType];
     activePieces.forEach(p => {
         p.material_type = selectedMaterialType;
         p.material_type_name = matType ? (currentLang === 'de' ? matType.name_de : matType.name_en) : selectedMaterialType;
+        // Auto-estimate orientation from curvature and shape
+        p.orientation_hint = estimateOrientation(p);
     });
     
     setTimeout(() => {
@@ -4218,14 +4224,109 @@ async function runAnalysis() {
         document.getElementById('metric-project').textContent = project.substring(0, 15);
         document.getElementById('metrics-row').style.display = '';
         
+        // Show batch stats
+        showBatchStats(analysisTime, timePerFragment);
+        
         renderGallery();
         renderGroups();
         renderReconOptions();
         renderDatabase();
         renderDecoSelection();
         
-        toast(`${activePieces.length} ${T('success_fragments')}`, 'success');
+        toast(`${activePieces.length} ${T('success_fragments')} · ${analysisTime}s · ${timePerFragment}s/Fragment`, 'success');
     }, 500);
+}
+
+// ==================================================
+// ORIENTATION ESTIMATION
+// ==================================================
+function estimateOrientation(piece) {
+    // Attempt to guess if fragment is from rim, body, or base based on shape metrics
+    // This is a rough heuristic — not definitive
+    const curv = piece.curvature || 0;
+    const sol = piece.solidity || 0;
+    const circ = piece.circularity || 0;
+    const area = piece.area || 0;
+    const bbox = piece.bbox || [0,0,100,100];
+    const aspectRatio = bbox[2] / (bbox[3] + 1);
+    
+    let hint = '';
+    let confidence = 'low';
+    
+    // High curvature + thin aspect = likely rim
+    if (curv > 0.012 && aspectRatio > 1.5) {
+        hint = currentLang === 'de' ? 'Rand (Krümmung hoch, länglich)' : 'Rim (high curvature, elongated)';
+        confidence = 'medium';
+    }
+    // Very flat, wide = likely base/bottom
+    else if (curv < 0.003 && sol > 0.8 && aspectRatio < 1.5 && aspectRatio > 0.7) {
+        hint = currentLang === 'de' ? 'Boden (flach, kompakt)' : 'Base (flat, compact)';
+        confidence = 'medium';
+    }
+    // Medium curvature = body/wall
+    else if (curv >= 0.003 && curv <= 0.012) {
+        hint = currentLang === 'de' ? 'Wandung (mittlere Krümmung)' : 'Body wall (medium curvature)';
+        confidence = 'low';
+    }
+    
+    return hint ? { hint, confidence } : null;
+}
+
+// ==================================================
+// BATCH STATS (Throughput Display)
+// ==================================================
+function showBatchStats(totalTime, timePerFrag) {
+    const container = document.getElementById('gallery-content');
+    if (!container || activePieces.length === 0) return;
+    
+    const nPieces = activePieces.length;
+    const colors = [...new Set(activePieces.map(p => p.color_name).filter(Boolean))];
+    const materials = [...new Set(activePieces.map(p => p.material).filter(Boolean))];
+    const decoCount = activePieces.filter(p => p.has_decoration).length;
+    const orientHints = activePieces.filter(p => p.orientation_hint).length;
+    
+    // Extrapolation for large batches (Jan's 5-6 digit scenario)
+    const per1000 = (parseFloat(timePerFrag) * 1000 / 60).toFixed(1);
+    const per10000 = (parseFloat(timePerFrag) * 10000 / 60).toFixed(0);
+    
+    const statsHtml = `<div style="background:linear-gradient(135deg, var(--bg-card), var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <div>
+                <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">⚡ ${currentLang === 'de' ? 'Analyse-Statistik' : 'Analysis Stats'}</div>
+                <div style="font-size:13px;color:var(--text-primary);margin-top:4px;">
+                    <strong>${nPieces}</strong> ${currentLang === 'de' ? 'Fragmente' : 'fragments'} · 
+                    <strong>${totalTime}s</strong> ${currentLang === 'de' ? 'gesamt' : 'total'} · 
+                    <strong>${timePerFrag}s</strong> / Fragment
+                </div>
+            </div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                <div style="text-align:center;">
+                    <div style="font-size:18px;font-weight:700;color:var(--accent);">${colors.length}</div>
+                    <div style="font-size:10px;color:var(--text-muted);">${currentLang === 'de' ? 'Farben' : 'Colors'}</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:18px;font-weight:700;color:var(--accent);">${materials.length}</div>
+                    <div style="font-size:10px;color:var(--text-muted);">${currentLang === 'de' ? 'Materialien' : 'Materials'}</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:18px;font-weight:700;color:var(--accent);">${decoCount}</div>
+                    <div style="font-size:10px;color:var(--text-muted);">${currentLang === 'de' ? 'mit Dekor' : 'w/ decor'}</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:18px;font-weight:700;color:var(--accent);">${orientHints}</div>
+                    <div style="font-size:10px;color:var(--text-muted);">${currentLang === 'de' ? 'Orient.-Hinw.' : 'Orient. hints'}</div>
+                </div>
+            </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+            📊 ${currentLang === 'de' ? 'Hochrechnung' : 'Extrapolation'}: 
+            ~${per1000} min / 1.000 Fragmente · 
+            ~${per10000} min / 10.000 Fragmente
+        </div>
+    </div>`;
+    
+    // Prepend to gallery
+    container.insertAdjacentHTML('afterbegin', statsHtml);
 }
 
 function readFileAsArrayBuffer(file) {
