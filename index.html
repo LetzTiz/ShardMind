@@ -2436,16 +2436,17 @@ function T(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || 
 // CHANGELOG DATA
 // ==================================================
 const CHANGELOG = {
-    '2.1': { date: '2025-02-13', title: 'Fach-Feedback: Fundkontext, Materialanalyse & Profilschnitt', features: [
+    '2.1': { date: '2025-02-17', title: 'Fach-Feedback: Datierung, Fundkontext, Materialanalyse & Profilschnitt', features: [
+        '📅 DATIERUNG: Jahrgenaue Datierungsvorschläge (nicht nur Kulturperiode) — verfeinert durch Dekortyp',
+        '📄 TECHNISCHER SCHNELLBERICHT: PDF-Export mit Fragmenttabelle, Datierung und Fundkontext für Firmenarchäologie',
+        '🏺 GEFÄSSBEREICH: Rand, Hals, Schulter, Bauch, Boden, Henkel, Knubbe — pro Fragment zuweisbar',
+        '🎨 DEKORATIONSARTEN: 17 spezifische Typen (Ritzlinien, Stiche, Dellen, Gurtfurchen, Kornstich, Bemalung, Kammstrich etc.)',
         '📋 FUNDKONTEXT-DOKUMENTATION: Befundtyp, Stratigraphie, geschlossener Fund, vergesellschaftete Funde',
         '🔬 MATERIALANALYSE-FELDER: Tonart, Magerung, Brenntechnik, Oberflächenbehandlung, Herstellungstechnik',
         '✏️ PROFILSCHNITT-ZEICHENTOOL: Digitale Gefäßquerschnitt-Zeichnung mit Symmetrie-Modus',
+        '🔍 ÄHNLICHKEITSVERGLEICH: Aktuelle Fragmente mit Datenbankeinträgen vergleichen',
+        '💾 DATENBANK: Reichere Kartenansicht mit Tags, Statistiken und Löschfunktion',
         '⚠️ FACH-DISCLAIMER: Hinweise zur Aussagekraft automatischer Klassifikation und Rekonstruktion',
-        '📄 KONTEXT-PDF-EXPORT: Strukturierte Fundkontextdokumentation als PDF',
-        '🎨 FARBDETEKTION VERBESSERT: Histogram-Peak-Detection statt Median (Blau nicht mehr als Grün erkannt)',
-        '🔍 VERZIERUNGSERKENNUNG: Einfarbige Flächen werden korrekt als Glasur/Körperfarbe erkannt',
-        '🧩 2D-REKONSTRUKTION: Bessere Maskierung, robusteres Circle-Fitting, Centroid-basierte Positionierung',
-        '🔮 3D-TEXTUR: Fragmente jetzt korrekt auf Innenseite projiziert (nicht mehr auf Unterseite)',
     ], fixes: [
         'Farbklassifikation: Histogram-basiert statt Median-basiert — Blau/Grün-Verwechslung behoben',
         'Verzierung: Einfarbig-blaue Fragmente werden nicht mehr als „hat Verzierung" klassifiziert',
@@ -5063,8 +5064,16 @@ const CULTURE_DB = {
     neolithic: {
         name_de: 'Neolithikum', name_en: 'Neolithic',
         period: 'ca. 5500–2200 v.Chr.',
+        date_range: [-5500, -2200],
         icon: '🪨',
         class: 'neolithic',
+        sub_dating: {
+            'ritzlinien': { period_de: 'Linearbandkeramik (LBK)', date: [-5500, -4500] },
+            'stiche': { period_de: 'Stichbandkeramik (SBK)', date: [-4900, -4500] },
+            'kornstich': { period_de: 'Rössener Kultur', date: [-4600, -4300] },
+            'dellen': { period_de: 'Michelsberger Kultur / Trichterbecherkultur', date: [-4400, -2800] },
+            'leisten': { period_de: 'Schnurkeramik / Endneolithikum', date: [-2800, -2200] },
+        },
         criteria: {
             wall_thickness: { de: 'Dick (8–15 mm), unregelmäßig', en: 'Thick (8–15 mm), irregular' },
             surface: { de: 'Rau, oft geglättet oder poliert', en: 'Rough, often smoothed or polished' },
@@ -5081,8 +5090,15 @@ const CULTURE_DB = {
     'bronze-age': {
         name_de: 'Bronzezeit', name_en: 'Bronze Age',
         period: 'ca. 2200–800 v.Chr.',
+        date_range: [-2200, -800],
         icon: '⚔️',
         class: 'bronze-age',
+        sub_dating: {
+            'ritzlinien': { period_de: 'Frühe Bronzezeit (Aunjetitz)', date: [-2200, -1600] },
+            'gurtfurchen': { period_de: 'Mittlere Bronzezeit (Hügelgräberkultur)', date: [-1600, -1300] },
+            'dellen': { period_de: 'Urnenfelderkultur', date: [-1300, -800] },
+            'leisten': { period_de: 'Späte Bronzezeit', date: [-1200, -800] },
+        },
         criteria: {
             wall_thickness: { de: 'Mittel (5–10 mm), regelmäßiger', en: 'Medium (5–10 mm), more regular' },
             surface: { de: 'Geglättet, teils poliert oder geschlickt', en: 'Smoothed, partly polished or slipped' },
@@ -5099,8 +5115,14 @@ const CULTURE_DB = {
     'iron-age': {
         name_de: 'Eisenzeit', name_en: 'Iron Age',
         period: 'ca. 800 v.Chr. – Zeitenwende',
+        date_range: [-800, 0],
         icon: '🗡️',
         class: 'iron-age',
+        sub_dating: {
+            'kammstrich': { period_de: 'Hallstattzeit (Ha C/D)', date: [-800, -450] },
+            'stempel': { period_de: 'Latènezeit', date: [-450, -50] },
+            'bemalung': { period_de: 'Späte Latènezeit (Graphittonmalerei)', date: [-250, -50] },
+        },
         criteria: {
             wall_thickness: { de: 'Variabel (3–10 mm), fein bei Drehscheibenware', en: 'Variable (3–10 mm), fine on wheel-thrown ware' },
             surface: { de: 'Graphitiert, poliert, Kammstrich', en: 'Graphite-coated, polished, combed' },
@@ -5117,8 +5139,14 @@ const CULTURE_DB = {
     roman: {
         name_de: 'Römisch', name_en: 'Roman',
         period: 'ca. 1. Jh. v.Chr. – 5. Jh. n.Chr.',
+        date_range: [-50, 450],
         icon: '🏛️',
         class: 'roman',
+        sub_dating: {
+            'stempel': { period_de: 'Frühe Kaiserzeit (Terra Sigillata)', date: [-50, 150] },
+            'rollraedchen': { period_de: 'Mittlere Kaiserzeit (Argonnenware)', date: [150, 350] },
+            'engobe': { period_de: 'Römische Kaiserzeit allgemein', date: [0, 400] },
+        },
         criteria: {
             wall_thickness: { de: 'Dünn (2–6 mm), gleichmäßig, Drehscheibe', en: 'Thin (2–6 mm), uniform, wheel-thrown' },
             surface: { de: 'Terra Sigillata: Glanztonüberzug; Gebrauchskeramik: glatt', en: 'Terra sigillata: gloss slip; common ware: smooth' },
@@ -5135,8 +5163,16 @@ const CULTURE_DB = {
     medieval: {
         name_de: 'Mittelalter', name_en: 'Medieval',
         period: 'ca. 5.–15. Jh. n.Chr.',
+        date_range: [450, 1500],
         icon: '🏰',
         class: 'medieval',
+        sub_dating: {
+            'gurtfurchen': { period_de: 'Frühmittelalter (Kugeltöpfe)', date: [450, 900] },
+            'rollraedchen': { period_de: 'Hochmittelalter', date: [900, 1250] },
+            'stempel': { period_de: 'Hoch-/Spätmittelalter', date: [1000, 1400] },
+            'glasur': { period_de: 'Spätmittelalter (Bleiglasur)', date: [1200, 1500] },
+            'ritzlinien': { period_de: 'Früh-/Hochmittelalter (Ritzdekor)', date: [600, 1100] },
+        },
         criteria: {
             wall_thickness: { de: 'Mittel (4–8 mm), Drehscheibe und Handaufbau', en: 'Medium (4–8 mm), wheel and hand-built' },
             surface: { de: 'Steinzeug: gesintert; Irdenware: engobiert/glasiert', en: 'Stoneware: sintered; earthenware: slipped/glazed' },
@@ -5153,8 +5189,15 @@ const CULTURE_DB = {
     'early-modern': {
         name_de: 'Frühe Neuzeit', name_en: 'Early Modern',
         period: 'ca. 15.–18. Jh.',
+        date_range: [1450, 1800],
         icon: '⚙️',
         class: 'modern',
+        sub_dating: {
+            'bemalung': { period_de: 'Fayence / Blaumalerei', date: [1550, 1800] },
+            'glasur': { period_de: 'Glasierte Irdenware / Steinzeug', date: [1450, 1750] },
+            'engobe': { period_de: 'Engobierte Ware', date: [1500, 1700] },
+            'stempel': { period_de: 'Westerwälder Steinzeug', date: [1590, 1800] },
+        },
         criteria: {
             wall_thickness: { de: 'Dünn (2–5 mm), Fayence/Steinzeug', en: 'Thin (2–5 mm), faience/stoneware' },
             surface: { de: 'Zinnglasur (Fayence), Salzglasur (Steinzeug)', en: 'Tin glaze (faience), salt glaze (stoneware)' },
@@ -5171,8 +5214,13 @@ const CULTURE_DB = {
     modern: {
         name_de: 'Neuzeit (Industriezeitalter)', name_en: 'Modern (Industrial)',
         period: 'ab 18. Jh.',
+        date_range: [1750, 2000],
         icon: '🏭',
         class: 'modern',
+        sub_dating: {
+            'bemalung': { period_de: 'Porzellanmanufaktur / Steingut', date: [1750, 1900] },
+            'glasur': { period_de: 'Industrielle Keramik', date: [1800, 2000] },
+        },
         criteria: {
             wall_thickness: { de: 'Sehr dünn (1–4 mm), gleichmäßig', en: 'Very thin (1–4 mm), uniform' },
             surface: { de: 'Porzellan: glatt, glasiert; Steingut: engobiert', en: 'Porcelain: smooth, glazed; earthenware: slipped' },
@@ -5625,6 +5673,18 @@ function formatCriteria(raw) {
         const mat = raw.split(':')[1];
         return 'Material: ' + mat;
     }
+    if (raw.startsWith('deco_type:')) {
+        const dt = raw.split(':')[1];
+        return (currentLang === 'de' ? 'Dekortyp: ' : 'Decor type: ') + getDecoLabel(dt);
+    }
+    if (raw.startsWith('vessel_part:')) {
+        const vp = raw.split(':')[1];
+        return (currentLang === 'de' ? 'Gefäßbereich: ' : 'Vessel part: ') + getPartLabel(vp);
+    }
+    if (raw.startsWith('sub_dating:')) {
+        const dt = raw.split(':')[1];
+        return (currentLang === 'de' ? '📅 Datierung verfeinert durch: ' : '📅 Dating refined by: ') + getDecoLabel(dt);
+    }
     return labels[raw] || raw.replace(/_/g, ' ');
 }
 
@@ -5714,7 +5774,16 @@ function classifyPieceCulture(piece) {
             score += 5; matchedCriteria.push('circular');
         }
 
-        scores[key] = { score: Math.min(score, 100), criteria: matchedCriteria };
+        // Compute dating refinement
+        let dating = { from: culture.date_range[0], to: culture.date_range[1], refined: false, sub_period: null };
+        if (piece.deco_type && culture.sub_dating && culture.sub_dating[piece.deco_type]) {
+            const sub = culture.sub_dating[piece.deco_type];
+            dating = { from: sub.date[0], to: sub.date[1], refined: true, sub_period: sub.period_de };
+            score += 10; // bonus for being able to date more precisely
+            matchedCriteria.push(`sub_dating:${piece.deco_type}`);
+        }
+
+        scores[key] = { score: Math.min(score, 100), criteria: matchedCriteria, dating };
     });
 
     // Sort and return top matches
@@ -5723,6 +5792,15 @@ function classifyPieceCulture(piece) {
         .filter(([, v]) => v.score > 15);
 
     return sorted.slice(0, 3);
+}
+
+function formatDateRange(from, to) {
+    const fmtYear = (y) => {
+        if (y < 0) return `${Math.abs(y)} v.Chr.`;
+        if (y === 0) return 'Zeitenwende';
+        return `${y} n.Chr.`;
+    };
+    return `${fmtYear(from)} – ${fmtYear(to)}`;
 }
 
 function runCultureClassification() {
@@ -5743,19 +5821,24 @@ function runCultureClassification() {
         let topMatches;
 
         if (selectedCultureOverride) {
-            topMatches = [[selectedCultureOverride, { score: 100, criteria: ['manual_override'] }]];
+            topMatches = [[selectedCultureOverride, { score: 100, criteria: ['manual_override'], dating: { from: CULTURE_DB[selectedCultureOverride]?.date_range?.[0] || 0, to: CULTURE_DB[selectedCultureOverride]?.date_range?.[1] || 0, refined: false } }]];
         } else {
             topMatches = classifyPieceCulture(piece);
         }
 
         if (topMatches.length === 0) {
-            topMatches = [['unknown', { score: 0, criteria: [] }]];
+            topMatches = [['unknown', { score: 0, criteria: [], dating: { from: 0, to: 0, refined: false } }]];
         }
 
         const topKey = topMatches[0][0];
         const topScore = topMatches[0][1].score;
         const topCriteria = topMatches[0][1].criteria;
-        const culture = CULTURE_DB[topKey] || { name_de: 'Unbestimmt', name_en: 'Undetermined', icon: '❓', class: 'unknown', period: '?', criteria: {} };
+        const topDating = topMatches[0][1].dating || { from: 0, to: 0, refined: false };
+        const culture = CULTURE_DB[topKey] || { name_de: 'Unbestimmt', name_en: 'Undetermined', icon: '❓', class: 'unknown', period: '?', criteria: {}, date_range: [0,0] };
+        
+        // Store dating on the piece for later use
+        piece._dating = topDating;
+        piece._culture_key = topKey;
 
         html += `<div class="culture-card ${culture.class}">
             <div class="culture-header">
@@ -5763,7 +5846,7 @@ function runCultureClassification() {
                     ${piece.thumbnailDataUrl ? `<img src="${piece.thumbnailDataUrl}" style="width:50px;height:50px;object-fit:cover;border-radius:8px;">` : ''}
                     <div>
                         <div class="culture-title">${piece.id.substring(0,11)}</div>
-                        <div style="font-size:12px;color:var(--text-muted);">${piece.name || 'Fragment'}</div>
+                        <div style="font-size:12px;color:var(--text-muted);">${piece.name || 'Fragment'}${piece.vessel_part ? ' · ' + getPartLabel(piece.vessel_part) : ''}${piece.deco_type && piece.deco_type !== 'keine' ? ' · ' + getDecoLabel(piece.deco_type) : ''}</div>
                     </div>
                 </div>
                 <div>
@@ -5772,11 +5855,28 @@ function runCultureClassification() {
                 </div>
             </div>
 
-            <div class="culture-details">
-                <div class="culture-detail">
-                    <div class="culture-detail-label">⏳ ${lang === 'de' ? 'Zeitraum' : 'Period'}</div>
-                    <div class="culture-detail-value">${culture.period}</div>
+            <!-- DATING SECTION — prominent -->
+            <div style="background:var(--bg-secondary);border-radius:var(--radius);padding:14px 16px;margin:12px 0;border-left:4px solid var(--accent);">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">📅 ${lang === 'de' ? 'Datierung' : 'Dating'}</div>
+                        <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-top:2px;">
+                            ${formatDateRange(topDating.from, topDating.to)}
+                        </div>
+                        ${topDating.refined ? `<div style="font-size:12px;color:var(--accent);margin-top:2px;">
+                            ↳ ${topDating.sub_period || ''} <span style="font-size:10px;color:var(--text-muted);">(${lang === 'de' ? 'verfeinert durch Dekortyp' : 'refined by decor type'})</span>
+                        </div>` : `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                            ${lang === 'de' ? 'Grobe Datierung — Dekortyp-Angabe kann die Datierung verfeinern' : 'Broad dating — specifying decor type can refine the date'}
+                        </div>`}
+                    </div>
+                    <div style="text-align:center;min-width:80px;">
+                        <div style="font-size:28px;font-weight:800;color:var(--accent);">${Math.abs(topDating.to - topDating.from)}</div>
+                        <div style="font-size:10px;color:var(--text-muted);">${lang === 'de' ? 'Jahre Spanne' : 'year range'}</div>
+                    </div>
                 </div>
+            </div>
+
+            <div class="culture-details">
                 <div class="culture-detail">
                     <div class="culture-detail-label">🎨 ${T('culture_decoration')}</div>
                     <div class="culture-detail-value">${culture.criteria.decoration ? (lang === 'de' ? culture.criteria.decoration.de : culture.criteria.decoration.en) : '-'}</div>
@@ -5789,6 +5889,10 @@ function runCultureClassification() {
                     <div class="culture-detail-label">📐 ${T('culture_wall_thickness')}</div>
                     <div class="culture-detail-value">${culture.criteria.wall_thickness ? (lang === 'de' ? culture.criteria.wall_thickness.de : culture.criteria.wall_thickness.en) : '-'}</div>
                 </div>
+                <div class="culture-detail">
+                    <div class="culture-detail-label">🏺 ${lang === 'de' ? 'Typische Formen' : 'Typical forms'}</div>
+                    <div class="culture-detail-value">${culture.criteria.typical_forms ? (lang === 'de' ? culture.criteria.typical_forms.de : culture.criteria.typical_forms.en) : '-'}</div>
+                </div>
             </div>
 
             <div class="culture-criteria">
@@ -5800,17 +5904,184 @@ function runCultureClassification() {
                     ${lang === 'de' ? 'Weitere Möglichkeiten' : 'Other possibilities'}: 
                     ${topMatches.slice(1).map(([k, v]) => {
                         const c = CULTURE_DB[k];
-                        return c ? `${c.icon} ${lang === 'de' ? c.name_de : c.name_en} (${v.score}%)` : '';
+                        return c ? `${c.icon} ${lang === 'de' ? c.name_de : c.name_en} (${v.score}%, ${formatDateRange(v.dating.from, v.dating.to)})` : '';
                     }).filter(Boolean).join(', ')}
                 </p>` : ''}
             </div>
         </div>`;
     });
 
+    // Add export button after results
+    html += `<div style="margin-top:20px;display:flex;gap:12px;">
+        <button class="btn btn-primary" onclick="exportTechnicalReport()">📄 ${lang === 'de' ? 'Technischen Schnellbericht exportieren (PDF)' : 'Export technical report (PDF)'}</button>
+    </div>`;
+
     results.innerHTML = html;
 
     // Render knowledge base
     renderCultureKnowledgeBase();
+}
+
+// ==================================================
+// TECHNICAL REPORT EXPORT (Schnellbericht für Firmenarchäologie)
+// ==================================================
+function exportTechnicalReport() {
+    if (typeof jspdf === 'undefined' && typeof window.jspdf === 'undefined') {
+        toast('PDF library not loaded', 'error');
+        return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageW = 210, marginL = 18, marginR = 18, contentW = pageW - marginL - marginR;
+    let y = 20;
+    
+    // Header
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ShardMind — Technischer Keramik-Schnellbericht', marginL, y);
+    y += 8;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Erstellt: ${new Date().toLocaleDateString('de-DE')} | ${activePieces.length} Fragmente analysiert`, marginL, y);
+    y += 4;
+    doc.text(`Hinweis: Automatische Vorklassifikation — keine facharchäologische Bestimmung. Datierung vorbehaltlich Materialanalyse.`, marginL, y);
+    y += 8;
+    
+    // Context info if available
+    if (contextData.site || contextData.befund || contextData.fundnr) {
+        doc.setDrawColor(200, 200, 200);
+        doc.line(marginL, y, pageW - marginR, y);
+        y += 6;
+        doc.setTextColor(30, 30, 30);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Fundkontext', marginL, y);
+        y += 5;
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        if (contextData.site) { doc.text(`Grabungsort: ${contextData.site}`, marginL, y); y += 4; }
+        if (contextData.fundnr) { doc.text(`Fundnummer: ${contextData.fundnr}`, marginL, y); y += 4; }
+        if (contextData.befund) { doc.text(`Befundtyp: ${contextData.befund}`, marginL, y); y += 4; }
+        if (contextData.stratum) { doc.text(`Schicht: ${contextData.stratum}`, marginL, y); y += 4; }
+        if (contextData.closed !== 'unknown') { doc.text(`Geschlossener Fund: ${contextData.closed === 'yes' ? 'Ja' : 'Nein'}`, marginL, y); y += 4; }
+        if (contextData.clay) { doc.text(`Warenart: ${contextData.clay}`, marginL, y); y += 4; }
+        if (contextData.temper) { doc.text(`Magerung: ${contextData.temper}`, marginL, y); y += 4; }
+        if (contextData.firing) { doc.text(`Brenntechnik: ${contextData.firing}`, marginL, y); y += 4; }
+        y += 4;
+    }
+    
+    // Fragment table header
+    doc.setDrawColor(200, 200, 200);
+    doc.line(marginL, y, pageW - marginR, y);
+    y += 6;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 30, 30);
+    doc.text('Fragmentliste mit Datierung', marginL, y);
+    y += 6;
+    
+    // Table header
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setFillColor(240, 240, 240);
+    doc.rect(marginL, y - 3, contentW, 5, 'F');
+    const cols = [marginL, marginL + 28, marginL + 58, marginL + 82, marginL + 112, marginL + 142];
+    doc.text('ID', cols[0], y);
+    doc.text('Material', cols[1], y);
+    doc.text('Farbe', cols[2], y);
+    doc.text('Gef.bereich', cols[3], y);
+    doc.text('Dekortyp', cols[4], y);
+    doc.text('Datierung', cols[5], y);
+    y += 5;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    
+    activePieces.forEach((piece, idx) => {
+        if (y > 270) {
+            doc.addPage();
+            y = 20;
+        }
+        
+        // Alternating row bg
+        if (idx % 2 === 0) {
+            doc.setFillColor(248, 248, 248);
+            doc.rect(marginL, y - 3, contentW, 4.5, 'F');
+        }
+        
+        doc.setTextColor(30, 30, 30);
+        doc.text((piece.id || '').substring(0, 11), cols[0], y);
+        doc.text((piece.material || '?').substring(0, 14), cols[1], y);
+        doc.text((piece.color_name || '?').substring(0, 10), cols[2], y);
+        doc.text(piece.vessel_part ? getPartLabel(piece.vessel_part).substring(0, 12) : '-', cols[3], y);
+        doc.text(piece.deco_type ? getDecoLabel(piece.deco_type).substring(0, 14) : '-', cols[4], y);
+        
+        // Dating
+        const dating = piece._dating;
+        if (dating) {
+            doc.setFont('helvetica', 'bold');
+            doc.text(formatDateRange(dating.from, dating.to).substring(0, 28), cols[5], y);
+            doc.setFont('helvetica', 'normal');
+        } else {
+            doc.text('-', cols[5], y);
+        }
+        
+        y += 4.5;
+    });
+    
+    y += 6;
+    
+    // Summary: date range across all pieces
+    const allDatings = activePieces.filter(p => p._dating).map(p => p._dating);
+    if (allDatings.length > 0) {
+        const overallFrom = Math.min(...allDatings.map(d => d.from));
+        const overallTo = Math.max(...allDatings.map(d => d.to));
+        const refinedCount = allDatings.filter(d => d.refined).length;
+        
+        if (y > 260) { doc.addPage(); y = 20; }
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.line(marginL, y, pageW - marginR, y);
+        y += 6;
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Zusammenfassung Datierung', marginL, y);
+        y += 6;
+        doc.setFontSize(9);
+        doc.text(`Gesamtspanne: ${formatDateRange(overallFrom, overallTo)}`, marginL, y);
+        y += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${refinedCount} von ${allDatings.length} Fragmenten mit verfeinerter Datierung (durch Dekortyp)`, marginL, y);
+        y += 5;
+        doc.text(`${allDatings.length - refinedCount} Fragmente nur grob datiert — Dekortyp-Bestimmung empfohlen`, marginL, y);
+        y += 8;
+        
+        // Culture summary
+        const cultureCount = {};
+        activePieces.forEach(p => {
+            if (p._culture_key) {
+                const c = CULTURE_DB[p._culture_key];
+                const name = c ? c.name_de : p._culture_key;
+                cultureCount[name] = (cultureCount[name] || 0) + 1;
+            }
+        });
+        doc.setFontSize(9);
+        Object.entries(cultureCount).sort((a,b) => b[1]-a[1]).forEach(([name, count]) => {
+            doc.text(`• ${name}: ${count} Fragment${count > 1 ? 'e' : ''}`, marginL, y);
+            y += 4;
+        });
+    }
+    
+    // Footer
+    y = 287;
+    doc.setFontSize(6);
+    doc.setTextColor(130, 130, 130);
+    doc.text(`ShardMind v${APP_VERSION} — Automatischer Schnellbericht — Keine facharchäologische Bestimmung`, marginL, y);
+    doc.text(`Datierung basiert auf visuellen Merkmalen. Materialanalyse (Dünnschliff, p-RFA) kann zu abweichenden Ergebnissen führen.`, marginL, y + 3);
+    
+    doc.save(`shardmind_schnellbericht_${new Date().toISOString().slice(0,10)}.pdf`);
+    toast(currentLang === 'de' ? 'Technischer Schnellbericht exportiert!' : 'Technical report exported!', 'success');
 }
 
 function renderCultureKnowledgeBase() {
