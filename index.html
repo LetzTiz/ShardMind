@@ -1252,6 +1252,11 @@
             <span id="py-status-text">Python-Engine lädt...</span>
             <button class="py-retry-btn" id="py-retry-btn" style="display:none;" onclick="retryPyLoad()">↻ Retry</button>
         </div>
+        
+        <!-- Offline indicator -->
+        <div id="offline-indicator" style="display:none;padding:6px 12px;background:var(--warning);color:#000;font-size:11px;font-weight:600;border-radius:var(--radius);margin:4px 12px;text-align:center;">
+            📡 Offline-Modus — Analyse läuft lokal, kein Internet nötig
+        </div>
 
         <div class="sidebar-section-title" id="sidebar-upload-title">📤 FOTOS HOCHLADEN</div>
         <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
@@ -1389,6 +1394,7 @@
             <button class="tab-btn" onclick="switchTab('culture')">🏛️ <span class="tab-label" data-key="tab_culture">Kulturstufe</span></button>
             <button class="tab-btn" onclick="switchTab('database')">💾 <span class="tab-label" data-key="tab_database">Datenbank</span></button>
             <button class="tab-btn" onclick="switchTab('labels')">🏷️ <span class="tab-label" data-key="tab_labels">Etiketten</span></button>
+            <button class="tab-btn" onclick="switchTab('inventory')">📋 <span class="tab-label" data-key="tab_inventory">Inventarliste</span></button>
             <button class="tab-btn" onclick="switchTab('changelog')">📋 <span class="tab-label" data-key="tab_changelog">Changelog</span></button>
             <button class="tab-btn" onclick="switchTab('privacy')">🔒 <span class="tab-label" data-key="tab_privacy">Datenschutz</span></button>
             <button class="tab-btn" onclick="switchTab('help')">❓ <span class="tab-label" data-key="tab_help">Hilfe</span></button>
@@ -1436,6 +1442,9 @@
         <!-- TAB: Gallery -->
         <div class="tab-content" id="tab-gallery">
             <h2 class="section-header" id="gallery-header">Erkannte Fragmente</h2>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;" id="gallery-edit-hint">
+                ✏️ Alle automatischen Einträge sind nachträglich anpassbar — Name, Gefäßbereich, Dekor, Gewicht und Haptik direkt auf der Karte bearbeiten.
+            </p>
             <div id="gallery-content">
                 <div class="empty-state" id="gallery-empty">
                     <div class="icon">📷</div>
@@ -2042,7 +2051,13 @@
                     der stratigraphische und räumliche Kontext liefert diese Information. Die automatische Klassifikation hier basiert 
                     ausschließlich auf visuellen Merkmalen (Farbe, Form, Oberfläche) und kann wesentliche Informationen nicht erfassen: 
                     Haptik, Klang, technischer Aufbau, Magerung im Bruch — und vor allem die Erfahrung aus der Bearbeitung tausender Scherben. 
-                    Sie dient als Sortier- und Orientierungshilfe, z.B. bei Massenverarbeitung oder Sammlungsmaterial ohne Kontextinformation.</span>
+                    Diagnostische Scherben (Rand, Boden, Verzierung) werden in der Praxis vertieft bestimmt; nicht-diagnostische 
+                    Wandscherben werden per Schnellroutine (Haptik, Gewicht, Magerung) eingeordnet — ShardMind kann letztere visuell 
+                    nicht gleichwertig erfassen. Die Felder für Gewicht und Haptik ermöglichen eine manuelle Ergänzung.</span>
+                </p>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+                    🔗 Verwandte Initiative: <a href="https://www.nfdi4objects.net/" target="_blank" style="color:var(--accent);">NFDI4Objects</a> — 
+                    Nationale Forschungsdateninfrastruktur für materielle und immaterielle Kulturgüter
                 </p>
             </div>
 
@@ -2087,6 +2102,19 @@
 
         <div class="tab-content" id="tab-database">
             <h2 class="section-header" id="database-header">Meine Sammlung</h2>
+            
+            <!-- Export options -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+                <button class="btn btn-secondary" onclick="exportDatabaseCSV()" style="font-size:12px;padding:6px 12px;">
+                    📊 CSV Export
+                </button>
+                <button class="btn btn-secondary" onclick="exportDatabaseJSON()" style="font-size:12px;padding:6px 12px;">
+                    { } JSON Export
+                </button>
+                <span style="font-size:11px;color:var(--text-muted);align-self:center;" id="db-export-hint">
+                    → Import in eigene Grabungsdatenbank
+                </span>
+            </div>
             
             <!-- DB stats bar -->
             <div class="db-stats-bar" id="db-stats-bar" style="display:none;">
@@ -2140,7 +2168,9 @@
                     <strong id="labels-explain-title">📋 Etikettierungssystem:</strong>
                     <span id="labels-explain-text">Generiert druckbare Etiketten mit QR-Code für die physische Beschriftung von Fundstücken. 
                     Jedes Fragment erhält eine eindeutige ShardMind-ID (SM-XXXXXXXX). Zusätzlich können Inventarnummer, 
-                    Fundnummer und Grabungskürzel vergeben werden — diese erscheinen auf dem Etikett und im QR-Code.</span>
+                    Fundnummer und Grabungskürzel vergeben werden — diese erscheinen auf dem Etikett und im QR-Code.
+                    Die Etiketten können auf Klebeetiketten gedruckt und direkt auf die Scherben/Fundtüten aufgebracht werden.
+                    So entfällt das händische Beschriften tausender Funde.</span>
                 </p>
             </div>
             
@@ -2206,6 +2236,52 @@
                 <button class="btn btn-primary btn-full" onclick="createLabelsPDF()" id="btn-create-pdf" style="margin-top:16px;">
                     📄 <span id="txt-create-pdf">PDF erstellen</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- TAB: Inventory List -->
+        <div class="tab-content" id="tab-inventory">
+            <h2 class="section-header">📋 Inventarliste</h2>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;" id="inventory-explain">
+                Generiert eine strukturierte Fundaufnahmeliste aus den analysierten Fragmenten — 
+                automatisch gezählt und nach Art (Rand/Wand/Boden), Typ und Material gruppiert. 
+                Ideal für die schnelle Inventarisierung von Fundbeuteln.
+            </p>
+            
+            <!-- Fundbeutel header -->
+            <div class="card" style="padding:14px;margin-bottom:16px;">
+                <h4 style="font-size:13px;color:var(--accent);margin-bottom:10px;">📦 Fundbeutel-Zuordnung</h4>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                    <div>
+                        <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px;">Befundnummer</label>
+                        <input type="text" id="inv-befund" placeholder="z.B. Bef. 1042" 
+                               style="width:100%;padding:5px 8px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                    </div>
+                    <div>
+                        <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px;">Schicht / Planum</label>
+                        <input type="text" id="inv-schicht" placeholder="z.B. Schicht 3" 
+                               style="width:100%;padding:5px 8px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                    </div>
+                    <div>
+                        <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px;">Fundnummer</label>
+                        <input type="text" id="inv-fundnr" placeholder="z.B. FN 2024-0347" 
+                               style="width:100%;padding:5px 8px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="generateInventory()" style="margin-bottom:20px;">
+                📋 Inventarliste generieren
+            </button>
+            
+            <div id="inventory-content">
+                <div class="empty-state">
+                    <div class="icon">📋</div>
+                    <p>Fragmente analysieren, dann Inventarliste generieren</p>
+                </div>
+            </div>
+            
+            <div id="inventory-actions" style="display:none;margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
             </div>
         </div>
 
@@ -2277,7 +2353,7 @@
 // ==================================================
 // STATE & CONFIG
 // ==================================================
-const APP_VERSION = "2.0";
+const APP_VERSION = "2.2";
 const BASE_URL = "https://shardmind.streamlit.app";
 
 let currentLang = 'de';
@@ -2312,10 +2388,26 @@ const MATERIAL_TYPES = {
         has_culture: true, has_reconstruction: false, has_decoration: true,
     },
     knochen: {
-        name_de: 'Knochen', name_en: 'Bone', icon: '🦴',
-        features_de: 'Tierart, Knochen-Element, Bearbeitungsspuren, Schnittmarken',
-        features_en: 'Species, bone element, tool marks, cut marks',
+        name_de: 'Knochen / Zähne', name_en: 'Bone / Teeth', icon: '🦴',
+        features_de: 'Tierart, Skelett-Element, Fragmentierung, Schnittspuren, Verbiss, Brandspuren, Gewicht',
+        features_en: 'Species, skeletal element, fragmentation, cut marks, gnaw marks, burning, weight',
         has_culture: false, has_reconstruction: false, has_decoration: false,
+        note_de: 'Zweitgrößte Fundgruppe auf europäischen Ausgrabungen. Bei Notbergungen oft nur pro Befund/Schicht gewogen.',
+        // Bone-specific vessel parts / categories
+        bone_parts: [
+            { value: 'langknochen', label_de: 'Langknochen', label_en: 'Long bone' },
+            { value: 'platter_knochen', label_de: 'Platter Knochen', label_en: 'Flat bone' },
+            { value: 'wirbel', label_de: 'Wirbel', label_en: 'Vertebra' },
+            { value: 'rippe', label_de: 'Rippe', label_en: 'Rib' },
+            { value: 'schaedel', label_de: 'Schädelfragment', label_en: 'Cranial fragment' },
+            { value: 'zahn', label_de: 'Zahn', label_en: 'Tooth' },
+            { value: 'gelenk', label_de: 'Gelenkende', label_en: 'Articular end' },
+            { value: 'becken', label_de: 'Becken', label_en: 'Pelvis' },
+            { value: 'schulterblatt', label_de: 'Schulterblatt', label_en: 'Scapula' },
+            { value: 'metapodium', label_de: 'Metapodium', label_en: 'Metapodial' },
+            { value: 'phalanx', label_de: 'Phalanx', label_en: 'Phalanx' },
+            { value: 'unbestimmt', label_de: 'Unbestimmt', label_en: 'Unidentified' },
+        ],
     },
     holz: {
         name_de: 'Holz', name_en: 'Wood', icon: '🪵',
@@ -2547,6 +2639,18 @@ function T(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || 
 // CHANGELOG DATA
 // ==================================================
 const CHANGELOG = {
+    '2.2': { date: '2025-02-17', title: 'Inventarliste, Munsell-Farben & Fundbeutel-Modus', features: [
+        '📋 INVENTARLISTE: Automatische Fundaufnahme mit Zählung nach Art (Rand/Wand/Boden), Typ und Material',
+        '📦 FUNDBEUTEL-MODUS: Befundnummer, Schicht, Fundnummer pro Analyse-Durchgang zuweisbar',
+        '🎨 MUNSELL-FARBEN: Automatische Munsell-Notation (z.B. 10YR 5/4) zusätzlich zum deutschen Farbnamen',
+        '✏️ ALLE FELDER EDITIERBAR: Name, Material, Bereich, Dekor — direkt auf der Galerie-Karte anpassbar',
+        '📡 OFFLINE-INDIKATOR: Automatische Erkennung ob Internet verfügbar (Analyse läuft lokal)',
+        '📊 DATENBANK-EXPORT: CSV und JSON Export für Import in eigene Grabungsdatenbanken',
+        '🦴 TIERKNOCHEN: Erweiterte Knochen-Klassifikation (Becken, Schulterblatt, Metapodium, Phalanx)',
+        '🔍 DIAGNOSTIK: Fragmente als diagnostisch (Rand/Boden/Dekor) vs. Wandscherbe klassifiziert',
+        '⚖️ GEWICHT + HAPTIK: Manuelle Eingabefelder für nicht-visuelle Merkmale',
+        '🏷️ INVENTARNUMMERN: Grabungskürzel + fortlaufende Nummerierung auf Etiketten und QR-Code',
+    ], fixes: [] },
     '2.1': { date: '2025-02-17', title: 'Fach-Feedback: Datierung, Multi-Material, Fundkontext & Profilschnitt', features: [
         '📅 DATIERUNG: Jahrgenaue Datierungsvorschläge — verfeinert durch Dekortyp (Sub-Dating)',
         '🪟 MULTI-MATERIAL: Keramik, Glas, Stein, Metall, Knochen, Holz — Materialart pro Analyse wählbar',
@@ -3326,12 +3430,39 @@ function getDecoLabel(val) {
 function setVesselPart(pieceIdx, value) {
     if (activePieces[pieceIdx]) {
         activePieces[pieceIdx].vessel_part = value;
+        // Re-evaluate diagnostic status when vessel part changes
     }
 }
 function setDecoType(pieceIdx, value) {
     if (activePieces[pieceIdx]) {
         activePieces[pieceIdx].deco_type = value;
     }
+}
+function setPieceField(pieceIdx, field, value) {
+    if (activePieces[pieceIdx]) {
+        activePieces[pieceIdx][field] = value;
+    }
+}
+
+// Diagnostic vs. non-diagnostic classification
+// Diagnostic sherds: have rim, base, handle, spout, lid, knob, or decoration
+// Non-diagnostic: plain body/wall sherds without identifiable features
+function isDiagnostic(piece) {
+    // Vessel part is diagnostic?
+    const diagParts = ['rand', 'boden', 'standfuss', 'henkel', 'knubbe', 'ausguss', 'deckel'];
+    if (piece.vessel_part && diagParts.includes(piece.vessel_part)) return true;
+    
+    // Has decoration?
+    if (piece.has_decoration) return true;
+    if (piece.deco_type && piece.deco_type !== '' && piece.deco_type !== 'keine') return true;
+    
+    // Orientation hint suggests rim or base?
+    if (piece.orientation_hint) {
+        const h = piece.orientation_hint.hint.toLowerCase();
+        if (h.includes('rand') || h.includes('rim') || h.includes('boden') || h.includes('base')) return true;
+    }
+    
+    return false;
 }
 
 function renderGallery() {
@@ -3355,16 +3486,30 @@ function renderGallery() {
         const color = cid >= 0 ? CLUSTER_COLORS[cid % CLUSTER_COLORS.length] : '#B0B0B0';
         const colorMap = {'Blau':'#4488cc','Rot':'#cc4444','Grün':'#44aa66','Braun':'#a0774a','Orange':'#dd8833','Gelb':'#ccaa33','Weiß':'#e8e4de','Grau':'#888','Schwarz':'#444','Violett':'#8855aa'};
         
-        html += `<div class="gallery-item">
-            <div class="gallery-item-border" style="background:${color};"></div>
+        // Diagnostic classification
+        const isDiag = isDiagnostic(p);
+        const diagLabel = isDiag 
+            ? (currentLang === 'de' ? '🔍 Diagnostisch' : '🔍 Diagnostic')
+            : (currentLang === 'de' ? '◻ Wandscherbe' : '◻ Body sherd');
+        const diagColor = isDiag ? 'var(--accent)' : 'var(--text-muted)';
+        const diagBg = isDiag ? 'rgba(99,102,241,0.1)' : 'transparent';
+        
+        html += `<div class="gallery-item" style="${isDiag ? 'border-color:var(--accent);' : ''}">
+            <div class="gallery-item-border" style="background:${isDiag ? 'var(--accent)' : color};"></div>
             ${p.thumbnailDataUrl ? `<img class="gallery-thumb" src="${p.thumbnailDataUrl}" alt="${p.id}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);"></div>'}
             <div class="gallery-info">
-                <div class="gallery-id">${p.id.substring(0, 11)}</div>
-                <div class="gallery-name">${(p.name || '').substring(0, 25)}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div class="gallery-id">${p.id.substring(0, 11)}</div>
+                    <span style="font-size:9px;padding:1px 6px;border-radius:8px;background:${diagBg};color:${diagColor};font-weight:600;">${diagLabel}</span>
+                </div>
+                <input type="text" value="${(p.name || '').replace(/"/g, '&quot;')}" 
+                       onchange="setPieceField(${idx}, 'name', this.value)"
+                       style="width:100%;font-size:12px;color:var(--text-secondary);background:transparent;border:none;border-bottom:1px dashed var(--border);padding:2px 0;margin-top:2px;"
+                       title="${currentLang === 'de' ? 'Klicken zum Bearbeiten' : 'Click to edit'}">
             </div>
             <div class="gallery-tags">
                 <span class="gallery-tag t-mat">${(MATERIAL_TYPES[p.material_type] || {}).icon || '🏺'} ${p.material || '?'}</span>
-                <span class="gallery-tag t-color" style="border-left-color:${colorMap[p.color_name] || '#999'};">${p.color_name || '?'}</span>
+                <span class="gallery-tag t-color" style="border-left-color:${colorMap[p.color_name] || '#999'};" title="${p.munsell || ''}">${p.color_name || '?'}${p.munsell ? ' · ' + p.munsell : ''}</span>
                 ${p.vessel_part ? `<span class="gallery-tag t-part">${getPartLabel(p.vessel_part)}</span>` : ''}
                 ${p.deco_type && p.deco_type !== 'keine' ? `<span class="gallery-tag t-deco">${getDecoLabel(p.deco_type)}</span>` : ''}
                 ${p.has_decoration && !p.deco_type ? `<span class="gallery-tag t-deco">Deko?</span>` : ''}
@@ -3381,6 +3526,25 @@ function renderGallery() {
                     <label>🎨</label>
                     <select onchange="setDecoType(${idx}, this.value)" title="${currentLang === 'de' ? 'Dekorationsart' : 'Decoration type'}">
                         ${decoOpts.replace(`value="${p.deco_type || ''}"`, `value="${p.deco_type || ''}" selected`)}
+                    </select>
+                </div>
+                <div class="gallery-prop-row">
+                    <label style="font-size:9px;">⚖️</label>
+                    <input type="number" step="0.1" min="0" placeholder="${currentLang === 'de' ? 'Gewicht (g)' : 'Weight (g)'}" 
+                           value="${p.weight_g || ''}" onchange="setPieceField(${idx}, 'weight_g', parseFloat(this.value))"
+                           style="flex:1;padding:4px 6px;font-size:11px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);width:60px;">
+                </div>
+                <div class="gallery-prop-row">
+                    <label style="font-size:9px;">✋</label>
+                    <select onchange="setPieceField(${idx}, 'haptics', this.value)" title="${currentLang === 'de' ? 'Haptik/Oberfläche' : 'Haptics/Surface'}">
+                        <option value="">${currentLang === 'de' ? '— Haptik —' : '— Haptics —'}</option>
+                        <option value="rau" ${p.haptics === 'rau' ? 'selected' : ''}>${currentLang === 'de' ? 'Rau / Sandig' : 'Rough / Sandy'}</option>
+                        <option value="glatt" ${p.haptics === 'glatt' ? 'selected' : ''}>${currentLang === 'de' ? 'Glatt' : 'Smooth'}</option>
+                        <option value="poliert" ${p.haptics === 'poliert' ? 'selected' : ''}>${currentLang === 'de' ? 'Poliert / Glänzend' : 'Polished / Glossy'}</option>
+                        <option value="seifig" ${p.haptics === 'seifig' ? 'selected' : ''}>${currentLang === 'de' ? 'Seifig / Fettig' : 'Soapy / Greasy'}</option>
+                        <option value="koernig" ${p.haptics === 'koernig' ? 'selected' : ''}>${currentLang === 'de' ? 'Körnig / Grob' : 'Gritty / Coarse'}</option>
+                        <option value="mehlig" ${p.haptics === 'mehlig' ? 'selected' : ''}>${currentLang === 'de' ? 'Mehlig / Weich' : 'Chalky / Soft'}</option>
+                        <option value="hart" ${p.haptics === 'hart' ? 'selected' : ''}>${currentLang === 'de' ? 'Hart / Gesintert' : 'Hard / Sintered'}</option>
                     </select>
                 </div>
             </div>
@@ -3595,7 +3759,7 @@ function renderDatabase() {
                     <div class="db-name">${p.name || 'Fragment'}</div>
                     <div class="db-tags">
                         <span class="db-tag material">${p.material || '?'}</span>
-                        <span class="db-tag color" style="border-left-color:${colorDot};">${p.color_name || '?'}</span>
+                        <span class="db-tag color" style="border-left-color:${colorDot};">${p.color_name || '?'}${p.munsell ? ' · ' + p.munsell : ''}</span>
                         ${p.area ? `<span class="db-tag">${Math.round(p.area)} px²</span>` : ''}
                         ${p.has_decoration ? `<span class="db-tag" style="border-left:3px solid var(--warning);">${p.deco_type ? getDecoLabel(p.deco_type) : 'Deko'}</span>` : ''}
                         ${p.vessel_part ? `<span class="db-tag" style="border-left:3px solid #8b5cf6;">${getPartLabel(p.vessel_part)}</span>` : ''}
@@ -3658,6 +3822,338 @@ function deleteClusterFromDB(key) {
     saveUserData(data);
     renderDatabase();
     toast(currentLang === 'de' ? 'Gruppe gelöscht' : 'Group deleted', 'info');
+}
+
+// ==================================================
+// DATABASE EXPORT (CSV / JSON)
+// ==================================================
+function exportDatabaseCSV() {
+    const data = getUserData();
+    const pieces = Object.values(data.pieces || {});
+    if (pieces.length === 0) { toast(currentLang === 'de' ? 'Datenbank leer' : 'Database empty', 'error'); return; }
+    
+    const headers = ['ID','Name','Material','Material_Typ','Farbe','Munsell','Gefaessbereich','Dekortyp','Gewicht_g','Haptik','Diagnostisch','Farbe_R','Farbe_G','Farbe_B','Flaeche_px','Kruemmung','Soliditaet','Zirkularitaet','Grabung','Gruppe'];
+    
+    const rows = pieces.map(p => {
+        // Find cluster name
+        let groupName = '';
+        if (data.clusters) {
+            for (const [key, cl] of Object.entries(data.clusters)) {
+                if (cl.piece_ids && cl.piece_ids.includes(p.id)) { groupName = cl.name || key; break; }
+            }
+        }
+        
+        return [
+            p.id || '', 
+            (p.name || '').replace(/,/g, ';'),
+            p.material || '', 
+            p.material_type || '',
+            p.color_name || '',
+            p.munsell || '',
+            p.vessel_part ? getPartLabel(p.vessel_part) : '',
+            p.deco_type ? getDecoLabel(p.deco_type) : '',
+            p.weight_g || '',
+            p.haptics || '',
+            isDiagnostic(p) ? 'ja' : 'nein',
+            '', '', '', // RGB placeholder
+            p.area || '',
+            p.curvature || '',
+            p.solidity || '',
+            p.circularity || '',
+            p.excavation || '',
+            groupName,
+        ].join(',');
+    });
+    
+    const csv = headers.join(',') + '\n' + rows.join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `shardmind_export_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('CSV exportiert!', 'success');
+}
+
+function exportDatabaseJSON() {
+    const data = getUserData();
+    const pieces = Object.values(data.pieces || {});
+    if (pieces.length === 0) { toast(currentLang === 'de' ? 'Datenbank leer' : 'Database empty', 'error'); return; }
+    
+    // Clean export without thumbnails (too large)
+    const exportData = {
+        export_date: new Date().toISOString(),
+        software: `ShardMind v${APP_VERSION}`,
+        total_pieces: pieces.length,
+        context: { ...contextData },
+        pieces: pieces.map(p => {
+            const { thumbnailDataUrl, color_features, contour_global, ...clean } = p;
+            return clean;
+        }),
+        clusters: data.clusters || {},
+    };
+    
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `shardmind_export_${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('JSON exportiert!', 'success');
+}
+
+// ==================================================
+// INVENTARLISTE (Inventory List Generation)
+// ==================================================
+function generateInventory() {
+    if (activePieces.length === 0) {
+        toast(T('upload_first'), 'error');
+        return;
+    }
+    
+    const container = document.getElementById('inventory-content');
+    const actions = document.getElementById('inventory-actions');
+    const befund = document.getElementById('inv-befund')?.value || '';
+    const schicht = document.getElementById('inv-schicht')?.value || '';
+    const fundnr = document.getElementById('inv-fundnr')?.value || '';
+    
+    // Count by vessel part
+    const partCounts = {};
+    const matCounts = {};
+    const typeCounts = {};
+    const decoCounts = {};
+    let totalWeight = 0;
+    let diagCount = 0;
+    
+    activePieces.forEach(p => {
+        // Part
+        const part = p.vessel_part || 'unbestimmt';
+        const partLabel = p.vessel_part ? getPartLabel(p.vessel_part) : (currentLang === 'de' ? 'Wandscherbe (unbest.)' : 'Body sherd (undet.)');
+        if (!partCounts[part]) partCounts[part] = { label: partLabel, count: 0, weight: 0 };
+        partCounts[part].count++;
+        if (p.weight_g) partCounts[part].weight += p.weight_g;
+        
+        // Material
+        const mat = p.material || '?';
+        matCounts[mat] = (matCounts[mat] || 0) + 1;
+        
+        // Culture/type from classification
+        if (p._culture_key) {
+            const c = CULTURE_DB[p._culture_key];
+            const name = c ? (currentLang === 'de' ? c.name_de : c.name_en) : p._culture_key;
+            typeCounts[name] = (typeCounts[name] || 0) + 1;
+        }
+        
+        // Decoration
+        if (p.deco_type && p.deco_type !== '' && p.deco_type !== 'keine') {
+            const dl = getDecoLabel(p.deco_type);
+            decoCounts[dl] = (decoCounts[dl] || 0) + 1;
+        }
+        
+        if (p.weight_g) totalWeight += p.weight_g;
+        if (isDiagnostic(p)) diagCount++;
+    });
+    
+    const lang = currentLang;
+    let html = '';
+    
+    // Header info
+    if (befund || schicht || fundnr) {
+        html += `<div style="background:var(--bg-secondary);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;border-left:4px solid var(--accent);">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px;">📦 Fundbeutel</div>
+            <div style="font-size:14px;color:var(--text-primary);">
+                ${befund ? `<strong>Befund:</strong> ${befund} · ` : ''}
+                ${schicht ? `<strong>Schicht:</strong> ${schicht} · ` : ''}
+                ${fundnr ? `<strong>Fundnr.:</strong> ${fundnr}` : ''}
+            </div>
+        </div>`;
+    }
+    
+    // Summary bar
+    html += `<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);">
+        <div style="text-align:center;"><div style="font-size:28px;font-weight:800;color:var(--accent);">${activePieces.length}</div><div style="font-size:10px;color:var(--text-muted);">Gesamt</div></div>
+        <div style="text-align:center;"><div style="font-size:28px;font-weight:800;color:var(--accent);">${diagCount}</div><div style="font-size:10px;color:var(--text-muted);">Diagnostisch</div></div>
+        <div style="text-align:center;"><div style="font-size:28px;font-weight:800;color:var(--text-muted);">${activePieces.length - diagCount}</div><div style="font-size:10px;color:var(--text-muted);">Wandscherben</div></div>
+        ${totalWeight > 0 ? `<div style="text-align:center;"><div style="font-size:28px;font-weight:800;color:var(--accent);">${totalWeight.toFixed(0)}g</div><div style="font-size:10px;color:var(--text-muted);">Gesamtgewicht</div></div>` : ''}
+    </div>`;
+    
+    // Table: Count by vessel part
+    html += `<h4 style="font-size:14px;margin-bottom:8px;">🏺 Nach Gefäßbereich</h4>`;
+    html += `<table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;">
+        <thead><tr style="background:var(--bg-secondary);text-align:left;">
+            <th style="padding:8px 12px;border-bottom:2px solid var(--border);">Bereich</th>
+            <th style="padding:8px 12px;border-bottom:2px solid var(--border);text-align:right;">Anzahl</th>
+            <th style="padding:8px 12px;border-bottom:2px solid var(--border);text-align:right;">%</th>
+            ${totalWeight > 0 ? `<th style="padding:8px 12px;border-bottom:2px solid var(--border);text-align:right;">Gewicht (g)</th>` : ''}
+        </tr></thead><tbody>`;
+    Object.entries(partCounts).sort((a,b) => b[1].count - a[1].count).forEach(([key, val]) => {
+        const pct = (val.count / activePieces.length * 100).toFixed(1);
+        html += `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:6px 12px;">${val.label}</td>
+            <td style="padding:6px 12px;text-align:right;font-weight:600;">${val.count}</td>
+            <td style="padding:6px 12px;text-align:right;color:var(--text-muted);">${pct}%</td>
+            ${totalWeight > 0 ? `<td style="padding:6px 12px;text-align:right;">${val.weight > 0 ? val.weight.toFixed(1) : '-'}</td>` : ''}
+        </tr>`;
+    });
+    html += `</tbody></table>`;
+    
+    // Table: Count by material
+    html += `<h4 style="font-size:14px;margin-bottom:8px;">🧱 Nach Material</h4>`;
+    html += `<table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;">
+        <thead><tr style="background:var(--bg-secondary);text-align:left;">
+            <th style="padding:8px 12px;border-bottom:2px solid var(--border);">Material</th>
+            <th style="padding:8px 12px;border-bottom:2px solid var(--border);text-align:right;">Anzahl</th>
+            <th style="padding:8px 12px;border-bottom:2px solid var(--border);text-align:right;">%</th>
+        </tr></thead><tbody>`;
+    Object.entries(matCounts).sort((a,b) => b[1] - a[1]).forEach(([mat, count]) => {
+        html += `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:6px 12px;">${mat}</td>
+            <td style="padding:6px 12px;text-align:right;font-weight:600;">${count}</td>
+            <td style="padding:6px 12px;text-align:right;color:var(--text-muted);">${(count/activePieces.length*100).toFixed(1)}%</td>
+        </tr>`;
+    });
+    html += `</tbody></table>`;
+    
+    // Table: Count by culture/type (if classified)
+    if (Object.keys(typeCounts).length > 0) {
+        html += `<h4 style="font-size:14px;margin-bottom:8px;">🏛️ Nach Typ / Kultur</h4>`;
+        html += `<table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;">
+            <thead><tr style="background:var(--bg-secondary);text-align:left;">
+                <th style="padding:8px 12px;border-bottom:2px solid var(--border);">Typ</th>
+                <th style="padding:8px 12px;border-bottom:2px solid var(--border);text-align:right;">Anzahl</th>
+                <th style="padding:8px 12px;border-bottom:2px solid var(--border);text-align:right;">%</th>
+            </tr></thead><tbody>`;
+        Object.entries(typeCounts).sort((a,b) => b[1] - a[1]).forEach(([typ, count]) => {
+            html += `<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px 12px;">${typ}</td>
+                <td style="padding:6px 12px;text-align:right;font-weight:600;">${count}</td>
+                <td style="padding:6px 12px;text-align:right;color:var(--text-muted);">${(count/activePieces.length*100).toFixed(1)}%</td>
+            </tr>`;
+        });
+        html += `</tbody></table>`;
+    }
+    
+    // Decoration summary
+    if (Object.keys(decoCounts).length > 0) {
+        html += `<h4 style="font-size:14px;margin-bottom:8px;">🎨 Dekorarten</h4>`;
+        html += `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">`;
+        Object.entries(decoCounts).sort((a,b) => b[1] - a[1]).forEach(([deco, count]) => {
+            html += `<span style="padding:4px 12px;border-radius:12px;background:var(--bg-secondary);border:1px solid var(--border);font-size:12px;">${deco}: <strong>${count}</strong></span>`;
+        });
+        html += `</div>`;
+    }
+    
+    container.innerHTML = html;
+    
+    // Show action buttons
+    actions.style.display = 'flex';
+    actions.innerHTML = `
+        <button class="btn btn-primary" onclick="exportInventoryPDF()">📄 Inventarliste als PDF</button>
+        <button class="btn btn-secondary" onclick="exportInventoryCSV()">📊 Inventarliste als CSV</button>
+    `;
+}
+
+function exportInventoryPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const marginL = 18, marginR = 18, pageW = 210, contentW = pageW - marginL - marginR;
+    let y = 20;
+    
+    const befund = document.getElementById('inv-befund')?.value || '';
+    const schicht = document.getElementById('inv-schicht')?.value || '';
+    const fundnr = document.getElementById('inv-fundnr')?.value || '';
+    
+    // Title
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Inventarliste / Fundaufnahme', marginL, y);
+    y += 7;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(`ShardMind v${APP_VERSION} | ${new Date().toLocaleDateString('de-DE')} | ${activePieces.length} Objekte`, marginL, y);
+    y += 6;
+    
+    // Context
+    if (befund || schicht || fundnr) {
+        doc.setTextColor(30, 30, 30);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        if (befund) { doc.text(`Befund: ${befund}`, marginL, y); y += 4.5; }
+        if (schicht) { doc.text(`Schicht: ${schicht}`, marginL, y); y += 4.5; }
+        if (fundnr) { doc.text(`Fundnr.: ${fundnr}`, marginL, y); y += 4.5; }
+        y += 3;
+    }
+    
+    // Summary
+    doc.setDrawColor(200); doc.line(marginL, y, pageW - marginR, y); y += 5;
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+    doc.text('Zusammenfassung', marginL, y); y += 5;
+    
+    const diagCount = activePieces.filter(p => isDiagnostic(p)).length;
+    const totalWeight = activePieces.reduce((sum, p) => sum + (p.weight_g || 0), 0);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.text(`Gesamtanzahl: ${activePieces.length} | Diagnostisch: ${diagCount} | Wandscherben: ${activePieces.length - diagCount}${totalWeight > 0 ? ` | Gesamtgewicht: ${totalWeight.toFixed(0)}g` : ''}`, marginL, y);
+    y += 8;
+    
+    // Piece table
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.setFillColor(240, 240, 240);
+    doc.rect(marginL, y - 3, contentW, 5, 'F');
+    const cols = [marginL, marginL + 26, marginL + 52, marginL + 82, marginL + 108, marginL + 134, marginL + 155];
+    doc.text('Nr.', cols[0], y);
+    doc.text('ID', cols[1], y);
+    doc.text('Material', cols[2], y);
+    doc.text('Farbe', cols[3], y);
+    doc.text('Bereich', cols[4], y);
+    doc.text('Dekor', cols[5], y);
+    doc.text('Gew.(g)', cols[6], y);
+    y += 5;
+    
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+    activePieces.forEach((p, idx) => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        if (idx % 2 === 0) { doc.setFillColor(248, 248, 248); doc.rect(marginL, y - 3, contentW, 4.5, 'F'); }
+        doc.setTextColor(30, 30, 30);
+        doc.text(`${idx + 1}`, cols[0], y);
+        doc.text((p.id || '').substring(0, 11), cols[1], y);
+        doc.text((p.material || '?').substring(0, 14), cols[2], y);
+        doc.text(`${(p.color_name || '?').substring(0, 8)}${p.munsell ? ' ' + p.munsell : ''}`, cols[3], y);
+        doc.text(p.vessel_part ? getPartLabel(p.vessel_part).substring(0, 12) : 'Wand', cols[4], y);
+        doc.text(p.deco_type && p.deco_type !== 'keine' ? getDecoLabel(p.deco_type).substring(0, 10) : '-', cols[5], y);
+        doc.text(p.weight_g ? p.weight_g.toFixed(1) : '-', cols[6], y);
+        y += 4.5;
+    });
+    
+    doc.setFontSize(6); doc.setTextColor(130,130,130);
+    doc.text(`ShardMind v${APP_VERSION} — Automatische Inventarliste — Prüfung durch Fachpersonal erforderlich`, marginL, 290);
+    
+    const fname = `inventarliste_${befund || fundnr || 'export'}_${new Date().toISOString().slice(0,10)}.pdf`.replace(/\s+/g, '_');
+    doc.save(fname);
+    toast('Inventarliste PDF exportiert!', 'success');
+}
+
+function exportInventoryCSV() {
+    const befund = document.getElementById('inv-befund')?.value || '';
+    const schicht = document.getElementById('inv-schicht')?.value || '';
+    const fundnr = document.getElementById('inv-fundnr')?.value || '';
+    
+    const headers = ['Nr','ID','Material','Farbe','Munsell','Gefaessbereich','Dekortyp','Gewicht_g','Haptik','Diagnostisch','Befund','Schicht','Fundnr'];
+    const rows = activePieces.map((p, idx) => [
+        idx + 1, p.id || '', p.material || '', p.color_name || '', p.munsell || '',
+        p.vessel_part ? getPartLabel(p.vessel_part) : 'Wandscherbe',
+        p.deco_type ? getDecoLabel(p.deco_type) : '-',
+        p.weight_g || '', p.haptics || '',
+        isDiagnostic(p) ? 'ja' : 'nein',
+        befund, schicht, fundnr,
+    ].join(','));
+    
+    const csv = headers.join(',') + '\n' + rows.join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `inventarliste_${befund || 'export'}_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('Inventarliste CSV exportiert!', 'success');
 }
 
 // ==================================================
@@ -3740,6 +4236,19 @@ function calcPieceSimilarity(a, b) {
     // Vessel part match (weight: 1.5)
     if (a.vessel_part && b.vessel_part && a.vessel_part !== '' && b.vessel_part !== '') {
         score += (a.vessel_part === b.vessel_part ? 1 : 0) * 1.5;
+        weights += 1.5;
+    }
+    
+    // Weight similarity (if both have weight data)
+    if (a.weight_g && b.weight_g && a.weight_g > 0 && b.weight_g > 0) {
+        const wRatio = Math.min(a.weight_g, b.weight_g) / Math.max(a.weight_g, b.weight_g);
+        score += wRatio * 1.0;
+        weights += 1.0;
+    }
+    
+    // Haptics match
+    if (a.haptics && b.haptics && a.haptics !== '' && b.haptics !== '') {
+        score += (a.haptics === b.haptics ? 1 : 0) * 1.5;
         weights += 1.5;
     }
     
@@ -4284,6 +4793,8 @@ function showBatchStats(totalTime, timePerFrag) {
     const materials = [...new Set(activePieces.map(p => p.material).filter(Boolean))];
     const decoCount = activePieces.filter(p => p.has_decoration).length;
     const orientHints = activePieces.filter(p => p.orientation_hint).length;
+    const diagCount = activePieces.filter(p => isDiagnostic(p)).length;
+    const nonDiagCount = nPieces - diagCount;
     
     // Extrapolation for large batches (Jan's 5-6 digit scenario)
     const per1000 = (parseFloat(timePerFrag) * 1000 / 60).toFixed(1);
@@ -4301,20 +4812,20 @@ function showBatchStats(totalTime, timePerFrag) {
             </div>
             <div style="display:flex;gap:16px;flex-wrap:wrap;">
                 <div style="text-align:center;">
-                    <div style="font-size:18px;font-weight:700;color:var(--accent);">${colors.length}</div>
-                    <div style="font-size:10px;color:var(--text-muted);">${currentLang === 'de' ? 'Farben' : 'Colors'}</div>
+                    <div style="font-size:18px;font-weight:700;color:var(--accent);">${diagCount}</div>
+                    <div style="font-size:10px;color:var(--text-muted);">${currentLang === 'de' ? 'Diagnostisch' : 'Diagnostic'}</div>
                 </div>
                 <div style="text-align:center;">
-                    <div style="font-size:18px;font-weight:700;color:var(--accent);">${materials.length}</div>
-                    <div style="font-size:10px;color:var(--text-muted);">${currentLang === 'de' ? 'Materialien' : 'Materials'}</div>
+                    <div style="font-size:18px;font-weight:700;color:var(--text-muted);">${nonDiagCount}</div>
+                    <div style="font-size:10px;color:var(--text-muted);">${currentLang === 'de' ? 'Wandscherben' : 'Body sherds'}</div>
                 </div>
                 <div style="text-align:center;">
                     <div style="font-size:18px;font-weight:700;color:var(--accent);">${decoCount}</div>
                     <div style="font-size:10px;color:var(--text-muted);">${currentLang === 'de' ? 'mit Dekor' : 'w/ decor'}</div>
                 </div>
                 <div style="text-align:center;">
-                    <div style="font-size:18px;font-weight:700;color:var(--accent);">${orientHints}</div>
-                    <div style="font-size:10px;color:var(--text-muted);">${currentLang === 'de' ? 'Orient.-Hinw.' : 'Orient. hints'}</div>
+                    <div style="font-size:18px;font-weight:700;color:var(--accent);">${colors.length}</div>
+                    <div style="font-size:10px;color:var(--text-muted);">${currentLang === 'de' ? 'Farben' : 'Colors'}</div>
                 </div>
             </div>
         </div>
@@ -4327,6 +4838,129 @@ function showBatchStats(totalTime, timePerFrag) {
     
     // Prepend to gallery
     container.insertAdjacentHTML('afterbegin', statsHtml);
+    
+    // Also generate inventory summary
+    generateInventorySummary(container);
+}
+
+// ==================================================
+// FUNDBEUTEL-INVENTARLISTE (Inventory Summary)
+// ==================================================
+function generateInventorySummary(container) {
+    if (activePieces.length === 0) return;
+    const lang = currentLang;
+    
+    // Count by vessel part
+    const partCounts = {};
+    activePieces.forEach(p => {
+        const part = p.vessel_part || '_wand';
+        const label = p.vessel_part ? getPartLabel(p.vessel_part) : (lang === 'de' ? 'Wandscherbe (unbest.)' : 'Body sherd (unident.)');
+        if (!partCounts[part]) partCounts[part] = { label, count: 0, diag: 0 };
+        partCounts[part].count++;
+        if (isDiagnostic(p)) partCounts[part].diag++;
+    });
+    
+    // Count by material
+    const matCounts = {};
+    activePieces.forEach(p => {
+        const mat = p.material || '?';
+        if (!matCounts[mat]) matCounts[mat] = 0;
+        matCounts[mat]++;
+    });
+    
+    // Count by color
+    const colorCounts = {};
+    activePieces.forEach(p => {
+        const c = p.color_name || '?';
+        if (!colorCounts[c]) colorCounts[c] = 0;
+        colorCounts[c]++;
+    });
+    
+    // Count by decoration type
+    const decoCounts = {};
+    activePieces.forEach(p => {
+        if (p.deco_type && p.deco_type !== '' && p.deco_type !== 'keine') {
+            const d = getDecoLabel(p.deco_type);
+            if (!decoCounts[d]) decoCounts[d] = 0;
+            decoCounts[d]++;
+        }
+    });
+    
+    // Total weight if any
+    const totalWeight = activePieces.reduce((sum, p) => sum + (p.weight_g || 0), 0);
+    
+    const sortedParts = Object.entries(partCounts).sort((a, b) => b[1].count - a[1].count);
+    const sortedMats = Object.entries(matCounts).sort((a, b) => b[1] - a[1]);
+    const sortedColors = Object.entries(colorCounts).sort((a, b) => b[1] - a[1]);
+    
+    let invHtml = `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h4 style="font-size:14px;color:var(--text-primary);margin:0;">📋 ${lang === 'de' ? 'Fundbeutel-Inventar' : 'Find Bag Inventory'}</h4>
+            <button class="btn btn-secondary" onclick="copyInventoryToClipboard()" style="font-size:11px;padding:4px 10px;">
+                📋 ${lang === 'de' ? 'Kopieren' : 'Copy'}
+            </button>
+        </div>
+        
+        <table style="width:100%;border-collapse:collapse;font-size:12px;" id="inventory-table">
+            <thead>
+                <tr style="border-bottom:2px solid var(--border);">
+                    <th style="text-align:left;padding:4px 8px;color:var(--text-muted);font-size:10px;">${lang === 'de' ? 'Typ / Bereich' : 'Type / Part'}</th>
+                    <th style="text-align:right;padding:4px 8px;color:var(--text-muted);font-size:10px;">${lang === 'de' ? 'Anzahl' : 'Count'}</th>
+                    <th style="text-align:right;padding:4px 8px;color:var(--text-muted);font-size:10px;">${lang === 'de' ? 'davon diag.' : 'diagnostic'}</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${sortedParts.map(([key, val]) => `<tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:4px 8px;">${val.label}</td>
+                    <td style="text-align:right;padding:4px 8px;font-weight:600;">${val.count}</td>
+                    <td style="text-align:right;padding:4px 8px;color:${val.diag > 0 ? 'var(--accent)' : 'var(--text-muted)'};">${val.diag}</td>
+                </tr>`).join('')}
+                <tr style="border-top:2px solid var(--accent);font-weight:700;">
+                    <td style="padding:4px 8px;">${lang === 'de' ? 'Gesamt' : 'Total'}</td>
+                    <td style="text-align:right;padding:4px 8px;">${activePieces.length}</td>
+                    <td style="text-align:right;padding:4px 8px;color:var(--accent);">${activePieces.filter(p => isDiagnostic(p)).length}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="display:flex;gap:24px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted);flex-wrap:wrap;">
+            <div><strong>${lang === 'de' ? 'Material:' : 'Material:'}</strong> ${sortedMats.map(([m, c]) => `${m} (${c})`).join(', ')}</div>
+            <div><strong>${lang === 'de' ? 'Farbe:' : 'Color:'}</strong> ${sortedColors.map(([c, n]) => `${c} (${n})`).join(', ')}</div>
+            ${Object.keys(decoCounts).length > 0 ? `<div><strong>${lang === 'de' ? 'Dekor:' : 'Decor:'}</strong> ${Object.entries(decoCounts).map(([d, n]) => `${d} (${n})`).join(', ')}</div>` : ''}
+            ${totalWeight > 0 ? `<div><strong>⚖️</strong> ${totalWeight.toFixed(1)}g ${lang === 'de' ? 'Gesamtgewicht' : 'total weight'}</div>` : ''}
+        </div>
+    </div>`;
+    
+    container.insertAdjacentHTML('afterbegin', invHtml);
+}
+
+function copyInventoryToClipboard() {
+    const lang = currentLang;
+    const partCounts = {};
+    activePieces.forEach(p => {
+        const label = p.vessel_part ? getPartLabel(p.vessel_part) : (lang === 'de' ? 'Wandscherbe' : 'Body sherd');
+        if (!partCounts[label]) partCounts[label] = 0;
+        partCounts[label]++;
+    });
+    
+    let text = lang === 'de' ? 'Fundbeutel-Inventar\n' : 'Find Bag Inventory\n';
+    text += '─'.repeat(30) + '\n';
+    Object.entries(partCounts).sort((a,b) => b[1]-a[1]).forEach(([label, count]) => {
+        text += `${label}: ${count}\n`;
+    });
+    text += '─'.repeat(30) + '\n';
+    text += `${lang === 'de' ? 'Gesamt' : 'Total'}: ${activePieces.length}\n`;
+    
+    const totalWeight = activePieces.reduce((sum, p) => sum + (p.weight_g || 0), 0);
+    if (totalWeight > 0) text += `${lang === 'de' ? 'Gewicht' : 'Weight'}: ${totalWeight.toFixed(1)}g\n`;
+    
+    text += `\nShardMind v${APP_VERSION} | ${new Date().toLocaleDateString('de-DE')}`;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        toast(lang === 'de' ? 'Inventar in Zwischenablage kopiert!' : 'Inventory copied to clipboard!', 'success');
+    }).catch(() => {
+        toast('Clipboard error', 'error');
+    });
 }
 
 function readFileAsArrayBuffer(file) {
@@ -6223,10 +6857,10 @@ function exportTechnicalReport() {
     doc.setFont('helvetica', 'bold');
     doc.setFillColor(240, 240, 240);
     doc.rect(marginL, y - 3, contentW, 5, 'F');
-    const cols = [marginL, marginL + 28, marginL + 58, marginL + 82, marginL + 112, marginL + 142];
+    const cols = [marginL, marginL + 26, marginL + 56, marginL + 90, marginL + 116, marginL + 144];
     doc.text('ID', cols[0], y);
     doc.text('Material', cols[1], y);
-    doc.text('Farbe', cols[2], y);
+    doc.text('Farbe (Munsell)', cols[2], y);
     doc.text('Gef.bereich', cols[3], y);
     doc.text('Dekortyp', cols[4], y);
     doc.text('Datierung', cols[5], y);
@@ -6248,9 +6882,16 @@ function exportTechnicalReport() {
         }
         
         doc.setTextColor(30, 30, 30);
+        
+        // Mark diagnostic pieces with a dot
+        if (isDiagnostic(piece)) {
+            doc.setFillColor(99, 102, 241);
+            doc.circle(cols[0] - 2.5, y - 1, 1, 'F');
+        }
+        
         doc.text((piece.id || '').substring(0, 11), cols[0], y);
         doc.text((piece.material || '?').substring(0, 14), cols[1], y);
-        doc.text((piece.color_name || '?').substring(0, 10), cols[2], y);
+        doc.text((piece.color_name || '?').substring(0, 10) + (piece.munsell ? ' (' + piece.munsell + ')' : ''), cols[2], y);
         doc.text(piece.vessel_part ? getPartLabel(piece.vessel_part).substring(0, 12) : '-', cols[3], y);
         doc.text(piece.deco_type ? getDecoLabel(piece.deco_type).substring(0, 14) : '-', cols[4], y);
         
@@ -6292,6 +6933,24 @@ function exportTechnicalReport() {
         doc.text(`${refinedCount} von ${allDatings.length} Fragmenten mit verfeinerter Datierung (durch Dekortyp)`, marginL, y);
         y += 5;
         doc.text(`${allDatings.length - refinedCount} Fragmente nur grob datiert — Dekortyp-Bestimmung empfohlen`, marginL, y);
+        y += 5;
+        
+        // Diagnostic breakdown
+        const diagTotal = activePieces.filter(p => isDiagnostic(p)).length;
+        const nonDiagTotal = activePieces.length - diagTotal;
+        const withWeight = activePieces.filter(p => p.weight_g).length;
+        const withHaptics = activePieces.filter(p => p.haptics).length;
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Diagnostische Scherben: ${diagTotal} (Rand/Boden/Dekor) | Wandscherben: ${nonDiagTotal}`, marginL, y);
+        doc.setFont('helvetica', 'normal');
+        y += 5;
+        if (withWeight > 0 || withHaptics > 0) {
+            doc.text(`Manuelle Ergänzungen: ${withWeight} mit Gewicht, ${withHaptics} mit Haptik-Angabe`, marginL, y);
+            y += 5;
+        }
+        doc.setFillColor(99, 102, 241);
+        doc.circle(marginL + 1, y - 1, 1, 'F');
+        doc.text('  = diagnostische Scherbe', marginL + 3, y);
         y += 8;
         
         // Culture summary
@@ -6308,6 +6967,34 @@ function exportTechnicalReport() {
             doc.text(`• ${name}: ${count} Fragment${count > 1 ? 'e' : ''}`, marginL, y);
             y += 4;
         });
+        
+        // Inventory counts by vessel part
+        y += 4;
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text('Inventarliste (Fundbeutel)', marginL, y);
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        
+        const partCounts = {};
+        activePieces.forEach(p => {
+            const label = p.vessel_part ? getPartLabel(p.vessel_part) : 'Wandscherbe (unbest.)';
+            if (!partCounts[label]) partCounts[label] = 0;
+            partCounts[label]++;
+        });
+        Object.entries(partCounts).sort((a,b) => b[1]-a[1]).forEach(([label, count]) => {
+            doc.text(`${label}: ${count}`, marginL + 4, y);
+            y += 4;
+        });
+        y += 2;
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Gesamt: ${activePieces.length} Fragmente`, marginL + 4, y);
+        doc.setFont('helvetica', 'normal');
+        y += 4;
+        const tw = activePieces.reduce((s, p) => s + (p.weight_g || 0), 0);
+        if (tw > 0) { doc.text(`Gesamtgewicht: ${tw.toFixed(1)} g`, marginL + 4, y); y += 4; }
     }
     
     // Footer
@@ -6729,6 +7416,25 @@ function init() {
     
     // Start monitoring Python environment
     monitorPythonLoading();
+    
+    // Offline detection
+    updateOfflineStatus();
+    window.addEventListener('online', updateOfflineStatus);
+    window.addEventListener('offline', updateOfflineStatus);
+}
+
+function updateOfflineStatus() {
+    const indicator = document.getElementById('offline-indicator');
+    if (indicator) {
+        if (!navigator.onLine) {
+            indicator.style.display = '';
+            indicator.innerHTML = currentLang === 'de' 
+                ? '📡 Offline — Nach dem ersten Laden funktioniert die Analyse lokal ohne Internet'
+                : '📡 Offline — After initial load, analysis runs locally without internet';
+        } else {
+            indicator.style.display = 'none';
+        }
+    }
 }
 
 // ==================================================
@@ -7151,6 +7857,38 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
         elif h_val < 135: color_name = "Blau"
         else: color_name = "Violett"
         
+        # Approximate Munsell notation from HSV
+        # Munsell: Hue Value/Chroma (e.g. 7.5YR 5/4)
+        munsell = ""
+        m_value = round(v_val / 255 * 9 + 1)  # Munsell Value 1-10
+        m_chroma = round(s_val / 255 * 8)      # Munsell Chroma 0-8
+        if s_val < 25:
+            munsell = f"N {m_value}/" # Neutral
+        elif h_val < 8 or h_val > 170:
+            munsell = f"5R {m_value}/{m_chroma}"
+        elif h_val < 13:
+            munsell = f"5YR {m_value}/{m_chroma}"
+        elif h_val < 18:
+            munsell = f"7.5YR {m_value}/{m_chroma}"
+        elif h_val < 25:
+            munsell = f"10YR {m_value}/{m_chroma}"
+        elif h_val < 32:
+            munsell = f"2.5Y {m_value}/{m_chroma}"
+        elif h_val < 38:
+            munsell = f"5Y {m_value}/{m_chroma}"
+        elif h_val < 55:
+            munsell = f"5GY {m_value}/{m_chroma}"
+        elif h_val < 75:
+            munsell = f"5G {m_value}/{m_chroma}"
+        elif h_val < 100:
+            munsell = f"5BG {m_value}/{m_chroma}"
+        elif h_val < 135:
+            munsell = f"5B {m_value}/{m_chroma}"
+        elif h_val < 155:
+            munsell = f"5PB {m_value}/{m_chroma}"
+        else:
+            munsell = f"5P {m_value}/{m_chroma}"
+        
         if s_val < 20 and v_val > 200: material = "Porzellan"
         elif 10 < h_val < 30 and s_val > 30: material = "Keramik"
         elif s_val < 25 and v_val < 100: material = "Metall"
@@ -7226,6 +7964,7 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
             'name': name,
             'material': material,
             'color_name': color_name,
+            'munsell': munsell,
             'area': float(area),
             'centroid': [int(cx), int(cy)],
             'bbox': [int(x), int(y), int(bw), int(bh)],
