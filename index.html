@@ -1316,12 +1316,15 @@
         <div class="form-group">
             <label id="lbl-detection-mode">Erkennungsmodus</label>
             <select id="select-mode">
-                <option value="porcelain">Porzellan/Keramik</option>
-                <option value="auto">Automatisch</option>
-                <option value="light_bg">Heller Hintergrund</option>
-                <option value="dark_bg">Dunkler Hintergrund</option>
-                <option value="high_contrast">Hoher Kontrast</option>
+                <option value="porcelain">🏺 Porzellan/Keramik (Labor)</option>
+                <option value="auto">🔄 Automatisch</option>
+                <option value="light_bg">⬜ Heller Hintergrund</option>
+                <option value="dark_bg">⬛ Dunkler Hintergrund</option>
+                <option value="high_contrast">🎯 Hoher Kontrast</option>
+                <option value="aerial">🛩️ Luftbild / Drohne</option>
+                <option value="field_survey">🥾 Feldbegehung / Survey</option>
             </select>
+            <div id="mode-hint" style="font-size:10px;color:var(--text-muted);margin-top:3px;line-height:1.3;"></div>
         </div>
 
         <div class="form-group">
@@ -1371,6 +1374,10 @@
                 <div class="metric-value" id="metric-project">—</div>
                 <div class="metric-label">🗺️ Projekt</div>
             </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metric-time">—</div>
+                <div class="metric-label">⏱️ <span id="ml-time">Sekunden/Fragment</span></div>
+            </div>
         </div>
 
         <!-- Progress -->
@@ -1397,6 +1404,7 @@
             <button class="tab-btn" onclick="switchTab('inventory')">📋 <span class="tab-label" data-key="tab_inventory">Inventarliste</span></button>
             <button class="tab-btn" onclick="switchTab('changelog')">📋 <span class="tab-label" data-key="tab_changelog">Changelog</span></button>
             <button class="tab-btn" onclick="switchTab('privacy')">🔒 <span class="tab-label" data-key="tab_privacy">Datenschutz</span></button>
+            <button class="tab-btn" onclick="switchTab('about')">ℹ️ <span class="tab-label" data-key="tab_about">Über / Technik</span></button>
             <button class="tab-btn" onclick="switchTab('help')">❓ <span class="tab-label" data-key="tab_help">Hilfe</span></button>
         </nav>
 
@@ -1404,6 +1412,11 @@
         <div class="tab-content active" id="tab-start">
             <h2 class="section-header">🏺 ShardMind</h2>
             <p class="section-sub" id="start-tagline">Analysiere und rekonstruiere archäologische Fundobjekte — Keramik, Glas, Stein, Metall und mehr</p>
+            
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+                <button class="btn btn-secondary" onclick="copyShareLink()" style="font-size:11px;padding:5px 12px;">🔗 Link teilen</button>
+                <button class="btn btn-secondary" onclick="switchTab('about');document.querySelector('[onclick*=about]').classList.add('active')" style="font-size:11px;padding:5px 12px;">ℹ️ Über / Technik</button>
+            </div>
 
             <div style="margin-bottom:24px;">
                 <h3 style="font-size:18px;margin-bottom:12px;" id="search-title">🔍 Fragment suchen</h3>
@@ -1436,6 +1449,29 @@
                         📥 <span id="demo-dl-plate">Download</span>
                     </button>
                 </div>
+            </div>
+            
+            <hr style="border-color:var(--border);margin:24px 0;">
+            
+            <div style="background:linear-gradient(135deg, rgba(99,102,241,0.08), rgba(99,102,241,0.02));border:1px solid var(--accent);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;">
+                <h3 style="font-size:16px;margin-bottom:8px;color:var(--accent);">🛩️ NEU: Luftbild- & Feldbegehungs-Modus</h3>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;">
+                    Erkennt Keramikscherben und Oberflächenfunde auf <strong>Drohnenaufnahmen</strong> und <strong>Feldbegehungsfotos</strong> — 
+                    durch Farbanomalien-Detektion gegen natürlichen Boden. Kein Laborsetting nötig.
+                </p>
+                <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;">
+                    <div style="flex:1;min-width:140px;padding:10px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);">
+                        <strong>🛩️ Luftbild</strong><br>
+                        <span style="color:var(--text-muted);">Drohnenfotos, Orthophotos, Luftbilder — erkennt Farbunterschiede zum Erdreich</span>
+                    </div>
+                    <div style="flex:1;min-width:140px;padding:10px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);">
+                        <strong>🥾 Feldbegehung</strong><br>
+                        <span style="color:var(--text-muted);">Survey-Fotos vom Boden — Farb- + Textururkennung für Scherben auf Erdreich</span>
+                    </div>
+                </div>
+                <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">
+                    Wähle den Modus in der Sidebar unter „Erkennungsmodus" → 🛩️ oder 🥾
+                </p>
             </div>
         </div>
 
@@ -1664,6 +1700,19 @@
         <!-- TAB: Groups -->
         <div class="tab-content" id="tab-groups">
             <h2 class="section-header" id="groups-header">Gruppierung</h2>
+            <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <label style="font-size:12px;color:var(--text-muted);">Gruppieren nach:</label>
+                <select id="group-mode" onchange="renderGroups()" style="padding:5px 10px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                    <option value="cluster">🎨 Farbähnlichkeit (Cluster)</option>
+                    <option value="deco_type">🎭 Verzierungstyp (Motiv)</option>
+                    <option value="vessel_part">🏺 Gefäßbereich</option>
+                    <option value="deco_technique">🔧 Verzierungstechnik</option>
+                    <option value="material">📦 Material</option>
+                </select>
+                <span style="font-size:10px;color:var(--text-muted);">
+                    💡 Für chronologische Einordnung: nach Verzierungstyp oder Gefäßbereich gruppieren
+                </span>
+            </div>
             <div id="groups-content">
                 <div class="empty-state">
                     <div class="icon">📦</div>
@@ -1679,9 +1728,10 @@
             <div class="feature-explanation" style="border-left:3px solid var(--warning);">
                 <p>
                     <strong>⚠️ Hinweis zur digitalen Rekonstruktion:</strong>
-                    <span id="recon-disclaimer-text">Bruchkanten erodieren und verrunden — eine perfekte Passung ist selten möglich. 
+                    <span id="recon-disclaimer-text">Bruchkanten erodieren und verrunden über Tausende von Jahren — eine perfekte Passung über die Bruchform ist selten möglich. 
+                    Vielversprechender ist das Matching über <strong>Verzierungsmuster</strong>: Welche Scherben tragen das gleiche Dekor und gehören wahrscheinlich zum selben Gefäß?
                     Bei einfachen Problemen mit gut abstrahierbarem Kantenverlauf kann eine maschinelle Zuordnung schneller sein als der Mensch. 
-                    Komplexe Rekonstruktionen (z.B. über Schriftmerkmale oder Dekor-Logik) erfordern jedoch weiterhin menschliche Expertise.
+                    Komplexe Rekonstruktionen erfordern jedoch weiterhin menschliche Expertise.
                     Diese 2D/3D-Rekonstruktion bietet eine Annäherung — für eine präzise Rekonstruktion ist physische Anpassung erforderlich.</span>
                 </p>
             </div>
@@ -2055,9 +2105,49 @@
                     Wandscherben werden per Schnellroutine (Haptik, Gewicht, Magerung) eingeordnet — ShardMind kann letztere visuell 
                     nicht gleichwertig erfassen. Die Felder für Gewicht und Haptik ermöglichen eine manuelle Ergänzung.</span>
                 </p>
+                <p style="font-size:12px;color:var(--warning);margin-top:8px;">
+                    ⚠️ <strong>Farbe = unzuverlässig:</strong> Die Farbe der Keramik wird oft von der Bodenlagerung beeinflusst. 
+                    Zwei anpassende Scherben können völlig unterschiedlich gefärbt sein. Farbe wird daher 
+                    in der Kulturzuweisung nur minimal gewichtet. <strong>Verzierungen und Formen</strong> sind 
+                    die entscheidenden Kriterien für eine typochronologische Zuordnung.
+                </p>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+                    📐 <strong>Vollständigkeit beeinflusst Konfidenz:</strong> Je vollständiger ein Fragment erhalten ist, 
+                    desto sicherer lässt es sich bestimmen. Das Feld „Erhaltung" auf der Galerie-Karte skaliert die 
+                    Konfidenz der Kulturzuweisung (Splitter → stark reduziert, Großfragment → erhöht).
+                </p>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+                    🕰️ <strong>Chronologische Einordnung:</strong> Für die zeitliche Einordnung eines Fundinventars stehen 
+                    nicht die Einzelmerkmale einer Scherbe im Vordergrund, sondern die Rekonstruktion von 
+                    <strong>Verzierungsmotiven und Gefäßformen</strong>. Diese sind in der Regel chronologisch relevant. 
+                    Nutzen Sie den Tab „Gruppierung" → „Verzierungstyp", um chronologisch relevante Muster zu erkennen.
+                </p>
                 <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
                     🔗 Verwandte Initiative: <a href="https://www.nfdi4objects.net/" target="_blank" style="color:var(--accent);">NFDI4Objects</a> — 
                     Nationale Forschungsdateninfrastruktur für materielle und immaterielle Kulturgüter
+                </p>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+                    🔗 Verwandtes Projekt: <a href="http://www.archaide.eu/" target="_blank" style="color:var(--accent);">ArchAIDE</a> (EU Horizon 2020, 2016–2019) — 
+                    Automatische Keramikerkennung via Deep Learning (Dekor- und Formerkennung). 
+                    35+ Forscher, 5 Länder, ~25.000 fotografierte Scherben. 
+                    Zentrale Erkenntnis: Zu wenig Vergleichsmaterial für zuverlässiges Training.
+                </p>
+            </div>
+            
+            <!-- LBK Focus Section -->
+            <div class="card" style="padding:16px;margin-bottom:20px;border-left:3px solid var(--accent);">
+                <h4 style="font-size:14px;margin-bottom:8px;">〰️ Fokus-Kultur: Linienbandkeramik (LBK)</h4>
+                <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px;">
+                    Als Testfall für die typologische Bestimmung eignet sich die <strong>Linienbandkeramik</strong> (ca. 5500–4500 v.Chr.) besonders gut: 
+                    Sie trägt standardisierte Verzierungen (Bandtypen), die sich häufig schon an kleinen Fragmenten erkennen lassen 
+                    und chronologisch/geographisch sehr aussagekräftig sind.
+                </p>
+                <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px;">
+                    Auf der Galerie-Karte können LBK-Bandtypen (Einfachband, Doppelband, Spiralband, Notenkopf etc.) 
+                    und die Verzierungstechnik (Spatel ein-/mehrzinkig, Finger) direkt zugewiesen werden.
+                </p>
+                <p style="font-size:11px;">
+                    📚 Typenkatalog: <a href="https://www.archaeologie-stiftung.de/de/wissenschaft/bandkeramik_online/gebrauchsanleitung/gebrauchsanleitung_1.html" target="_blank" style="color:var(--accent);">Bandkeramik Online</a> (Archäologie-Stiftung)
                 </p>
             </div>
 
@@ -2103,18 +2193,57 @@
         <div class="tab-content" id="tab-database">
             <h2 class="section-header" id="database-header">Meine Sammlung</h2>
             
-            <!-- Export options -->
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+            <!-- Search & Filter -->
+            <div style="margin-bottom:16px;">
+                <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    <input type="text" id="db-search" placeholder="🔍 Suche nach ID, Material, Farbe, Grabung..." 
+                           oninput="filterDatabase()"
+                           style="flex:1;padding:8px 12px;font-size:13px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                    <select id="db-filter-material" onchange="filterDatabase()" style="padding:6px 8px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                        <option value="">Alle Materialien</option>
+                        <option value="Keramik">🏺 Keramik</option>
+                        <option value="Porzellan">🏺 Porzellan</option>
+                        <option value="Metall">⚙️ Metall</option>
+                    </select>
+                    <select id="db-filter-diag" onchange="filterDatabase()" style="padding:6px 8px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                        <option value="">Alle</option>
+                        <option value="diag">🔍 Diagnostisch</option>
+                        <option value="nondiag">◻ Wandscherben</option>
+                        <option value="deco">🎨 Mit Verzierung</option>
+                    </select>
+                </div>
+                <div id="db-search-count" style="font-size:11px;color:var(--text-muted);"></div>
+            </div>
+            
+            <!-- Export & Share options -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
                 <button class="btn btn-secondary" onclick="exportDatabaseCSV()" style="font-size:12px;padding:6px 12px;">
                     📊 CSV Export
                 </button>
                 <button class="btn btn-secondary" onclick="exportDatabaseJSON()" style="font-size:12px;padding:6px 12px;">
                     { } JSON Export
                 </button>
+                <button class="btn btn-primary" onclick="exportSharePackage()" style="font-size:12px;padding:6px 12px;">
+                    ☁️ Fundpaket teilen
+                </button>
+                <label class="btn btn-secondary" style="font-size:12px;padding:6px 12px;cursor:pointer;">
+                    📥 Fundpaket importieren
+                    <input type="file" accept=".json" style="display:none;" onchange="if(this.files[0])importSharePackage(this.files[0])">
+                </label>
                 <span style="font-size:11px;color:var(--text-muted);align-self:center;" id="db-export-hint">
                     → Import in eigene Grabungsdatenbank
                 </span>
             </div>
+            <p style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">
+                📁 Archivfähige Formate: CSV (UTF-8), JSON (offen, maschinenlesbar), PDF (Schnellbericht). 
+                Thumbnails als eingebettetes JPG (Base64). Alle Formate sind langfristig lesbar und standardkonform.
+            </p>
+            <p style="font-size:10px;color:var(--accent);margin-bottom:16px;">
+                ☁️ <strong>Fundpaket teilen:</strong> Exportiert die Sammlung als JSON-Datei mit allen Metadaten, 
+                die an Kolleg:innen weitergegeben und in deren ShardMind importiert werden kann. 
+                Langfristige Vision: Cloud-basierte, institutionsübergreifende Datenbank für alle Forschenden.
+            </p>
+            </p>
             
             <!-- DB stats bar -->
             <div class="db-stats-bar" id="db-stats-bar" style="display:none;">
@@ -2157,6 +2286,22 @@
                 </button>
                 <div id="sim-results"></div>
             </div>
+            
+            <!-- Re-identification section -->
+            <div class="sim-section" id="reid-section" style="display:none;">
+                <hr style="border-color:var(--border);margin:24px 0;">
+                <h3 style="font-size:18px;margin-bottom:8px;color:var(--accent);">🔁 Wiedererkennung</h3>
+                <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+                    Prüft, ob aktuell analysierte Fragmente bereits in der Datenbank vorhanden sind — 
+                    basierend auf einem <strong>visuellen Fingerabdruck</strong> (Perceptual Hash + Farbsignatur). 
+                    So werden Scherben beim erneuten Scannen/Fotografieren als bereits bekannt erkannt, 
+                    ohne dass die Beschriftung gelesen werden muss.
+                </p>
+                <button class="btn btn-primary" onclick="runReIdentification()" style="margin-bottom:20px;">
+                    🔁 Wiedererkennung starten
+                </button>
+                <div id="reid-results"></div>
+            </div>
         </div>
 
         <!-- TAB: Labels -->
@@ -2170,7 +2315,9 @@
                     Jedes Fragment erhält eine eindeutige ShardMind-ID (SM-XXXXXXXX). Zusätzlich können Inventarnummer, 
                     Fundnummer und Grabungskürzel vergeben werden — diese erscheinen auf dem Etikett und im QR-Code.
                     Die Etiketten können auf Klebeetiketten gedruckt und direkt auf die Scherben/Fundtüten aufgebracht werden.
-                    So entfällt das händische Beschriften tausender Funde.</span>
+                    So entfällt das händische Beschriften tausender Funde.
+                    Alternativ: Über die <em>Wiedererkennung</em> (Datenbank-Tab) können Scherben auch ohne Beschriftung 
+                    beim erneuten Fotografieren identifiziert werden.</span>
                 </p>
             </div>
             
@@ -2326,6 +2473,161 @@
             <div id="export-data-output" style="margin-top:16px;"></div>
         </div>
 
+        <!-- TAB: About / Tech -->
+        <div class="tab-content" id="tab-about">
+            <h2 class="section-header">ℹ️ Über ShardMind</h2>
+            
+            <!-- Share section -->
+            <div style="background:linear-gradient(135deg, rgba(99,102,241,0.08), rgba(99,102,241,0.02));border:1px solid var(--accent);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                    <div>
+                        <div style="font-size:15px;font-weight:700;color:var(--text-primary);">🔗 ShardMind teilen</div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Leite ShardMind an Kolleg:innen weiter — je mehr Feedback, desto besser!</div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-primary" onclick="copyShareLink()" style="font-size:12px;padding:8px 16px;">📋 Link kopieren</button>
+                        <button class="btn btn-secondary" onclick="shareViaEmail()" style="font-size:12px;padding:8px 16px;">📧 Per E-Mail</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Project -->
+            <div class="card" style="padding:20px;margin-bottom:20px;">
+                <h3 style="font-size:16px;margin-bottom:12px;">🏺 Das Projekt</h3>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                    <strong>ShardMind</strong> ist ein KI-gestütztes Werkzeug zur Analyse und Dokumentation archäologischer 
+                    Fundfragmente. Entwickelt von Schüler:innen des Max-Planck-Gymnasiums München im Rahmen der 
+                    <strong>FIRST LEGO League</strong> (Saison 2024/25, Thema: Unterwasser-Archäologie).
+                </p>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-top:8px;">
+                    Das Projekt basiert auf dem Feedback von über einem Dutzend Facharchäolog:innen aus Deutschland, 
+                    darunter Grabungsfirmen, Denkmalämter, Universitäten und Restaurator:innen. 
+                    ShardMind adressiert ein reales Problem: die zeitintensive Inventarisierung und Dokumentation 
+                    tausender Fundstücke auf Ausgrabungen.
+                </p>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-top:8px;">
+                    <strong>Langfristige Vision:</strong> Open-Source-Tool für die archäologische Praxis — 
+                    kostenlos, browser-basiert, offline-fähig, DSGVO-konform. Perspektivisch als cloud-basierte, 
+                    institutionsübergreifende Datenbank für alle Forschenden.
+                    Bewusst für die begrenzten finanziellen Mittel archäologischer Denkmalinstitutionen konzipiert: 
+                    keine Lizenzkosten, keine Server-Infrastruktur, keine Spezialhardware — nur ein Browser.
+                </p>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-top:8px;">
+                    <strong>Publikationslücke:</strong> In der Archäologie werden häufig nur die Funde dokumentiert, 
+                    die für den Fundplatz von besonderer Bedeutung sind. Die Masse der „normalen" Funde bleibt 
+                    undokumentiert. ShardMind soll helfen, diese Lücke zu schließen — durch schnelle, systematische 
+                    Erfassung auch der undokumentierten Bestände in Archiven und Denkmalämtern.
+                </p>
+            </div>
+            
+            <!-- Tech Stack -->
+            <div class="card" style="padding:20px;margin-bottom:20px;">
+                <h3 style="font-size:16px;margin-bottom:12px;">⚙️ Technische Basis</h3>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px;">
+                    ShardMind nutzt <strong>klassische Computer Vision</strong> (kein Deep Learning / kein PyTorch). 
+                    Alles läuft <strong>vollständig im Browser</strong> — kein Server, keine Cloud, kein Daten-Upload.
+                </p>
+                
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px 0;font-weight:600;width:40%;">🔍 Segmentierung</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">Adaptive Thresholding, Otsu, Lab-Farbraum, Canny Edge Detection (OpenCV)</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px 0;font-weight:600;">🎨 Farbanalyse</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">HSV-Histogramme → Munsell-Approximation, Lab-Farbdistanz</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px 0;font-weight:600;">📦 Gruppierung</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">Hierarchisches Clustering über Lab-Farbmerkmale + Formparameter</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px 0;font-weight:600;">🧩 Rekonstruktion</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">Kontur-Matching (Kantenverlauf-Vergleich), 2D + 3D (Three.js)</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px 0;font-weight:600;">🏛️ Kulturzuweisung</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">Regelbasiert (Farbe, Dekor, Gefäßbereich) — kein trainiertes Modell</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px 0;font-weight:600;">🛩️ Luftbild-Erkennung</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">Farbanomalien-Detektion gegen Hintergrund-Sampling (Lab-Distanz)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:8px 0;font-weight:600;">🖥️ Runtime</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">PyScript (Python im Browser via WebAssembly) + OpenCV + NumPy — kein Server nötig</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- What's NOT included -->
+            <div class="card" style="padding:20px;margin-bottom:20px;">
+                <h3 style="font-size:16px;margin-bottom:12px;">🚧 Ehrliche Grenzen</h3>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                    ShardMind kann vieles <strong>nicht</strong>, was erfahrene Archäolog:innen können:
+                </p>
+                <div style="margin-top:10px;font-size:13px;color:var(--text-secondary);line-height:1.8;">
+                    <div>❌ <strong>Haptik, Klang, Gewicht</strong> — nur visuell, nicht taktil (manuelle Ergänzung möglich)</div>
+                    <div>❌ <strong>Magerung im Bruch</strong> — erfordert physische Inspektion</div>
+                    <div>❌ <strong>Stratigraphischer Kontext</strong> — muss manuell eingegeben werden</div>
+                    <div>❌ <strong>Kulturzuweisung bei unverzierten Wandscherben</strong> — hier dominiert Erfahrung</div>
+                    <div>❌ <strong>Komplexe Rekonstruktion</strong> (z.B. über Schriftmerkmale) — erfordert Fachwissen</div>
+                    <div>⚠️ <strong>Farbvariation durch uneinheitlichen Brand</strong> — vor- und frühgeschichtliche Keramik zeigt oft variierende Farben auf einer Scherbe. ShardMind misst Durchschnittsfarben, erkennt aber Farbverläufe bisher nur eingeschränkt</div>
+                    <div>⚠️ <strong>Kein selbstlernendes System</strong> — aktuell regelbasiert, kein KI-Training. Für eine zuverlässige Kulturzuweisung müsste das System an sehr viel Material trainiert werden</div>
+                    <div>⚠️ <strong>Einzelscherben vs. Inventar</strong> — für die Auswertung eines Fundinventars steht weniger die Merkmalsaufnahme einzelner Scherben im Vordergrund, sondern die Rekonstruktion von Verzierungsmotiven und Gefäßformen. ShardMind unterstützt dies durch Gruppierung nach Verzierungstyp und Gefäßbereich</div>
+                    <div>⏱️ <strong>Aufwand ↔ Erkenntnisgewinn</strong> — der Aufwand muss adäquat zum Erkenntnisgewinn sein. ShardMind zeigt daher die Analysezeit pro Fragment an, damit der Zeitaufwand transparent bleibt</div>
+                </div>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-top:12px;">
+                    ShardMind ist ein <strong>Unterstützungswerkzeug</strong>, kein Ersatz für Fachpersonal. 
+                    Insbesondere die <strong>kulturelle Einordnung</strong> sollte stets durch fachlich ausgebildete 
+                    Archäolog:innen erfolgen — ShardMinds Vorschläge sind Hypothesen, keine Bestimmungen.
+                    Alle automatischen Einträge sind nachträglich durch Archäolog:innen anpassbar.
+                </p>
+            </div>
+            
+            <!-- Roadmap -->
+            <div class="card" style="padding:20px;margin-bottom:20px;">
+                <h3 style="font-size:16px;margin-bottom:12px;">🗺️ Nächste Schritte</h3>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
+                    <div>🔲 <strong>Trainierte Modelle (KI)</strong> — CNN für Gefäßteil-Erkennung und Kulturzuweisung. Benötigt gelabelte Trainingsdaten — z.B. en-bloc geborgene Urnen aus eisenzeitlichen Gräberfeldern als Trainingsmaterial. Vorgängerprojekt: <a href="http://www.archaide.eu/" target="_blank" style="color:var(--accent);">ArchAIDE</a> (EU, 2016–2019, 2,46 Mio. €) — Dekor- und Form-Erkennung via Deep Learning, ~25.000 fotografierte Scherben, Hauptproblem: zu wenig Vergleichsmaterial</div>
+                    <div>✅ <strong>Wiedererkennung</strong> — Scherben beim erneuten Scannen als bereits bekannt erkennen (visueller Fingerabdruck)</div>
+                    <div>✅ <strong>Fundpaket-Austausch</strong> — Export/Import von Sammlungen zwischen ShardMind-Instanzen</div>
+                    <div>🔲 <strong>Cloud-Datenbank</strong> — Institutionsübergreifende, cloud-basierte Datenbank mit Suchfunktion für alle Forschenden</div>
+                    <div>🔲 <strong>3D-Modell-Import</strong> — Kompatibilität mit OBJ, STL, PLY aus Structure-from-Motion-Pipelines (z.B. Agisoft Metashape)</div>
+                    <div>🔲 <strong>Automatisierte Orientierung</strong> — Automatische Ausrichtung von 3D-Scherbenmodellen (Horizontale bestimmen) — derzeit größtes ungelöstes Problem (vgl. DACORD, Gigamesh)</div>
+                    <div>🔲 <strong>Automatisierte Vermessung</strong> — Durchmesser, Wandstärke, Randstärke, Neigung aus 3D-Modellen extrahieren</div>
+                    <div>🔲 <strong>Cloud-Datenbank</strong> — Institutionsübergreifende, cloud-basierte Datenbank mit Suchfunktion für alle Forschenden</div>
+                    <div>🔲 <strong>Video-Analyse</strong> — Drohnenvideos frame-by-frame durchsuchen</div>
+                    <div>🔲 <strong>Archivformate</strong> — TIFF-Export für Langzeitarchivierung, CIDOC-CRM-kompatible Metadaten</div>
+                </div>
+            </div>
+            
+            <!-- Feedback partners -->
+            <div class="card" style="padding:20px;margin-bottom:20px;">
+                <h3 style="font-size:16px;margin-bottom:12px;">🤝 Fachliches Feedback & Kooperation</h3>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                    Wir danken allen Archäolog:innen, die uns mit ihrer Expertise unterstützt haben. 
+                    Ihr Feedback hat ShardMind von einem Schulprojekt zu einem praxisnahen Werkzeug gemacht.
+                </p>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-top:8px;">
+                    <strong>Akademische Anknüpfung:</strong> An der Universität Heidelberg (Vorderasiatische Archäologie) 
+                    arbeiten Forscher um Prof. Dr. Aaron Schmitt mit einer Datenbank von ca. 4.000 phönizischen 
+                    Keramikfragmenten als 3D-Modelle (via Structure from Motion). Michael Rummel (Uni Heidelberg) 
+                    hat eine eigene Python-Software für automatisierte Vermessung (Wandstärke, Durchmesser, Neigung) 
+                    entwickelt und plant deren Veröffentlichung zusammen mit seiner Dissertation. 
+                    Ein Austausch zu möglichen Synergien ist in Vorbereitung.
+                </p>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+                    📚 Rummel, M. (2024): <em>Pottery from Motion – A Refined Approach to the Large-Scale Documentation 
+                    of Pottery Using Structure from Motion.</em> Open Archaeology 10, 20240011. 
+                    <a href="https://doi.org/10.1515/opar-2024-0011" target="_blank" style="color:var(--accent);">DOI</a>
+                </p>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+                    Feedback, Testberichte und Kooperationsanfragen gerne an das Team über die FIRST LEGO League oder direkt per E-Mail.
+                </p>
+            </div>
+        </div>
+        
         <!-- TAB: Help -->
         <div class="tab-content" id="tab-help">
             <h2 class="section-header">❓ <span id="help-header-text">Anleitung</span></h2>
@@ -2353,7 +2655,7 @@
 // ==================================================
 // STATE & CONFIG
 // ==================================================
-const APP_VERSION = "2.2";
+const APP_VERSION = "2.7";
 const BASE_URL = "https://shardmind.streamlit.app";
 
 let currentLang = 'de';
@@ -2433,6 +2735,38 @@ function setMaterialType(type) {
         toast(msg, 'info');
     }
 }
+
+// Mode hint updater
+function updateModeHint() {
+    const hints_de = {
+        porcelain: '🏺 Optimiert für gereinigte Scherben auf hellem Labor-Hintergrund',
+        auto: '🔄 Probiert mehrere Methoden und wählt die beste',
+        light_bg: '⬜ Dunkle Objekte auf hellem Untergrund',
+        dark_bg: '⬛ Helle Objekte auf dunklem Untergrund',
+        high_contrast: '🎯 Starke Konturenerkennung für schwierige Bilder',
+        aerial: '🛩️ NEU: Erkennt Oberflächenfunde auf Drohnen-/Luftbildern — sucht Farbanomalien gegen natürlichen Boden',
+        field_survey: '🥾 NEU: Für Feldbegehungen — erkennt Scherben auf Erdboden durch Farb- und Textur-Kontrast',
+    };
+    const hints_en = {
+        porcelain: '🏺 Optimized for cleaned sherds on light lab background',
+        auto: '🔄 Tries multiple methods and picks best',
+        light_bg: '⬜ Dark objects on light surface',
+        dark_bg: '⬛ Light objects on dark surface',
+        high_contrast: '🎯 Strong contour detection for difficult images',
+        aerial: '🛩️ NEW: Detects surface finds on drone/aerial images — looks for color anomalies against natural ground',
+        field_survey: '🥾 NEW: For field walking — detects sherds on soil via color + texture contrast',
+    };
+    const sel = document.getElementById('select-mode');
+    const hint = document.getElementById('mode-hint');
+    if (sel && hint) {
+        const h = currentLang === 'de' ? hints_de : hints_en;
+        hint.textContent = h[sel.value] || '';
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const sel = document.getElementById('select-mode');
+    if (sel) sel.addEventListener('change', updateModeHint);
+});
 let clusterLabels = [];
 let clusterNames = {};
 let customLabels = [];
@@ -2503,7 +2837,7 @@ const TRANSLATIONS = {
         analyzing: 'Analysiere...', success_fragments: 'Fragmente erkannt!',
         porcelain: 'Porzellan/Keramik', auto: 'Automatisch',
         light_bg: 'Heller Hintergrund', dark_bg: 'Dunkler Hintergrund',
-        high_contrast: 'Hoher Kontrast',
+        high_contrast: 'Hoher Kontrast', aerial: 'Luftbild/Drohne', field_survey: 'Feldbegehung',
         necessary_desc: 'Erforderlich für Grundfunktionen',
         functional_desc: 'Einstellungen speichern',
         // Decoration
@@ -2596,7 +2930,7 @@ const TRANSLATIONS = {
         analyzing: 'Analyzing...', success_fragments: 'fragments detected!',
         porcelain: 'Porcelain/Ceramic', auto: 'Automatic',
         light_bg: 'Light Background', dark_bg: 'Dark Background',
-        high_contrast: 'High Contrast',
+        high_contrast: 'High Contrast', aerial: 'Aerial/Drone', field_survey: 'Field Survey',
         necessary_desc: 'Required for basic functionality',
         functional_desc: 'Save your settings',
         // Decoration
@@ -2639,7 +2973,54 @@ function T(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || 
 // CHANGELOG DATA
 // ==================================================
 const CHANGELOG = {
-    '2.2': { date: '2025-02-17', title: 'Inventarliste, Munsell-Farben & Fundbeutel-Modus', features: [
+    '2.7': { date: '2025-02-18', title: 'Gefäßformen, Herstellungsmerkmale & Schauhütte-Feedback', features: [
+        '🏺 GEFÄSSFORMEN: 16 Typen (Kumpf, Topf, Schüssel, Schale, Becher, Flasche, Terrine, Amphore, Krug, Teller etc.)',
+        '🔥 BRANDATMOSPHÄRE: Oxidierend, Reduzierend, Wechselnd, Sekundär gebrannt',
+        '🪨 BRUCHSTRUKTUR: Glatt/Dicht, Körnig/Sandig, Porös, Feingeschichtet, Grob',
+        '💎 BRANDHÄRTE: Weich (Fingernagel), Mittel (Messer), Hart (klingend), Gesintert',
+        '🔄 NACHGEDREHT: Herstellungstechnik um „Nachgedreht" erweitert (handgeformt + Drehscheibe)',
+        '⚠️ KULTURZUWEISUNG: Disclaimer verstärkt — Kulturzuweisung ist Expertensache, ShardMind liefert nur Hypothesen',
+        '💰 ERSCHWINGLICH: Kostenfreiheit und Null-Infrastruktur als bewusste Design-Entscheidung dokumentiert',
+        '📊 CSV: Erweitert um Gefäßform, Brandatmosphäre, Bruchstruktur, Brandhärte',
+    ], fixes: [] },
+    '2.6': { date: '2025-02-18', title: 'Gruppierung nach Motiv, Zeiteffizienz & Dittrich/Geßner-Feedback', features: [
+        '🎭 GRUPPIERUNG NACH MOTIV: Gruppen-Tab mit 5 Modi — Farbcluster, Verzierungstyp, Gefäßbereich, Verzierungstechnik, Material',
+        '🕰️ CHRONOLOGISCHE EINORDNUNG: Hinweis auf Verzierungsmotive und Gefäßformen als Schlüssel zur zeitlichen Einordnung',
+        '⏱️ ZEITEFFIZIENZ: Analysezeit pro Fragment wird angezeigt — Aufwand/Erkenntnisgewinn transparent',
+        '⚠️ INVENTAR vs. EINZELSCHERBE: Dokumentiert, dass Fundinventar-Auswertung auf Motiv- und Formrekonstruktion zielt',
+    ], fixes: [] },
+    '2.5': { date: '2025-02-18', title: 'Morphometrie, Statistik & Rummel-Kooperation', features: [
+        '📏 MORPHOMETRIE: Durchmesser, Wandstärke, Randstärke, Erhaltung (%), Wandneigung, Herstellungstechnik als Eingabefelder pro Fragment',
+        '📊 STATISTIK: Variationskoeffizient (CV), Mittelwert, Standardabweichung, Min/Max für alle morphometrischen Maße — Grundlage für Standardisierungsanalysen',
+        '🔧 HERSTELLUNGSTECHNIK: Handgemacht, Scheibengedreht, Wulsttechnik, Plattentechnik, Formgefertigt',
+        '↗️ RANDFORMEN: 12 Typen (gerade, eingebogen, ausgebogen, T-Rand, facettiert, mit Lippe etc.)',
+        '🏛️ KOOPERATION: Kontakt mit Uni Heidelberg (M. Rummel, 4.000 phönizische 3D-Keramikfragmente, Python-Vermessungssoftware)',
+        '📚 LITERATUR: Rummel (2024) "Pottery from Motion" als Referenz im Über-Tab verlinkt',
+        '🗺️ ROADMAP: 3D-Modell-Import (OBJ/STL/PLY), automatisierte Orientierung, automatisierte Vermessung',
+        '📊 CSV-EXPORT: Erweitert um Randform, Verzierungstechnik, LBK-Bandtyp, Morphometrie-Felder, Herstellung',
+    ], fixes: [] },
+    '2.4': { date: '2025-02-18', title: 'Datenbank-Suche, Fundpaket-Austausch & Randformen', features: [
+        '🔍 DATENBANK-SUCHE: Volltextsuche + Filter nach Material und Diagnostik-Status in der Sammlung',
+        '☁️ FUNDPAKET-AUSTAUSCH: Export/Import kompletter Sammlungen als JSON — Kolleg:innen können Fundpakete laden',
+        '↗️ RANDFORMEN: 12 detaillierte Randform-Typen (gerade, eingebogen, ausgebogen, T-Rand, facettiert etc.)',
+        '📐 PROFILSEKTIONEN: Gefäßbereichs-Systematik (Rand → Hals → Schulter → Bauch → Übergang → Boden)',
+        '📖 PUBLIKATIONSLÜCKE: Dokumentation des Problems undokumentierter Fundbestände in Archiven',
+        '☁️ CLOUD-VISION: Roadmap-Eintrag für institutionsübergreifende Datenbank mit Suchfunktion',
+    ], fixes: [] },
+    '2.3': { date: '2025-02-18', title: 'Verzierungsfokus, LBK-Bandtypen & Stolle-Feedback', features: [
+        '〰️ LBK-BANDTYPEN: 14 Linienbandkeramik-Verzierungstypen (Einfachband, Spiralband, Notenkopf etc.) als Fokus-Kultur',
+        '🔧 VERZIERUNGSTECHNIK: Spatel (ein-/mehrzinkig), Finger, Kamm, Schnur, Stempel etc. als neues Feld',
+        '📐 ERHALTUNG / VOLLSTÄNDIGKEIT: 5-stufige Skala (Vollständig → Splitter) beeinflusst Konfidenz der Kulturzuweisung',
+        '⚠️ FARBE HERABGESTUFT: Farbe in Kulturscoring von 25% auf 5% reduziert — Bodenlagerung verfälscht Farben',
+        '📉 KRÜMMUNG HERABGESTUFT: Krümmung selten aussagekräftig — nur noch 2% statt 10% im Scoring',
+        '🎨 VERZIERUNG HOCHGESTUFT: Dekortyp jetzt 30% (war 20%), Technik 15% neu — wichtigstes Kriterium',
+        '📚 LBK-KATALOG-LINK: Verweis auf Bandkeramik Online (Archäologie-Stiftung) im Kulturstufe-Tab',
+        '🔁 WIEDERERKENNUNG: Visueller Fingerabdruck (Perceptual Hash) für Scherben-Re-Identifikation',
+        '📁 ARCHIVFORMATE: Hinweis auf langfristig lesbare Export-Standards (CSV, JSON, PDF)',
+    ], fixes: [] },
+    '2.2': { date: '2025-02-18', title: 'Inventarliste, Luftbild-Modus, Munsell-Farben & Fundbeutel', features: [
+        '🛩️ LUFTBILD-MODUS: Scherben auf Drohnenfotos und Luftbildern erkennen — Farbanomalien-Detektion gegen Erdreich',
+        '🥾 FELDBEGEHUNGS-MODUS: Oberflächenfunde auf Survey-Fotos — Farb- und Texturkontrast zum Boden',
         '📋 INVENTARLISTE: Automatische Fundaufnahme mit Zählung nach Art (Rand/Wand/Boden), Typ und Material',
         '📦 FUNDBEUTEL-MODUS: Befundnummer, Schicht, Fundnummer pro Analyse-Durchgang zuweisbar',
         '🎨 MUNSELL-FARBEN: Automatische Munsell-Notation (z.B. 10YR 5/4) zusätzlich zum deutschen Farbnamen',
@@ -3112,7 +3493,7 @@ function updateAllTranslations() {
     // Update mode select options
     const modeSelect = document.getElementById('select-mode');
     if (modeSelect) {
-        const modes = { porcelain: T('porcelain'), auto: T('auto'), light_bg: T('light_bg'), dark_bg: T('dark_bg'), high_contrast: T('high_contrast') };
+        const modes = { porcelain: T('porcelain'), auto: T('auto'), light_bg: T('light_bg'), dark_bg: T('dark_bg'), high_contrast: T('high_contrast'), aerial: T('aerial'), field_survey: T('field_survey') };
         [...modeSelect.options].forEach(opt => { if (modes[opt.value]) opt.textContent = modes[opt.value]; });
     }
     
@@ -3397,6 +3778,91 @@ const VESSEL_PARTS = [
     { value: 'deckel', label_de: 'Deckel', label_en: 'Lid', icon: '🔝' },
 ];
 
+// Detailed rim forms (shown when vessel_part = 'rand')
+const RIM_FORMS = [
+    { value: '', label_de: '— Randform —', label_en: '— Rim form —' },
+    { value: 'gerade', label_de: 'Gerade / Aufrecht', label_en: 'Straight / Upright' },
+    { value: 'eingebogen', label_de: 'Eingebogen / Einziehend', label_en: 'Inverted / Incurving' },
+    { value: 'ausgebogen', label_de: 'Ausgebogen / Ausbiegend', label_en: 'Everted / Outcurving' },
+    { value: 'abgestrichen', label_de: 'Abgestrichen', label_en: 'Cut/Wiped' },
+    { value: 'verdickt_aussen', label_de: 'Außen verdickt', label_en: 'Externally thickened' },
+    { value: 'verdickt_innen', label_de: 'Innen verdickt', label_en: 'Internally thickened' },
+    { value: 'verdickt_beids', label_de: 'Beidseitig verdickt (T-Rand)', label_en: 'T-shaped rim' },
+    { value: 'spitz', label_de: 'Spitz zulaufend', label_en: 'Tapered / Pointed' },
+    { value: 'gerundet', label_de: 'Gerundet', label_en: 'Rounded' },
+    { value: 'facettiert', label_de: 'Facettiert / Kantig', label_en: 'Faceted / Angular' },
+    { value: 'lippe', label_de: 'Mit Lippe / Kragenrand', label_en: 'Lipped / Collared' },
+];
+
+// Profile completeness: which sections are present
+const PROFILE_SECTIONS = [
+    { value: 'rand', label_de: 'Rand', label_en: 'Rim' },
+    { value: 'hals', label_de: 'Hals', label_en: 'Neck' },
+    { value: 'schulter', label_de: 'Schulter', label_en: 'Shoulder' },
+    { value: 'bauch', label_de: 'Bauchwölbung', label_en: 'Belly' },
+    { value: 'uebergang', label_de: 'Übergang zum Boden', label_en: 'Base transition' },
+    { value: 'boden', label_de: 'Boden', label_en: 'Base' },
+];
+
+function getRimFormLabel(val) {
+    const r = RIM_FORMS.find(v => v.value === val);
+    return r ? (currentLang === 'de' ? r.label_de : r.label_en) : '';
+}
+
+// Vessel form types (Gefäßform)
+const VESSEL_FORMS = [
+    { value: '', label_de: '— Gefäßform —', label_en: '— Vessel form —' },
+    { value: 'kumpf', label_de: 'Kumpf', label_en: 'Kumpf (round pot)' },
+    { value: 'topf', label_de: 'Topf', label_en: 'Pot / Jar' },
+    { value: 'schuessel', label_de: 'Schüssel', label_en: 'Bowl (large)' },
+    { value: 'schale', label_de: 'Schale', label_en: 'Bowl (shallow)' },
+    { value: 'becher', label_de: 'Becher', label_en: 'Beaker / Cup' },
+    { value: 'flasche', label_de: 'Flasche', label_en: 'Bottle / Flask' },
+    { value: 'terrine', label_de: 'Terrine', label_en: 'Tureen' },
+    { value: 'amphore', label_de: 'Amphore', label_en: 'Amphora' },
+    { value: 'krug', label_de: 'Krug', label_en: 'Jug / Pitcher' },
+    { value: 'teller', label_de: 'Teller', label_en: 'Plate' },
+    { value: 'siebgefaess', label_de: 'Siebgefäß', label_en: 'Sieve vessel' },
+    { value: 'vorratsgefaess', label_de: 'Vorratsgefäß', label_en: 'Storage vessel' },
+    { value: 'miniaturgefaess', label_de: 'Miniaturgefäß', label_en: 'Miniature vessel' },
+    { value: 'deckelgefaess', label_de: 'Deckelgefäß', label_en: 'Lidded vessel' },
+    { value: 'sonstig', label_de: 'Sonstige', label_en: 'Other' },
+];
+
+// Firing atmosphere
+const FIRING_ATMOSPHERES = [
+    { value: '', label_de: '— Brandatmosphäre —', label_en: '— Firing atmosphere —' },
+    { value: 'oxidierend', label_de: 'Oxidierend (hell)', label_en: 'Oxidizing (light)' },
+    { value: 'reduzierend', label_de: 'Reduzierend (dunkel)', label_en: 'Reducing (dark)' },
+    { value: 'wechselnd', label_de: 'Wechselnd / Uneinheitlich', label_en: 'Alternating / Mixed' },
+    { value: 'sekundaer', label_de: 'Sekundär gebrannt', label_en: 'Secondary firing' },
+    { value: 'unbestimmt', label_de: 'Unbestimmt', label_en: 'Undetermined' },
+];
+
+// Fracture structure (Bruchstruktur)
+const FRACTURE_TYPES = [
+    { value: '', label_de: '— Bruchstruktur —', label_en: '— Fracture structure —' },
+    { value: 'glatt', label_de: 'Glatt / Dicht', label_en: 'Smooth / Dense' },
+    { value: 'koernig', label_de: 'Körnig / Sandig', label_en: 'Granular / Sandy' },
+    { value: 'porig', label_de: 'Porös / Blasig', label_en: 'Porous / Vesicular' },
+    { value: 'feingeschichtet', label_de: 'Feingeschichtet / Plattig', label_en: 'Laminated / Platy' },
+    { value: 'grob', label_de: 'Grob / Unregelmäßig', label_en: 'Coarse / Irregular' },
+];
+
+// Firing hardness (Brandhärte — Mohs scale simplified)
+const FIRING_HARDNESS = [
+    { value: '', label_de: '— Brandhärte —', label_en: '— Firing hardness —' },
+    { value: 'weich', label_de: 'Weich (mit Fingernagel ritzbar)', label_en: 'Soft (scratchable w/ fingernail)' },
+    { value: 'mittel', label_de: 'Mittel (mit Messer ritzbar)', label_en: 'Medium (scratchable w/ knife)' },
+    { value: 'hart', label_de: 'Hart (klingt beim Anschlagen)', label_en: 'Hard (rings when struck)' },
+    { value: 'gesintert', label_de: 'Gesintert / Steinzeugartig', label_en: 'Sintered / Stoneware-like' },
+];
+
+function getVesselFormLabel(val) {
+    const v = VESSEL_FORMS.find(f => f.value === val);
+    return v ? (currentLang === 'de' ? v.label_de : v.label_en) : val || '';
+}
+
 // Decoration type definitions
 const DECO_TYPES = [
     { value: '', label_de: '— Dekor —', label_en: '— Decor —' },
@@ -3418,6 +3884,52 @@ const DECO_TYPES = [
     { value: 'sonstiges', label_de: 'Sonstiges', label_en: 'Other' },
 ];
 
+// Decoration TECHNIQUE — how the decoration was applied
+const DECO_TECHNIQUES = [
+    { value: '', label_de: '— Technik —', label_en: '— Technique —' },
+    { value: 'spatel_einzinkig', label_de: 'Spatel, einzinkig', label_en: 'Spatula, single-tined' },
+    { value: 'spatel_mehrzinkig', label_de: 'Spatel, mehrzinkig', label_en: 'Spatula, multi-tined' },
+    { value: 'finger', label_de: 'Finger / Fingernagel', label_en: 'Finger / Fingernail' },
+    { value: 'kamm', label_de: 'Kamm / Zahnspatel', label_en: 'Comb / Toothed spatula' },
+    { value: 'schnur', label_de: 'Schnur / Textil', label_en: 'Cord / Textile' },
+    { value: 'stempel_einzel', label_de: 'Einzelstempel', label_en: 'Single stamp' },
+    { value: 'stempel_roll', label_de: 'Rollstempel', label_en: 'Rolling stamp' },
+    { value: 'pinsel', label_de: 'Pinsel / Bemalung', label_en: 'Brush / Painting' },
+    { value: 'ritzung', label_de: 'Ritzung (spitzes Werkzeug)', label_en: 'Incision (pointed tool)' },
+    { value: 'schlick', label_de: 'Schlickauftrag', label_en: 'Slip application' },
+    { value: 'polierung', label_de: 'Polierung / Glättung', label_en: 'Burnishing / Polishing' },
+    { value: 'unbestimmt', label_de: 'Unbestimmt', label_en: 'Undetermined' },
+];
+
+// LBK (Linienbandkeramik) Band Types — for focused cultural analysis
+// Based on: https://www.archaeologie-stiftung.de/de/wissenschaft/bandkeramik_online/
+const LBK_BAND_TYPES = [
+    { value: '', label_de: '— LBK-Bandtyp —', label_en: '— LBK Band Type —' },
+    { value: 'einfachband', label_de: 'Einfachband', label_en: 'Simple band' },
+    { value: 'doppelband', label_de: 'Doppelband', label_en: 'Double band' },
+    { value: 'dreifachband', label_de: 'Dreifachband', label_en: 'Triple band' },
+    { value: 'winkelband', label_de: 'Winkelband', label_en: 'Angular band' },
+    { value: 'spiralband', label_de: 'Spiralband / Mäander', label_en: 'Spiral band / Meander' },
+    { value: 'zickzackband', label_de: 'Zickzackband', label_en: 'Zigzag band' },
+    { value: 'bogenband', label_de: 'Bogenband', label_en: 'Arc band' },
+    { value: 'wellenband', label_de: 'Wellenband', label_en: 'Wave band' },
+    { value: 'randband', label_de: 'Randband', label_en: 'Rim band' },
+    { value: 'fuellung_stiche', label_de: 'Bandfüllung: Stiche', label_en: 'Band fill: stabs' },
+    { value: 'fuellung_punkte', label_de: 'Bandfüllung: Punkte', label_en: 'Band fill: dots' },
+    { value: 'fuellung_striche', label_de: 'Bandfüllung: Striche', label_en: 'Band fill: strokes' },
+    { value: 'notenkopf', label_de: 'Notenkopfverzierung', label_en: 'Music-note decoration' },
+    { value: 'sonstiges', label_de: 'Sonstiges', label_en: 'Other LBK' },
+];
+
+function getDecoTechLabel(val) {
+    const t = DECO_TECHNIQUES.find(v => v.value === val);
+    return t ? (currentLang === 'de' ? t.label_de : t.label_en) : '';
+}
+function getLBKLabel(val) {
+    const l = LBK_BAND_TYPES.find(v => v.value === val);
+    return l ? (currentLang === 'de' ? l.label_de : l.label_en) : '';
+}
+
 function getPartLabel(val) {
     const p = VESSEL_PARTS.find(v => v.value === val);
     return p ? (currentLang === 'de' ? p.label_de : p.label_en) : '';
@@ -3430,7 +3942,12 @@ function getDecoLabel(val) {
 function setVesselPart(pieceIdx, value) {
     if (activePieces[pieceIdx]) {
         activePieces[pieceIdx].vessel_part = value;
-        // Re-evaluate diagnostic status when vessel part changes
+        // Show/hide rim form row
+        const rimRow = document.querySelector(`[data-rimform-row="${pieceIdx}"]`);
+        if (rimRow) rimRow.style.display = value === 'rand' ? '' : 'none';
+        // Show/hide LBK row
+        const lbkRow = document.querySelector(`[data-lbk-row="${pieceIdx}"]`);
+        if (lbkRow) lbkRow.style.display = (value === 'rand' || activePieces[pieceIdx].deco_type === 'ritzlinien') ? '' : 'none';
     }
 }
 function setDecoType(pieceIdx, value) {
@@ -3480,6 +3997,18 @@ function renderGallery() {
         `<option value="${d.value}">${currentLang === 'de' ? d.label_de : d.label_en}</option>`
     ).join('');
     
+    const decoTechOpts = DECO_TECHNIQUES.map(t => 
+        `<option value="${t.value}">${currentLang === 'de' ? t.label_de : t.label_en}</option>`
+    ).join('');
+    
+    const lbkOpts = LBK_BAND_TYPES.map(l => 
+        `<option value="${l.value}">${currentLang === 'de' ? l.label_de : l.label_en}</option>`
+    ).join('');
+    
+    const rimFormOpts = RIM_FORMS.map(r => 
+        `<option value="${r.value}">${currentLang === 'de' ? r.label_de : r.label_en}</option>`
+    ).join('');
+    
     let html = '<div class="gallery-grid">';
     activePieces.forEach((p, idx) => {
         const cid = p.cluster ?? -1;
@@ -3522,10 +4051,39 @@ function renderGallery() {
                         ${partOpts.replace(`value="${p.vessel_part || ''}"`, `value="${p.vessel_part || ''}" selected`)}
                     </select>
                 </div>
+                <div class="gallery-prop-row" style="${p.vessel_part === 'rand' ? '' : 'display:none;'}" data-rimform-row="${idx}">
+                    <label style="font-size:9px;">↗️</label>
+                    <select onchange="setPieceField(${idx}, 'rim_form', this.value)" title="${currentLang === 'de' ? 'Randform' : 'Rim form'}">
+                        ${rimFormOpts}
+                    </select>
+                </div>
                 <div class="gallery-prop-row">
                     <label>🎨</label>
                     <select onchange="setDecoType(${idx}, this.value)" title="${currentLang === 'de' ? 'Dekorationsart' : 'Decoration type'}">
                         ${decoOpts.replace(`value="${p.deco_type || ''}"`, `value="${p.deco_type || ''}" selected`)}
+                    </select>
+                </div>
+                <div class="gallery-prop-row">
+                    <label style="font-size:9px;">🔧</label>
+                    <select onchange="setPieceField(${idx}, 'deco_technique', this.value)" title="${currentLang === 'de' ? 'Verzierungstechnik' : 'Decoration technique'}">
+                        ${decoTechOpts}
+                    </select>
+                </div>
+                <div class="gallery-prop-row" style="${p.deco_type === 'ritzlinien' || p.deco_type === 'gurtfurchen' || p._culture_key === 'lbk' ? '' : 'display:none;'}" data-lbk-row="${idx}">
+                    <label style="font-size:9px;">〰️</label>
+                    <select onchange="setPieceField(${idx}, 'lbk_band_type', this.value)" title="${currentLang === 'de' ? 'LBK-Bandtyp' : 'LBK Band Type'}">
+                        ${lbkOpts}
+                    </select>
+                </div>
+                <div class="gallery-prop-row">
+                    <label style="font-size:9px;">📐</label>
+                    <select onchange="setPieceField(${idx}, 'completeness', this.value)" title="${currentLang === 'de' ? 'Erhaltung / Vollständigkeit' : 'Preservation / Completeness'}">
+                        <option value="">${currentLang === 'de' ? '— Erhaltung —' : '— Preservation —'}</option>
+                        <option value="vollstaendig" ${p.completeness === 'vollstaendig' ? 'selected' : ''}>${currentLang === 'de' ? 'Vollständig / Ganz' : 'Complete'}</option>
+                        <option value="grossfragment" ${p.completeness === 'grossfragment' ? 'selected' : ''}>${currentLang === 'de' ? 'Großfragment (>50%)' : 'Large fragment (>50%)'}</option>
+                        <option value="fragment" ${p.completeness === 'fragment' ? 'selected' : ''}>${currentLang === 'de' ? 'Fragment (10-50%)' : 'Fragment (10-50%)'}</option>
+                        <option value="kleinfragment" ${p.completeness === 'kleinfragment' ? 'selected' : ''}>${currentLang === 'de' ? 'Kleinfragment (<10%)' : 'Small fragment (<10%)'}</option>
+                        <option value="splitter" ${p.completeness === 'splitter' ? 'selected' : ''}>${currentLang === 'de' ? 'Splitter' : 'Chip/Splinter'}</option>
                     </select>
                 </div>
                 <div class="gallery-prop-row">
@@ -3547,6 +4105,65 @@ function renderGallery() {
                         <option value="hart" ${p.haptics === 'hart' ? 'selected' : ''}>${currentLang === 'de' ? 'Hart / Gesintert' : 'Hard / Sintered'}</option>
                     </select>
                 </div>
+                <details style="margin-top:4px;cursor:pointer;">
+                    <summary style="font-size:10px;color:var(--text-muted);padding:2px 0;">📏 Morphometrie & Herstellung</summary>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px;">
+                        <input type="number" step="0.1" min="0" placeholder="${currentLang === 'de' ? '⌀ Durchm. (cm)' : '⌀ Diam. (cm)'}" 
+                               value="${p.diameter_cm || ''}" onchange="setPieceField(${idx}, 'diameter_cm', parseFloat(this.value))"
+                               title="${currentLang === 'de' ? 'Durchmesser in cm' : 'Diameter in cm'}"
+                               style="padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);">
+                        <input type="number" step="0.1" min="0" placeholder="${currentLang === 'de' ? 'Wandst. (mm)' : 'Wall th. (mm)'}" 
+                               value="${p.wall_thickness_mm || ''}" onchange="setPieceField(${idx}, 'wall_thickness_mm', parseFloat(this.value))"
+                               title="${currentLang === 'de' ? 'Wandstärke in mm' : 'Wall thickness in mm'}"
+                               style="padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);">
+                        <input type="number" step="0.1" min="0" placeholder="${currentLang === 'de' ? 'Randst. (mm)' : 'Rim th. (mm)'}" 
+                               value="${p.rim_thickness_mm || ''}" onchange="setPieceField(${idx}, 'rim_thickness_mm', parseFloat(this.value))"
+                               title="${currentLang === 'de' ? 'Randstärke in mm' : 'Rim thickness in mm'}"
+                               style="padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);">
+                        <input type="number" step="1" min="0" max="100" placeholder="${currentLang === 'de' ? 'Erhalt. (%)' : 'Preserv. (%)'}" 
+                               value="${p.preservation_pct || ''}" onchange="setPieceField(${idx}, 'preservation_pct', parseInt(this.value))"
+                               title="${currentLang === 'de' ? 'Erhaltung in % des Gefäßumfangs' : 'Preservation as % of vessel circumference'}"
+                               style="padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);">
+                        <input type="number" step="1" min="0" max="180" placeholder="${currentLang === 'de' ? 'Neigung (°)' : 'Inclin. (°)'}" 
+                               value="${p.inclination_deg || ''}" onchange="setPieceField(${idx}, 'inclination_deg', parseInt(this.value))"
+                               title="${currentLang === 'de' ? 'Wandneigung in Grad' : 'Wall inclination in degrees'}"
+                               style="padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);">
+                        <select onchange="setPieceField(${idx}, 'manufacturing', this.value)"
+                                title="${currentLang === 'de' ? 'Herstellungstechnik' : 'Manufacturing technique'}"
+                                style="padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);">
+                            <option value="">${currentLang === 'de' ? 'Herstellung' : 'Manufacturing'}</option>
+                            <option value="handgemacht" ${p.manufacturing === 'handgemacht' ? 'selected' : ''}>${currentLang === 'de' ? 'Handgemacht' : 'Handmade'}</option>
+                            <option value="scheibe" ${p.manufacturing === 'scheibe' ? 'selected' : ''}>${currentLang === 'de' ? 'Scheibengedreht' : 'Wheel-thrown'}</option>
+                            <option value="nachgedreht" ${p.manufacturing === 'nachgedreht' ? 'selected' : ''}>${currentLang === 'de' ? 'Nachgedreht' : 'Wheel-finished'}</option>
+                            <option value="wulst" ${p.manufacturing === 'wulst' ? 'selected' : ''}>${currentLang === 'de' ? 'Wulsttechnik' : 'Coil-built'}</option>
+                            <option value="platte" ${p.manufacturing === 'platte' ? 'selected' : ''}>${currentLang === 'de' ? 'Plattentechnik' : 'Slab-built'}</option>
+                            <option value="form" ${p.manufacturing === 'form' ? 'selected' : ''}>${currentLang === 'de' ? 'Formgefertigt' : 'Mold-made'}</option>
+                            <option value="unbestimmt" ${p.manufacturing === 'unbestimmt' ? 'selected' : ''}>${currentLang === 'de' ? 'Unbestimmt' : 'Undetermined'}</option>
+                        </select>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px;">
+                        <select onchange="setPieceField(${idx}, 'vessel_form', this.value)"
+                                title="${currentLang === 'de' ? 'Gefäßform' : 'Vessel form'}"
+                                style="padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);">
+                            ${VESSEL_FORMS.map(v => `<option value="${v.value}" ${p.vessel_form === v.value ? 'selected' : ''}>${currentLang === 'de' ? v.label_de : v.label_en}</option>`).join('')}
+                        </select>
+                        <select onchange="setPieceField(${idx}, 'firing_atmosphere', this.value)"
+                                title="${currentLang === 'de' ? 'Brandatmosphäre' : 'Firing atmosphere'}"
+                                style="padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);">
+                            ${FIRING_ATMOSPHERES.map(v => `<option value="${v.value}" ${p.firing_atmosphere === v.value ? 'selected' : ''}>${currentLang === 'de' ? v.label_de : v.label_en}</option>`).join('')}
+                        </select>
+                        <select onchange="setPieceField(${idx}, 'fracture_type', this.value)"
+                                title="${currentLang === 'de' ? 'Bruchstruktur' : 'Fracture structure'}"
+                                style="padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);">
+                            ${FRACTURE_TYPES.map(v => `<option value="${v.value}" ${p.fracture_type === v.value ? 'selected' : ''}>${currentLang === 'de' ? v.label_de : v.label_en}</option>`).join('')}
+                        </select>
+                        <select onchange="setPieceField(${idx}, 'firing_hardness', this.value)"
+                                title="${currentLang === 'de' ? 'Brandhärte' : 'Firing hardness'}"
+                                style="padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);">
+                            ${FIRING_HARDNESS.map(v => `<option value="${v.value}" ${p.firing_hardness === v.value ? 'selected' : ''}>${currentLang === 'de' ? v.label_de : v.label_en}</option>`).join('')}
+                        </select>
+                    </div>
+                </details>
             </div>
         </div>`;
     });
@@ -3561,6 +4178,9 @@ function renderGallery() {
             const selects = item.querySelectorAll('select');
             if (selects[0] && p.vessel_part) selects[0].value = p.vessel_part;
             if (selects[1] && p.deco_type) selects[1].value = p.deco_type;
+            if (selects[2] && p.deco_technique) selects[2].value = p.deco_technique;
+            if (selects[3] && p.lbk_band_type) selects[3].value = p.lbk_band_type;
+            // completeness is at index 4, haptics at 5 — but completeness uses inline selected
         });
     }, 50);
 }
@@ -3572,26 +4192,50 @@ function renderGroups() {
         return;
     }
     
-    const clusterIds = [...new Set(activePieces.map(p => p.cluster ?? -1))].filter(c => c >= 0).sort();
+    const groupMode = document.getElementById('group-mode')?.value || 'cluster';
     
-    if (clusterIds.length === 0) {
+    // Build groups based on selected mode
+    let groups = {};
+    
+    if (groupMode === 'cluster') {
+        const clusterIds = [...new Set(activePieces.map(p => p.cluster ?? -1))].filter(c => c >= 0).sort();
+        clusterIds.forEach(cid => {
+            const cp = activePieces.filter(p => p.cluster === cid);
+            const name = clusterNames[cid] || `Gruppe_${cid + 1}`;
+            groups[cid] = { name, pieces: cp, color: CLUSTER_COLORS[cid % CLUSTER_COLORS.length] };
+        });
+    } else {
+        const fieldMap = {
+            'deco_type': { getter: p => p.deco_type || '_keine', labeler: v => v === '_keine' ? (currentLang === 'de' ? 'Keine Verzierung' : 'No decoration') : getDecoLabel(v), icon: '🎭' },
+            'vessel_part': { getter: p => p.vessel_part || '_wand', labeler: v => v === '_wand' ? (currentLang === 'de' ? 'Wandscherbe' : 'Body sherd') : getPartLabel(v), icon: '🏺' },
+            'deco_technique': { getter: p => p.deco_technique || '_unbestimmt', labeler: v => v === '_unbestimmt' ? (currentLang === 'de' ? 'Unbestimmt' : 'Undetermined') : getDecoTechLabel(v), icon: '🔧' },
+            'material': { getter: p => p.material || '?', labeler: v => v, icon: '📦' },
+        };
+        const field = fieldMap[groupMode];
+        if (field) {
+            activePieces.forEach(p => {
+                const key = field.getter(p);
+                if (!groups[key]) groups[key] = { name: `${field.icon} ${field.labeler(key)}`, pieces: [], color: CLUSTER_COLORS[Object.keys(groups).length % CLUSTER_COLORS.length] };
+                groups[key].pieces.push(p);
+            });
+        }
+    }
+    
+    if (Object.keys(groups).length === 0) {
         container.innerHTML = `<div class="empty-state"><div class="icon">📦</div><p>No groups</p></div>`;
         return;
     }
     
     let html = '';
-    clusterIds.forEach(cid => {
-        const cp = activePieces.filter(p => p.cluster === cid);
-        const mats = cp.map(p => p.material || 'Unknown');
-        const common = mode(mats);
-        const name = clusterNames[cid] || `${common}_Gruppe_${cid + 1}`;
-        const color = CLUSTER_COLORS[cid % CLUSTER_COLORS.length];
+    Object.entries(groups).forEach(([key, group]) => {
+        const cp = group.pieces;
+        const color = group.color;
+        const name = group.name;
         
         html += `<div class="group-card" style="border-left:4px solid ${color};">
             <div class="group-header">
                 <div>
-                    <input type="text" value="${name}" onchange="clusterNames[${cid}]=this.value" 
-                           style="background:transparent;border:none;color:var(--text-primary);font-size:18px;font-weight:600;width:250px;">
+                    <span style="font-size:18px;font-weight:600;color:var(--text-primary);">${name}</span>
                 </div>
                 <span class="group-badge">${cp.length} ${T('pieces')}</span>
             </div>
@@ -3600,9 +4244,9 @@ function renderGroups() {
                     ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}">` : '<div style="width:80px;height:80px;background:var(--bg-secondary);"></div>'}
                 </div>`).join('')}
             </div>
-            <div class="group-actions">
-                <button class="btn btn-sm btn-primary" onclick="saveGroupToDB(${cid})">💾 ${T('save')}</button>
-            </div>
+            ${groupMode === 'cluster' ? `<div class="group-actions">
+                <button class="btn btn-sm btn-primary" onclick="saveGroupToDB('${key}')">💾 ${T('save')}</button>
+            </div>` : ''}
         </div>`;
     });
     container.innerHTML = html;
@@ -3709,6 +4353,10 @@ function renderDatabase() {
     if (simSection) {
         simSection.style.display = (activePieces.length > 0 && pieceCount > 0) ? '' : 'none';
     }
+    const reidSection = document.getElementById('reid-section');
+    if (reidSection) {
+        reidSection.style.display = (activePieces.length > 0 && pieceCount > 0) ? '' : 'none';
+    }
     
     if (pieceCount === 0) {
         container.innerHTML = `<div class="empty-state"><div class="icon">💾</div>
@@ -3733,9 +4381,27 @@ function renderDatabase() {
     // Render clusters with their pieces
     let html = '';
     
+    // Filter helper
+    const matchesFilter = (p) => {
+        if (dbFilterState.search) {
+            const s = dbFilterState.search;
+            const haystack = [p.id, p.name, p.material, p.color_name, p.munsell, p.excavation, p.vessel_part, p.deco_type].filter(Boolean).join(' ').toLowerCase();
+            if (!haystack.includes(s)) return false;
+        }
+        if (dbFilterState.material && p.material !== dbFilterState.material) return false;
+        if (dbFilterState.diag === 'diag' && !isDiagnostic(p)) return false;
+        if (dbFilterState.diag === 'nondiag' && isDiagnostic(p)) return false;
+        if (dbFilterState.diag === 'deco' && !p.has_decoration && !p.deco_type) return false;
+        return true;
+    };
+    
+    let filteredTotal = 0;
+    
     if (clusterCount > 0) {
         Object.entries(clusters).forEach(([key, cluster]) => {
-            const cPieces = (cluster.piece_ids || []).map(pid => pieces[pid]).filter(Boolean);
+            let cPieces = (cluster.piece_ids || []).map(pid => pieces[pid]).filter(Boolean);
+            cPieces = cPieces.filter(matchesFilter);
+            filteredTotal += cPieces.length;
             if (cPieces.length === 0) return;
             
             html += `<div style="margin-bottom:24px;">
@@ -3796,6 +4462,15 @@ function renderDatabase() {
     }
     
     container.innerHTML = html;
+    
+    // Update search count
+    const countEl = document.getElementById('db-search-count');
+    if (countEl) {
+        const hasFilter = dbFilterState.search || dbFilterState.material || dbFilterState.diag;
+        countEl.textContent = hasFilter 
+            ? `${filteredTotal} von ${pieceCount} Fragmenten angezeigt` 
+            : '';
+    }
 }
 
 function deletePieceFromDB(pid, clusterKey) {
@@ -3832,7 +4507,7 @@ function exportDatabaseCSV() {
     const pieces = Object.values(data.pieces || {});
     if (pieces.length === 0) { toast(currentLang === 'de' ? 'Datenbank leer' : 'Database empty', 'error'); return; }
     
-    const headers = ['ID','Name','Material','Material_Typ','Farbe','Munsell','Gefaessbereich','Dekortyp','Gewicht_g','Haptik','Diagnostisch','Farbe_R','Farbe_G','Farbe_B','Flaeche_px','Kruemmung','Soliditaet','Zirkularitaet','Grabung','Gruppe'];
+    const headers = ['ID','Name','Material','Material_Typ','Farbe','Munsell','Gefaessbereich','Randform','Gefaessform','Dekortyp','Verzierungstechnik','LBK_Bandtyp','Gewicht_g','Haptik','Diagnostisch','Vollstaendigkeit','Herstellung','Brandatmosphaere','Bruchstruktur','Brandhaerte','Durchmesser_cm','Wandstaerke_mm','Randstaerke_mm','Erhaltung_pct','Neigung_deg','Flaeche_px','Kruemmung','Soliditaet','Zirkularitaet','Grabung','Gruppe'];
     
     const rows = pieces.map(p => {
         // Find cluster name
@@ -3851,11 +4526,24 @@ function exportDatabaseCSV() {
             p.color_name || '',
             p.munsell || '',
             p.vessel_part ? getPartLabel(p.vessel_part) : '',
+            p.rim_form ? getRimFormLabel(p.rim_form) : '',
+            p.vessel_form ? getVesselFormLabel(p.vessel_form) : '',
             p.deco_type ? getDecoLabel(p.deco_type) : '',
+            p.deco_technique ? getDecoTechLabel(p.deco_technique) : '',
+            p.lbk_band_type ? getLBKLabel(p.lbk_band_type) : '',
             p.weight_g || '',
             p.haptics || '',
             isDiagnostic(p) ? 'ja' : 'nein',
-            '', '', '', // RGB placeholder
+            p.completeness || '',
+            p.manufacturing || '',
+            p.firing_atmosphere || '',
+            p.fracture_type || '',
+            p.firing_hardness || '',
+            p.diameter_cm || '',
+            p.wall_thickness_mm || '',
+            p.rim_thickness_mm || '',
+            p.preservation_pct || '',
+            p.inclination_deg || '',
             p.area || '',
             p.curvature || '',
             p.solidity || '',
@@ -3899,6 +4587,81 @@ function exportDatabaseJSON() {
     a.href = url; a.download = `shardmind_export_${new Date().toISOString().slice(0,10)}.json`;
     a.click(); URL.revokeObjectURL(url);
     toast('JSON exportiert!', 'success');
+}
+
+// Database search/filter
+let dbFilterState = { search: '', material: '', diag: '' };
+function filterDatabase() {
+    dbFilterState.search = (document.getElementById('db-search')?.value || '').toLowerCase();
+    dbFilterState.material = document.getElementById('db-filter-material')?.value || '';
+    dbFilterState.diag = document.getElementById('db-filter-diag')?.value || '';
+    renderDatabase();
+}
+
+// Share package export (for inter-institutional sharing)
+function exportSharePackage() {
+    const data = getUserData();
+    const pieces = Object.values(data.pieces || {});
+    if (pieces.length === 0) { toast(currentLang === 'de' ? 'Datenbank leer' : 'Database empty', 'error'); return; }
+    
+    const pkg = {
+        _shardmind_package: true,
+        version: APP_VERSION,
+        export_date: new Date().toISOString(),
+        exported_by: currentUser || 'anonymous',
+        context: { ...contextData },
+        total_pieces: pieces.length,
+        pieces: pieces.map(p => {
+            const { color_features, contour_global, ...clean } = p;
+            return clean; // Keep thumbnails for visual reference
+        }),
+        clusters: data.clusters || {},
+        readme: 'ShardMind Fundpaket — kann in jeder ShardMind-Instanz über "Fundpaket importieren" geladen werden.',
+    };
+    
+    const json = JSON.stringify(pkg);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shardmind_fundpaket_${contextData.excavation || 'export'}_${new Date().toISOString().slice(0,10)}.json`.replace(/\s+/g, '_');
+    a.click(); URL.revokeObjectURL(url);
+    toast(currentLang === 'de' ? '☁️ Fundpaket exportiert — kann an Kolleg:innen weitergegeben werden' : '☁️ Package exported', 'success');
+}
+
+// Import share package
+function importSharePackage(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const pkg = JSON.parse(e.target.result);
+            if (!pkg._shardmind_package) {
+                toast(currentLang === 'de' ? 'Keine gültige ShardMind-Datei' : 'Not a valid ShardMind file', 'error');
+                return;
+            }
+            const data = getUserData();
+            if (!data.pieces) data.pieces = {};
+            if (!data.clusters) data.clusters = {};
+            
+            let imported = 0;
+            (pkg.pieces || []).forEach(p => {
+                if (!data.pieces[p.id]) {
+                    data.pieces[p.id] = p;
+                    imported++;
+                }
+            });
+            Object.entries(pkg.clusters || {}).forEach(([key, cl]) => {
+                if (!data.clusters[key]) data.clusters[key] = cl;
+            });
+            
+            saveUserData(data);
+            renderDatabase();
+            toast(`${imported} Fragmente importiert (${pkg.exported_by || '?'}, ${pkg.export_date?.slice(0,10) || '?'})`, 'success');
+        } catch (err) {
+            toast('Import-Fehler: ' + err.message, 'error');
+        }
+    };
+    reader.readAsText(file);
 }
 
 // ==================================================
@@ -4040,6 +4803,51 @@ function generateInventory() {
             html += `<span style="padding:4px 12px;border-radius:12px;background:var(--bg-secondary);border:1px solid var(--border);font-size:12px;">${deco}: <strong>${count}</strong></span>`;
         });
         html += `</div>`;
+    }
+    
+    // Morphometric statistics (if any measurements present)
+    const morphFields = [
+        { key: 'diameter_cm', label_de: 'Durchmesser (cm)', label_en: 'Diameter (cm)' },
+        { key: 'wall_thickness_mm', label_de: 'Wandstärke (mm)', label_en: 'Wall thickness (mm)' },
+        { key: 'rim_thickness_mm', label_de: 'Randstärke (mm)', label_en: 'Rim thickness (mm)' },
+        { key: 'weight_g', label_de: 'Gewicht (g)', label_en: 'Weight (g)' },
+        { key: 'preservation_pct', label_de: 'Erhaltung (%)', label_en: 'Preservation (%)' },
+        { key: 'inclination_deg', label_de: 'Wandneigung (°)', label_en: 'Wall inclination (°)' },
+    ];
+    
+    const morphRows = morphFields.map(f => {
+        const vals = activePieces.map(p => p[f.key]).filter(v => v && !isNaN(v));
+        if (vals.length < 2) return null;
+        const stats = calcStats(vals);
+        return { ...f, stats };
+    }).filter(Boolean);
+    
+    if (morphRows.length > 0) {
+        html += `<h4 style="font-size:14px;margin:20px 0 8px;">📏 Morphometrische Statistik</h4>`;
+        html += `<p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Variationskoeffizient (CV): Maß für Standardisierung — niedrig (&lt;10%) = hohe Standardisierung, hoch (&gt;25%) = geringe Standardisierung</p>`;
+        html += `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px;">
+            <tr style="background:var(--bg-secondary);font-weight:600;">
+                <td style="padding:6px 8px;">Merkmal</td>
+                <td style="padding:6px 8px;text-align:center;">n</td>
+                <td style="padding:6px 8px;text-align:center;">Mittel</td>
+                <td style="padding:6px 8px;text-align:center;">SD</td>
+                <td style="padding:6px 8px;text-align:center;">CV (%)</td>
+                <td style="padding:6px 8px;text-align:center;">Min</td>
+                <td style="padding:6px 8px;text-align:center;">Max</td>
+            </tr>`;
+        morphRows.forEach(r => {
+            const cvColor = parseFloat(r.stats.cv) < 10 ? 'var(--success)' : parseFloat(r.stats.cv) > 25 ? 'var(--warning)' : 'var(--text-primary)';
+            html += `<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:5px 8px;">${currentLang === 'de' ? r.label_de : r.label_en}</td>
+                <td style="padding:5px 8px;text-align:center;">${r.stats.n}</td>
+                <td style="padding:5px 8px;text-align:center;">${r.stats.mean}</td>
+                <td style="padding:5px 8px;text-align:center;">${r.stats.sd}</td>
+                <td style="padding:5px 8px;text-align:center;font-weight:700;color:${cvColor};">${r.stats.cv}%</td>
+                <td style="padding:5px 8px;text-align:center;">${r.stats.min}</td>
+                <td style="padding:5px 8px;text-align:center;">${r.stats.max}</td>
+            </tr>`;
+        });
+        html += `</table>`;
     }
     
     container.innerHTML = html;
@@ -4712,7 +5520,7 @@ async function runAnalysis() {
     progressBar.style.width = '100%';
     const analysisTime = ((Date.now() - analysisStartTime) / 1000).toFixed(1);
     const timePerFragment = activePieces.length > 0 ? ((Date.now() - analysisStartTime) / activePieces.length / 1000).toFixed(2) : '?';
-    progressText.textContent = `✓ ${activePieces.length} ${T('success_fragments')} (${analysisTime}s)`;
+    progressText.textContent = `✓ ${activePieces.length} ${T('success_fragments')} (${analysisTime}s · ${timePerFragment}s/${currentLang === 'de' ? 'Fragment' : 'fragment'})`;
     
     // Tag each piece with selected material type
     const matType = MATERIAL_TYPES[selectedMaterialType];
@@ -4723,6 +5531,13 @@ async function runAnalysis() {
         p.orientation_hint = estimateOrientation(p);
     });
     
+    // Generate visual fingerprints for re-identification
+    for (const p of activePieces) {
+        try {
+            p.fingerprint = await generateVisualFingerprint(p);
+        } catch(e) { /* fingerprint optional */ }
+    }
+    
     setTimeout(() => {
         progress.style.display = 'none';
         
@@ -4731,6 +5546,7 @@ async function runAnalysis() {
         document.getElementById('metric-fragments').textContent = activePieces.length;
         document.getElementById('metric-groups').textContent = clusterIds.length;
         document.getElementById('metric-project').textContent = project.substring(0, 15);
+        document.getElementById('metric-time').textContent = timePerFragment + 's';
         document.getElementById('metrics-row').style.display = '';
         
         // Show batch stats
@@ -4744,6 +5560,166 @@ async function runAnalysis() {
         
         toast(`${activePieces.length} ${T('success_fragments')} · ${analysisTime}s · ${timePerFragment}s/Fragment`, 'success');
     }, 500);
+}
+
+// ==================================================
+// VISUAL FINGERPRINT & RE-IDENTIFICATION
+// ==================================================
+// Generate a perceptual hash for each fragment — allows re-identification
+// when the same sherd is scanned/photographed again later
+function generateVisualFingerprint(piece) {
+    if (!piece.thumbnailDataUrl) return null;
+    
+    // Create a small canvas to compute fingerprint
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    return new Promise((resolve) => {
+        img.onload = () => {
+            // Downsample to 16x16 grayscale
+            canvas.width = 16;
+            canvas.height = 16;
+            ctx.drawImage(img, 0, 0, 16, 16);
+            const data = ctx.getImageData(0, 0, 16, 16).data;
+            
+            // Compute average luminance
+            let sum = 0;
+            const grays = [];
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114;
+                grays.push(gray);
+                sum += gray;
+            }
+            const avg = sum / grays.length;
+            
+            // Perceptual hash: each pixel above/below average = 1/0 bit
+            let hash = '';
+            grays.forEach(g => hash += g >= avg ? '1' : '0');
+            
+            // Also store compact color signature (mean Lab values)
+            canvas.width = 8;
+            canvas.height = 8;
+            ctx.drawImage(img, 0, 0, 8, 8);
+            const d8 = ctx.getImageData(0, 0, 8, 8).data;
+            let rSum = 0, gSum = 0, bSum = 0;
+            const px = d8.length / 4;
+            for (let i = 0; i < d8.length; i += 4) {
+                rSum += d8[i]; gSum += d8[i+1]; bSum += d8[i+2];
+            }
+            
+            const fingerprint = {
+                phash: hash,
+                color_sig: [Math.round(rSum/px), Math.round(gSum/px), Math.round(bSum/px)],
+                area: piece.area || 0,
+                curvature: piece.curvature || 0,
+            };
+            
+            resolve(fingerprint);
+        };
+        img.onerror = () => resolve(null);
+        img.src = piece.thumbnailDataUrl;
+    });
+}
+
+// Hamming distance between two perceptual hashes
+function hammingDistance(h1, h2) {
+    if (!h1 || !h2 || h1.length !== h2.length) return Infinity;
+    let dist = 0;
+    for (let i = 0; i < h1.length; i++) {
+        if (h1[i] !== h2[i]) dist++;
+    }
+    return dist;
+}
+
+// Search database for a matching sherd by visual fingerprint
+async function searchByFingerprint(piece) {
+    const fp = await generateVisualFingerprint(piece);
+    if (!fp) return [];
+    
+    const data = getUserData();
+    const dbPieces = Object.values(data.pieces || {});
+    const matches = [];
+    
+    for (const dbP of dbPieces) {
+        if (!dbP.fingerprint) continue;
+        
+        // Compare perceptual hash
+        const hDist = hammingDistance(fp.phash, dbP.fingerprint.phash);
+        const hashSim = 1 - (hDist / 256); // 256 bits
+        
+        // Compare color signature
+        const cDist = Math.sqrt(
+            (fp.color_sig[0] - dbP.fingerprint.color_sig[0])**2 +
+            (fp.color_sig[1] - dbP.fingerprint.color_sig[1])**2 +
+            (fp.color_sig[2] - dbP.fingerprint.color_sig[2])**2
+        );
+        const colorSim = Math.max(0, 1 - cDist / 441); // max dist = sqrt(255²*3)
+        
+        // Area similarity
+        const areaSim = (fp.area > 0 && dbP.fingerprint.area > 0) 
+            ? Math.min(fp.area, dbP.fingerprint.area) / Math.max(fp.area, dbP.fingerprint.area) : 0.5;
+        
+        // Weighted score
+        const score = hashSim * 0.5 + colorSim * 0.3 + areaSim * 0.2;
+        
+        if (score > 0.7) {
+            matches.push({ piece: dbP, score, hashSim, colorSim });
+        }
+    }
+    
+    return matches.sort((a, b) => b.score - a.score).slice(0, 5);
+}
+
+// Re-identification button handler
+async function runReIdentification() {
+    if (activePieces.length === 0) {
+        toast(T('upload_first'), 'error');
+        return;
+    }
+    
+    const container = document.getElementById('reid-results');
+    if (!container) return;
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">🔍 Suche nach bekannten Fragmenten...</p>';
+    
+    let foundCount = 0;
+    let html = '';
+    
+    for (const piece of activePieces) {
+        const matches = await searchByFingerprint(piece);
+        if (matches.length > 0) {
+            foundCount++;
+            const best = matches[0];
+            const pct = (best.score * 100).toFixed(0);
+            html += `<div style="padding:10px;margin-bottom:8px;background:var(--bg-secondary);border-radius:var(--radius);border-left:3px solid ${best.score > 0.85 ? 'var(--success)' : 'var(--warning)'};">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <strong>${piece.id.substring(0, 11)}</strong> → 
+                        <span style="color:var(--accent);">${best.piece.id.substring(0, 11)}</span>
+                        <span style="color:var(--text-muted);font-size:12px;"> (${best.piece.name || ''})</span>
+                    </div>
+                    <span style="font-size:14px;font-weight:700;color:${best.score > 0.85 ? 'var(--success)' : 'var(--warning)'};">${pct}%</span>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+                    ${best.score > 0.85 
+                        ? (currentLang === 'de' ? '✅ Sehr wahrscheinlich dieselbe Scherbe' : '✅ Very likely the same sherd') 
+                        : (currentLang === 'de' ? '⚠️ Möglicherweise dieselbe Scherbe — bitte prüfen' : '⚠️ Possibly the same sherd — please verify')}
+                </div>
+            </div>`;
+        }
+    }
+    
+    if (foundCount === 0) {
+        container.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">
+            ${currentLang === 'de' 
+                ? '✅ Keine bekannten Fragmente gefunden — alle Stücke sind neu für die Datenbank.' 
+                : '✅ No known fragments found — all pieces are new to the database.'}
+        </p>`;
+    } else {
+        container.innerHTML = `<p style="font-size:13px;color:var(--text-primary);margin-bottom:12px;">
+            <strong>${foundCount}</strong> ${currentLang === 'de' ? 'mögliche Wiedererkennung(en)' : 'possible re-identification(s)'}:
+        </p>` + html;
+    }
 }
 
 // ==================================================
@@ -4849,6 +5825,19 @@ function showBatchStats(totalTime, timePerFrag) {
 function generateInventorySummary(container) {
     if (activePieces.length === 0) return;
     const lang = currentLang;
+    
+    // Morphometric statistics helper
+    function calcStats(values) {
+        if (values.length === 0) return null;
+        const n = values.length;
+        const mean = values.reduce((a, b) => a + b, 0) / n;
+        const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1 || 1);
+        const sd = Math.sqrt(variance);
+        const cv = mean > 0 ? (sd / mean * 100) : 0; // Coefficient of variation
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        return { n, mean: mean.toFixed(1), sd: sd.toFixed(2), cv: cv.toFixed(1), min: min.toFixed(1), max: max.toFixed(1) };
+    }
     
     // Count by vessel part
     const partCounts = {};
@@ -5957,6 +6946,7 @@ const CULTURE_DB = {
         material_hints: ['Keramik'],
         decoration_hints: ['incised', 'stamped'],
         deco_type_hints: ['ritzlinien', 'stiche', 'kornstich', 'dellen', 'leisten'],
+        deco_tech_hints: ['spatel_einzinkig', 'spatel_mehrzinkig', 'finger', 'schnur', 'ritzung'],
     },
     'bronze-age': {
         name_de: 'Bronzezeit', name_en: 'Bronze Age',
@@ -5982,6 +6972,7 @@ const CULTURE_DB = {
         material_hints: ['Keramik'],
         decoration_hints: ['ornamental', 'band', 'stamped'],
         deco_type_hints: ['gurtfurchen', 'dellen', 'ritzlinien', 'leisten', 'appliken'],
+        deco_tech_hints: ['finger', 'spatel_einzinkig', 'ritzung', 'schlick'],
     },
     'iron-age': {
         name_de: 'Eisenzeit', name_en: 'Iron Age',
@@ -6006,6 +6997,7 @@ const CULTURE_DB = {
         material_hints: ['Keramik'],
         decoration_hints: ['stamped', 'painted', 'ornamental'],
         deco_type_hints: ['kammstrich', 'stempel', 'bemalung', 'leisten', 'ritzlinien'],
+        deco_tech_hints: ['kamm', 'stempel_einzel', 'pinsel', 'ritzung'],
     },
     roman: {
         name_de: 'Römisch', name_en: 'Roman',
@@ -6030,6 +7022,7 @@ const CULTURE_DB = {
         material_hints: ['Keramik', 'Porzellan'],
         decoration_hints: ['figural', 'stamped', 'ornamental'],
         deco_type_hints: ['stempel', 'rollraedchen', 'appliken', 'engobe'],
+        deco_tech_hints: ['stempel_roll', 'stempel_einzel', 'schlick', 'polierung'],
     },
     medieval: {
         name_de: 'Mittelalter', name_en: 'Medieval',
@@ -6056,6 +7049,7 @@ const CULTURE_DB = {
         material_hints: ['Keramik'],
         decoration_hints: ['band', 'stamped', 'ornamental', 'incised'],
         deco_type_hints: ['rollraedchen', 'stempel', 'glasur', 'ritzlinien', 'leisten', 'gurtfurchen'],
+        deco_tech_hints: ['stempel_roll', 'stempel_einzel', 'ritzung', 'schlick'],
     },
     'early-modern': {
         name_de: 'Frühe Neuzeit', name_en: 'Early Modern',
@@ -6081,6 +7075,7 @@ const CULTURE_DB = {
         material_hints: ['Keramik', 'Porzellan'],
         decoration_hints: ['painted', 'figural', 'ornamental'],
         deco_type_hints: ['bemalung', 'glasur', 'engobe', 'appliken', 'stempel'],
+        deco_tech_hints: ['pinsel', 'stempel_einzel', 'stempel_roll', 'polierung'],
     },
     modern: {
         name_de: 'Neuzeit (Industriezeitalter)', name_en: 'Modern (Industrial)',
@@ -6104,6 +7099,7 @@ const CULTURE_DB = {
         material_hints: ['Porzellan'],
         decoration_hints: ['painted', 'band', 'figural', 'ornamental'],
         deco_type_hints: ['bemalung', 'glasur', 'engobe'],
+        deco_tech_hints: ['pinsel', 'polierung'],
     }
 };
 
@@ -6576,30 +7572,45 @@ function classifyPieceCulture(piece) {
         let score = 0;
         const matchedCriteria = [];
 
-        // Color matching
+        // Color matching — LOW weight: color is unreliable due to soil staining
+        // (Two fitting sherds can be completely differently colored after burial)
         if (piece.color_name && culture.color_hints.includes(piece.color_name)) {
-            score += 25;
-            matchedCriteria.push(`color:${piece.color_name}`);
+            score += 5; // Was 25, reduced per Stolle feedback
+            matchedCriteria.push(`color:${piece.color_name}⚠️`);
         }
 
         // Material matching
         if (piece.material && culture.material_hints.includes(piece.material)) {
-            score += 20;
+            score += 15;
             matchedCriteria.push(`material:${piece.material}`);
         }
 
-        // Decoration matching
+        // Decoration presence
         if (piece.has_decoration) {
             score += 10;
             matchedCriteria.push('has_decoration');
         }
         
-        // Decoration TYPE matching (much more specific)
+        // Decoration TYPE matching — HIGH weight: most reliable criterion
         if (piece.deco_type && piece.deco_type !== '' && piece.deco_type !== 'keine' && culture.deco_type_hints) {
             if (culture.deco_type_hints.includes(piece.deco_type)) {
-                score += 20;
+                score += 30; // Was 20, increased per Stolle feedback
                 matchedCriteria.push(`deco_type:${piece.deco_type}`);
             }
+        }
+        
+        // Decoration TECHNIQUE matching — NEW
+        if (piece.deco_technique && culture.deco_tech_hints) {
+            if (culture.deco_tech_hints.includes(piece.deco_technique)) {
+                score += 15;
+                matchedCriteria.push(`deco_tech:${piece.deco_technique}`);
+            }
+        }
+        
+        // LBK-specific band type matching
+        if (piece.lbk_band_type && piece.lbk_band_type !== '' && key === 'neolithic') {
+            score += 25; // Very strong indicator
+            matchedCriteria.push(`lbk_band:${piece.lbk_band_type}`);
         }
         
         // Vessel part can also hint at culture (e.g. Knubbe = neolithic/bronze age)
@@ -6612,12 +7623,12 @@ function classifyPieceCulture(piece) {
             }
         }
 
-        // Curvature analysis (thin walls = higher curvature often)
+        // Curvature — LOW weight: rarely informative (per Stolle)
         const curv = piece.curvature || 0;
         if (key === 'roman' || key === 'modern' || key === 'early-modern') {
-            if (curv > 0.01) { score += 10; matchedCriteria.push('high_curvature'); }
+            if (curv > 0.01) { score += 2; matchedCriteria.push('high_curvature↓'); }
         } else if (key === 'neolithic') {
-            if (curv < 0.005) { score += 10; matchedCriteria.push('low_curvature'); }
+            if (curv < 0.005) { score += 2; matchedCriteria.push('low_curvature↓'); }
         }
 
         // Area analysis (rough proxy for wall thickness)
@@ -6650,9 +7661,17 @@ function classifyPieceCulture(piece) {
         if (piece.deco_type && culture.sub_dating && culture.sub_dating[piece.deco_type]) {
             const sub = culture.sub_dating[piece.deco_type];
             dating = { from: sub.date[0], to: sub.date[1], refined: true, sub_period: sub.period_de };
-            score += 10; // bonus for being able to date more precisely
+            score += 10;
             matchedCriteria.push(`sub_dating:${piece.deco_type}`);
         }
+        
+        // Completeness confidence modifier — more complete = more reliable
+        const compMod = {
+            'vollstaendig': 1.3, 'grossfragment': 1.15, 'fragment': 1.0, 
+            'kleinfragment': 0.7, 'splitter': 0.4,
+        };
+        const modifier = compMod[piece.completeness] || 1.0;
+        score = Math.round(score * modifier);
 
         scores[key] = { score: Math.min(score, 100), criteria: matchedCriteria, dating };
     });
@@ -7438,6 +8457,47 @@ function updateOfflineStatus() {
 }
 
 // ==================================================
+// SHARE FUNCTIONS
+// ==================================================
+function copyShareLink() {
+    const url = BASE_URL;
+    const text = `ShardMind — KI-gestützte Analyse archäologischer Fundfragmente\n${url}\n\nBrowser-basiert, offline-fähig, kostenlos. Feedback willkommen!`;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            toast(currentLang === 'de' ? '🔗 Link kopiert!' : '🔗 Link copied!', 'success');
+        }).catch(() => {
+            fallbackCopy(text);
+        });
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast(currentLang === 'de' ? '🔗 Link kopiert!' : '🔗 Link copied!', 'success');
+}
+
+function shareViaEmail() {
+    const subject = encodeURIComponent('ShardMind — KI-Analyse für archäologische Fundfragmente');
+    const body = encodeURIComponent(
+        `Hallo,\n\nich möchte dir ShardMind zeigen — ein browser-basiertes Tool zur automatischen Analyse und Dokumentation archäologischer Fundfragmente (Keramik, Glas, Knochen u.a.).\n\n` +
+        `→ ${BASE_URL}\n\n` +
+        `Features: Segmentierung, Munsell-Farbbestimmung, Gruppierung, Kulturzuweisung, Inventarliste, Luftbild-Erkennung.\n` +
+        `Alles läuft im Browser, kein Server, offline-fähig.\n\n` +
+        `Das Team freut sich über Feedback von Fachleuten!\n\nViele Grüße`
+    );
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+}
+
+// ==================================================
 // PYTHON ENVIRONMENT MONITORING
 // ==================================================
 
@@ -7749,6 +8809,63 @@ def segment_fragments(image, min_area=100, project="", mode="auto", separation_s
         diff = np.abs(image.astype(float) - bg_mean_c)
         fg_mask = np.any(diff > bg_std_c * 2, axis=2).astype(np.uint8) * 255
         masks.append(fg_mask)
+    
+    if mode in ["aerial", "field_survey"]:
+        # Aerial/survey mode: detect ceramic sherds on natural ground
+        # Strategy: find color anomalies against earth background
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        
+        # Sample background from image edges (natural ground)
+        edge_w = max(20, w // 15)
+        edge_h = max(20, h // 15)
+        bg_samples = np.vstack([
+            image[0:edge_h, :].reshape(-1, 3),
+            image[-edge_h:, :].reshape(-1, 3),
+            image[:, 0:edge_w].reshape(-1, 3),
+            image[:, -edge_w:].reshape(-1, 3),
+        ])
+        bg_mean_lab = np.mean(cv2.cvtColor(bg_samples.reshape(1, -1, 3).astype(np.uint8), cv2.COLOR_BGR2Lab).reshape(-1, 3).astype(float), axis=0)
+        
+        # Color distance from background in Lab space
+        lab_img = cv2.cvtColor(image, cv2.COLOR_BGR2Lab).astype(float)
+        color_dist = np.sqrt(np.sum((lab_img - bg_mean_lab) ** 2, axis=2))
+        
+        # Threshold: pixels significantly different from background
+        dist_thresh = np.percentile(color_dist, 85)  # top 15% most different
+        anomaly_mask = (color_dist > dist_thresh).astype(np.uint8) * 255
+        masks.append(anomaly_mask)
+        
+        # Ceramic tends to be warmer (reddish-brown-orange) than soil
+        # Detect warm-colored regions: H < 25 (red/orange/brown) with some saturation
+        warm_mask = cv2.inRange(hsv, np.array([0, 20, 50]), np.array([25, 255, 220]))
+        masks.append(warm_mask)
+        
+        # Also detect very bright anomalies (white/light sherds on dark earth)
+        v_ch = hsv[:, :, 2]
+        v_median = np.median(v_ch)
+        bright_mask = ((v_ch > v_median + 40) & (v_ch > 120)).astype(np.uint8) * 255
+        masks.append(bright_mask)
+        
+        # Edge-based detection for texture anomalies
+        edges_a = cv2.Canny(gray, 40, 120)
+        kernel_a = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        edges_a = cv2.dilate(edges_a, kernel_a, iterations=2)
+        # Only keep edges that overlap with color anomalies
+        edge_anomaly = cv2.bitwise_and(edges_a, anomaly_mask)
+        kernel_fill = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
+        edge_anomaly = cv2.dilate(edge_anomaly, kernel_fill, iterations=3)
+        masks.append(edge_anomaly)
+        
+        if mode == "field_survey":
+            # Field survey: also use texture/LBP-like features
+            # Detect smooth regions (ceramic) vs rough (soil/gravel)
+            local_std = cv2.blur((gray.astype(float) - cv2.blur(gray.astype(float), (11,11)))**2, (11,11))
+            smooth_mask = (local_std < np.percentile(local_std, 30)).astype(np.uint8) * 255
+            # Combine: smooth + color anomaly = likely sherd
+            smooth_anomaly = cv2.bitwise_and(smooth_mask, anomaly_mask)
+            kernel_sm = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+            smooth_anomaly = cv2.dilate(smooth_anomaly, kernel_sm, iterations=2)
+            masks.append(smooth_anomaly)
     
     combined = np.zeros_like(gray)
     for m in masks:
