@@ -7,9 +7,8 @@
     <title>ShardMind — Archaeological Fragment Analysis</title>
 
 ```
-<!-- PyScript -->
-<link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
-<script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+<!-- PyScript: core.js loaded dynamically after page renders (see end of body) -->
+<!-- No PyScript CSS needed — we don't use the PyScript editor UI -->
 
 <!-- QR Code Library -->
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -20,9 +19,13 @@
 <!-- Three.js for 3D reconstruction -->
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<!-- Google Fonts (non-blocking) -->
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
+<style>
+    /* Override PyScript CSS that might hide page content */
+    body { visibility: visible !important; opacity: 1 !important; }
+</style>
 <style>
     :root {
         --bg-primary: #0f1117;
@@ -64,7 +67,7 @@
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-    /* Loading Screen */
+    /* Loading Screen — auto-hides after 2s via CSS (bulletproof fallback) */
     #loading-screen {
         position: fixed; inset: 0; z-index: 10000;
         background: var(--bg-primary);
@@ -72,8 +75,12 @@
         align-items: center; justify-content: center;
         gap: 24px;
         transition: opacity 0.6s ease-out;
+        animation: autoFadeOut 0.6s ease-out 2s forwards;
     }
-    #loading-screen.hidden { opacity: 0; pointer-events: none; display: none !important; }
+    @keyframes autoFadeOut {
+        to { opacity: 0; visibility: hidden; pointer-events: none; }
+    }
+    #loading-screen.hidden { opacity: 0; pointer-events: none; visibility: hidden; }
     .loading-logo {
         font-family: 'Playfair Display', serif;
         font-size: 48px; color: var(--accent);
@@ -93,6 +100,20 @@
     @keyframes loadSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
     .loading-text { color: var(--text-secondary); font-size: 14px; }
     .loading-packages { color: var(--text-muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+
+    /* CRITICAL: Hide PyScript's built-in splash screen & terminal overlay */
+    /* PyScript 2024.x creates py-splashscreen that covers entire viewport while loading 50+MB of packages */
+    py-splashscreen, py-terminal, .py-overlay, .pyscript-splash {
+        display: none !important;
+        visibility: hidden !important;
+        position: absolute !important;
+        width: 0 !important; height: 0 !important;
+        overflow: hidden !important;
+    }
+    /* Also hide any iframes PyScript might inject */
+    iframe[src*="pyscript"], iframe[src*="pyodide"] {
+        display: none !important;
+    }
 
     /* Python status indicator (non-blocking) */
     .py-status-bar {
@@ -1137,6 +1158,52 @@
     <div class="loading-text" id="loading-status">Initializing...</div>
     <div class="loading-packages" id="loading-packages">Loading Python environment...</div>
 </div>
+<noscript>
+    <div style="position:fixed;inset:0;z-index:99999;background:#0a0b10;color:#e0e0e0;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:20px;">
+        <div>
+            <h1 style="font-size:48px;">🏺 ShardMind</h1>
+            <p>JavaScript muss aktiviert sein, um ShardMind zu verwenden.</p>
+            <p>JavaScript must be enabled to use ShardMind.</p>
+        </div>
+    </div>
+</noscript>
+<script>
+// IMMEDIATE: If this runs, JS works. Hide loading screen after 2s max.
+(function() {
+    var t = setTimeout(function() {
+        var ls = document.getElementById('loading-screen');
+        if (ls) ls.style.display = 'none';
+        var lp = document.getElementById('login-page');
+        if (lp) lp.style.display = '';
+        console.log('[ShardMind] Emergency: loading screen forced hidden by inline script');
+    }, 2000);
+    // Store timer so init() can clear it if it works
+    window.__smLoadingTimer = t;
+
+```
+// KILL PyScript splash screens as they appear
+var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+        m.addedNodes.forEach(function(node) {
+            if (node.nodeType === 1) {
+                var tag = node.tagName ? node.tagName.toLowerCase() : '';
+                if (tag === 'py-splashscreen' || tag === 'py-terminal' || 
+                    (node.classList && (node.classList.contains('py-overlay') || node.classList.contains('pyscript-splash')))) {
+                    node.style.display = 'none';
+                    node.remove();
+                    console.log('[ShardMind] Killed PyScript overlay:', tag);
+                }
+            }
+        });
+    });
+});
+observer.observe(document.documentElement, { childList: true, subtree: true });
+// Stop observing after 60s
+setTimeout(function() { observer.disconnect(); }, 60000);
+```
+
+})();
+</script>
 
 <!-- ======================= TOAST CONTAINER ======================= -->
 
@@ -2689,12 +2756,11 @@ function checkLib(name) {
 }
 
 // Sync version displays everywhere
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.app-version-display').forEach(el => {
-        el.textContent = `v${APP_VERSION}`;
-    });
-    document.title = `ShardMind v${APP_VERSION} — Archaeological Fragment Analysis`;
+// Version sync - runs directly (DOM elements are above this script)
+document.querySelectorAll('.app-version-display').forEach(el => {
+    el.textContent = `v${APP_VERSION}`;
 });
+document.title = `ShardMind v${APP_VERSION} — Archaeological Fragment Analysis`;
 const BASE_URL = "https://letztiz.github.io/ShardMind/";
 
 let currentLang = 'de';
@@ -2802,10 +2868,11 @@ function updateModeHint() {
         hint.textContent = h[sel.value] || '';
     }
 }
-document.addEventListener('DOMContentLoaded', () => {
+// Mode selector - runs directly (element at line 1318 is above this script)
+{
     const sel = document.getElementById('select-mode');
     if (sel) sel.addEventListener('change', updateModeHint);
-});
+}
 let clusterLabels = [];
 let clusterNames = {};
 let customLabels = [];
@@ -8609,47 +8676,56 @@ toast(currentLang === 'de' ? 'Annotierte Zeichnung gespeichert!' : 'Annotated dr
 // INIT
 // ==================================================
 function init() {
-currentLang = localStorage.getItem(‘shardmind_lang’) || ‘de’;
-setLanguage(currentLang);
-checkCookieConsent();
+// Clear emergency fallback timer — init() is running properly
+if (window.__smLoadingTimer) clearTimeout(window.__smLoadingTimer);
 
 ```
-// Hide loading screen after brief splash (don't block on Python)
-setTimeout(() => {
-    const ls = document.getElementById('loading-screen');
-    if (ls) ls.classList.add('hidden');
-}, 1500);
+try {
+    currentLang = localStorage.getItem('shardmind_lang') || 'de';
+} catch(e) { currentLang = 'de'; }
 
-// SAFETY: If loading screen is STILL visible after 15s, force-hide it
-setTimeout(() => {
+try { setLanguage(currentLang); } catch(e) { console.error('[ShardMind] setLanguage failed:', e); }
+try { checkCookieConsent(); } catch(e) { console.error('[ShardMind] checkCookieConsent failed:', e); }
+
+// Hide loading screen (CSS animation handles this too as fallback)
+try {
     const ls = document.getElementById('loading-screen');
-    if (ls && !ls.classList.contains('hidden')) {
-        console.warn('[ShardMind] Force-hiding loading screen after 15s');
+    if (ls) {
+        ls.style.display = 'none';
         ls.classList.add('hidden');
     }
-}, 15000);
+} catch(e) {}
 
 // Auto-login if saved
-const savedUser = localStorage.getItem('shardmind_user');
-if (savedUser) {
-    const db = getDB();
-    if (db[savedUser]) {
-        currentUser = savedUser;
-        showApp();
+try {
+    const savedUser = localStorage.getItem('shardmind_user');
+    if (savedUser) {
+        const db = getDB();
+        if (db[savedUser]) {
+            currentUser = savedUser;
+            showApp();
+        } else {
+            document.getElementById('login-page').style.display = '';
+        }
     } else {
         document.getElementById('login-page').style.display = '';
     }
-} else {
-    document.getElementById('login-page').style.display = '';
+} catch(e) { 
+    console.error('[ShardMind] Login check failed:', e);
+    try { document.getElementById('login-page').style.display = ''; } catch(e2) {}
 }
 
 // Start monitoring Python environment
-monitorPythonLoading();
+try { monitorPythonLoading(); } catch(e) { console.error('[ShardMind] monitorPythonLoading failed:', e); }
 
 // Offline detection
-updateOfflineStatus();
-window.addEventListener('online', updateOfflineStatus);
-window.addEventListener('offline', updateOfflineStatus);
+try {
+    updateOfflineStatus();
+    window.addEventListener('online', updateOfflineStatus);
+    window.addEventListener('offline', updateOfflineStatus);
+} catch(e) {}
+
+console.log('[ShardMind] init() completed successfully');
 ```
 
 }
@@ -8828,13 +8904,38 @@ toast(currentLang === ‘de’ ? ‘Seite wird neu geladen…’ : ‘Reloading 
 setTimeout(() => location.reload(), 800);
 }
 
-// Wait for DOM
-document.addEventListener(‘DOMContentLoaded’, init);
+// Don’t wait for DOMContentLoaded — script is at end of body, DOM is ready
+try {
+init();
+} catch(e) {
+console.error(’[ShardMind] CRITICAL: init() crashed:’, e);
+// Emergency: force show login page
+try {
+document.getElementById(‘loading-screen’).style.display = ‘none’;
+document.getElementById(‘login-page’).style.display = ‘’;
+} catch(e2) {}
+}
+
+// Load PyScript dynamically (after page is visible)
+function loadPyScript() {
+const script = document.createElement(‘script’);
+script.type = ‘module’;
+script.src = ‘https://pyscript.net/releases/2024.1.1/core.js’;
+script.onerror = () => {
+console.warn(’[ShardMind] PyScript failed to load — analysis unavailable’);
+setPyStatus(‘error’, currentLang === ‘de’
+? ‘Python konnte nicht geladen werden — Analyse nicht verfügbar. Seite neu laden zum Wiederholen.’
+: ‘Python failed to load — analysis unavailable. Reload to retry.’);
+};
+document.head.appendChild(script);
+}
+// Start loading PyScript shortly after page renders
+setTimeout(loadPyScript, 100);
 </script>
 
 <!-- ======================= PYSCRIPT - PYTHON CODE ======================= -->
 
-<script type="py" config='{"packages":["numpy","opencv-python","scikit-learn","scipy","Pillow"]}'>
+<script type="py" config='{"packages":["numpy","opencv-python","scikit-learn","scipy","Pillow"],"terminal":false,"splashscreen":{"enabled":false}}'>
 import js
 import sys
 
