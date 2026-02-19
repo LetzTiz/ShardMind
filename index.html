@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShardMind v2.0 — Archaeological Fragment Analysis</title>
+    <title>ShardMind — Archaeological Fragment Analysis</title>
 
 ```
 <!-- PyScript -->
@@ -12,13 +12,13 @@
 <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
 
 <!-- QR Code Library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <!-- jsPDF for PDF generation -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <!-- Three.js for 3D reconstruction -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
@@ -1229,7 +1229,7 @@
     </div>
 
     <div style="text-align:center;margin-top:16px;">
-        <span style="color:var(--text-muted);font-size:12px;">🔒 <span id="privacy-link-text">Datenschutzerklärung</span> | ShardMind v2.0</span>
+        <span style="color:var(--text-muted);font-size:12px;">🔒 <span id="privacy-link-text">Datenschutzerklärung</span> | ShardMind <span class="app-version-display">v2.7</span></span>
     </div>
 </div>
 ```
@@ -1243,7 +1243,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <span class="sidebar-logo">🏺 ShardMind</span>
-            <span class="sidebar-version">v2.0</span>
+            <span class="sidebar-version app-version-display">v2.7</span>
         </div>
 
 ```
@@ -2676,7 +2676,26 @@
 // STATE & CONFIG
 // ==================================================
 const APP_VERSION = "2.7";
-const BASE_URL = "https://shardmind.streamlit.app";
+
+// Library availability checks (defer-loaded, may not be ready immediately)
+function checkLib(name) {
+    const libs = { 'jsPDF': () => window.jspdf, 'QRCode': () => window.QRCode, 'THREE': () => window.THREE };
+    const check = libs[name];
+    if (check && check()) return true;
+    toast(currentLang === 'de' 
+        ? `⏳ ${name} lädt noch — bitte in wenigen Sekunden erneut versuchen` 
+        : `⏳ ${name} still loading — please retry in a few seconds`, 'info');
+    return false;
+}
+
+// Sync version displays everywhere
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.app-version-display').forEach(el => {
+        el.textContent = `v${APP_VERSION}`;
+    });
+    document.title = `ShardMind v${APP_VERSION} — Archaeological Fragment Analysis`;
+});
+const BASE_URL = "https://letztiz.github.io/ShardMind/";
 
 let currentLang = 'de';
 let currentUser = null;
@@ -3162,7 +3181,7 @@ const HELP_DE = `<h2>Schnellstart</h2>
 <li><strong>Nicht überlappen</strong> lassen</li>
 <li><strong>Gute Beleuchtung</strong> ohne Schatten</li>
 <li>Bei Problemen: Erkennungsmodus ändern</li></ul>
-<h2>🔮 3D-Rekonstruktion (NEU in v2.0)</h2>
+<h2>🔮 3D-Rekonstruktion</h2>
 <p>Im Rekonstruktions-Tab wechseln Sie zwischen <strong>2D</strong> und <strong>3D-Ansicht</strong>:</p>
 <ul><li><strong>Gefäßtypen</strong>: Flachteller, Suppenteller, Schüssel, Tasse</li>
 <li><strong>Parameter</strong>: Tiefe, Randwinkel, Standfuß und Wandstärke anpassbar</li>
@@ -3171,13 +3190,13 @@ const HELP_DE = `<h2>Schnellstart</h2>
 <li><strong>Optionen</strong>: Drahtgitter, Fragmentgrenzen, Auto-Rotation, Unterseite</li>
 <li><strong>Export</strong>: Screenshot als PNG speichern</li></ul>
 <p><strong>So funktioniert es:</strong> Die Software nutzt das Circle-Fitting der Dekorbänder, um den Tellerradius zu bestimmen. Daraus wird ein parametrisches 3D-Modell erzeugt (Rotationskörper). Die Fragmentfotos werden als Textur auf die Oberfläche projiziert. Fehlende Bereiche zeigen die "Tonfarbe" des Gefäßkörpers.</p>
-<h2>🎨 Verzierungsanalyse (NEU in v2.0)</h2>
+<h2>🎨 Verzierungsanalyse</h2>
 <p>Im Tab "🎨 Verzierung" können Sie Fragmente mit Dekor auswählen und automatisch eine <strong>maßstäbliche Strichzeichnung</strong> extrahieren lassen.</p>
 <ul><li><strong>Verzierungstypen</strong>: Figürlich, Ornamental, Banddekor, Bemalt, Ritzdekor, Stempel/Relief</li>
 <li><strong>Parameter</strong>: Linienstärke, Detailgrad und Kantenerkennung anpassbar</li>
 <li><strong>Überlagerung</strong>: Original und Zeichnung überlagert mit Transparenzregler</li>
 <li><strong>Export</strong>: PNG (Strichzeichnung), PNG (Überlagerung), SVG (Vektorgrafik)</li></ul>
-<h2>🏛️ Kulturstufen-Klassifikation (NEU in v2.0)</h2>
+<h2>🏛️ Kulturstufen-Klassifikation</h2>
 <p>Im Tab "🏛️ Kulturstufe" analysiert ShardMind Material, Farbe, Form und Verzierung und schlägt eine archäologische Einordnung vor:</p>
 <ul><li><strong>Neolithikum</strong>: Grobe Magerung, Ritzdekor, Kugeltöpfe</li>
 <li><strong>Bronzezeit</strong>: Rillen, Buckel, verbesserte Brandführung</li>
@@ -3199,7 +3218,7 @@ const HELP_EN = `<h2>Quick Start</h2>
 <li><strong>Don't overlap</strong> fragments</li>
 <li><strong>Good lighting</strong> without shadows</li>
 <li>If problems: Change detection mode</li></ul>
-<h2>🔮 3D Reconstruction (NEW in v2.0)</h2>
+<h2>🔮 3D Reconstruction</h2>
 <p>In the Reconstruction tab, switch between <strong>2D</strong> and <strong>3D view</strong>:</p>
 <ul><li><strong>Vessel types</strong>: Flat plate, soup plate, bowl, cup</li>
 <li><strong>Parameters</strong>: Depth, rim angle, foot, wall thickness adjustable</li>
@@ -3208,13 +3227,13 @@ const HELP_EN = `<h2>Quick Start</h2>
 <li><strong>Options</strong>: Wireframe, fragment boundaries, auto-rotation, underside</li>
 <li><strong>Export</strong>: Save screenshot as PNG</li></ul>
 <p><strong>How it works:</strong> The software uses circle fitting from decoration bands to determine plate radius. A parametric 3D model (surface of revolution) is generated. Fragment photos are projected as texture onto the surface. Missing areas show the clay body color.</p>
-<h2>🎨 Decoration Analysis (NEW in v2.0)</h2>
+<h2>🎨 Decoration Analysis</h2>
 <p>In the "🎨 Decoration" tab, select decorated fragments and automatically extract a <strong>scaled line drawing</strong>.</p>
 <ul><li><strong>Decoration types</strong>: Figural, ornamental, band, painted, incised, stamped/relief</li>
 <li><strong>Parameters</strong>: Line thickness, detail level, edge sensitivity adjustable</li>
 <li><strong>Overlay</strong>: Original and drawing overlaid with transparency control</li>
 <li><strong>Export</strong>: PNG (line drawing), PNG (overlay), SVG (vector)</li></ul>
-<h2>🏛️ Culture Period Classification (NEW in v2.0)</h2>
+<h2>🏛️ Culture Period Classification</h2>
 <p>In the "🏛️ Culture" tab, ShardMind analyzes material, color, form and decoration to suggest an archaeological classification:</p>
 <ul><li><strong>Neolithic</strong>: Coarse temper, incised decoration, globular pots</li>
 <li><strong>Bronze Age</strong>: Grooves, bosses, improved firing</li>
@@ -4889,6 +4908,7 @@ function generateInventory() {
 }
 
 function exportInventoryPDF() {
+    if (!checkLib('jsPDF')) return;
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
     const marginL = 18, marginR = 18, pageW = 210, contentW = pageW - marginL - marginR;
@@ -5331,6 +5351,7 @@ if (pieces.length === 0) {
     return;
 }
 
+if (!checkLib('jsPDF')) return;
 const { jsPDF } = window.jspdf;
 const doc = new jsPDF('p', 'mm', 'a4');
 const pageW = 210, pageH = 297;
@@ -5388,7 +5409,11 @@ pieces.forEach((piece, idx) => {
         qrDiv.style.left = '-9999px';
         document.body.appendChild(qrDiv);
         
-        const qrCode = new QRCode(qrDiv, { text: qrData, width: 128, height: 128, correctLevel: QRCode.CorrectLevel.M });
+        if (typeof QRCode !== 'undefined') {
+            const qrCode = new QRCode(qrDiv, { text: qrData, width: 128, height: 128, correctLevel: QRCode.CorrectLevel.M });
+        } else {
+            qrDiv.innerHTML = '<span style="font-size:10px;color:var(--text-muted);">QR: ' + qrData.substring(0, 30) + '…</span>';
+        }
         
         setTimeout(() => {
             const qrCanvas = qrDiv.querySelector('canvas');
@@ -6282,6 +6307,11 @@ if (threeReady) update3DPlate();
 function initThreeScene() {
 const container = document.getElementById(‘three-container’);
 if (!container || threeScene) return;
+if (typeof THREE === ‘undefined’) {
+container.innerHTML = ‘<div style="padding:20px;text-align:center;color:var(--text-muted);">⏳ 3D-Bibliothek lädt noch…</div>’;
+setTimeout(initThreeScene, 2000);
+return;
+}
 
 ```
 const w = container.clientWidth || 600;
@@ -7301,6 +7331,7 @@ if (typeof jspdf === ‘undefined’ && typeof window.jspdf === ‘undefined’)
 toast(‘PDF library not loaded’, ‘error’);
 return;
 }
+if (!checkLib(‘jsPDF’)) return;
 const { jsPDF } = window.jspdf;
 const doc = new jsPDF(‘p’, ‘mm’, ‘a4’);
 
@@ -7964,6 +7995,7 @@ if (typeof jspdf === ‘undefined’ && typeof window.jspdf === ‘undefined’)
 toast(‘PDF library not loaded’, ‘error’);
 return;
 }
+if (!checkLib(‘jsPDF’)) return;
 const { jsPDF } = window.jspdf;
 const doc = new jsPDF(‘p’, ‘mm’, ‘a4’);
 const pageW = 210, marginL = 18, marginR = 18, contentW = pageW - marginL - marginR;
@@ -8587,6 +8619,15 @@ setTimeout(() => {
     const ls = document.getElementById('loading-screen');
     if (ls) ls.classList.add('hidden');
 }, 1500);
+
+// SAFETY: If loading screen is STILL visible after 15s, force-hide it
+setTimeout(() => {
+    const ls = document.getElementById('loading-screen');
+    if (ls && !ls.classList.contains('hidden')) {
+        console.warn('[ShardMind] Force-hiding loading screen after 15s');
+        ls.classList.add('hidden');
+    }
+}, 15000);
 
 // Auto-login if saved
 const savedUser = localStorage.getItem('shardmind_user');
