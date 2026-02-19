@@ -8886,6 +8886,7 @@ document.getElementById(‘login-page’).style.display = ‘’;
 <!-- ======================= PYSCRIPT - PYTHON CODE ======================= -->
 
 <script type="py" config='{"packages":["numpy","opencv-python","scikit-learn","scipy","Pillow"]}'>
+DQ = chr(34)  # double-quote char (prevents smart-quote corruption on copy-paste)
 import js
 import sys
 
@@ -8900,7 +8901,7 @@ def update_loading(msg):
             el2.textContent = msg
     except:
         pass
-    print(f"[ShardMind] {msg}")
+    print(f'[ShardMind] {msg}')
 
 def set_py_ready():
     # Signal to JavaScript that Python engine is ready
@@ -8935,33 +8936,33 @@ def set_py_error(msg):
 # =============================================================================
 
 try:
-    update_loading("Loading NumPy...")
+    update_loading('Loading NumPy...')
     import numpy as np
     
-    update_loading("Loading OpenCV...")
+    update_loading('Loading OpenCV...')
     import cv2
     
-    update_loading("Loading scikit-learn...")
+    update_loading('Loading scikit-learn...')
     from sklearn.cluster import AgglomerativeClustering
     
-    update_loading("Loading SciPy...")
+    update_loading('Loading SciPy...')
     from scipy.spatial.distance import cdist
     
-    update_loading("Loading Pillow...")
+    update_loading('Loading Pillow...')
     from PIL import Image
     
-    update_loading("Loading utilities...")
+    update_loading('Loading utilities...')
     from pyodide.ffi import to_js, create_proxy
     import json
     import base64
     from io import BytesIO
     import uuid
     
-    update_loading("Alle Pakete geladen ✓")
+    update_loading('Alle Pakete geladen ✓')
 
 except Exception as e:
-    error_msg = f"Import-Fehler: {str(e)[:100]}"
-    print(f"[ShardMind ERROR] {error_msg}")
+    error_msg = f'Import-Fehler: {str(e)[:100]}'
+    print(f'[ShardMind ERROR] {error_msg}')
     update_loading(error_msg)
     set_py_error(error_msg)
     raise  # re-raise so we don't execute code that depends on these imports
@@ -8984,10 +8985,10 @@ def cv2_to_dataurl(img):
     buf = BytesIO()
     pil.save(buf, format='PNG')
     b64 = base64.b64encode(buf.getvalue()).decode()
-    return f"data:image/png;base64,{b64}"
+    return f'data:image/png;base64,{b64}'
 
 def gen_id():
-    return f"SM-{uuid.uuid4().hex[:8].upper()}"
+    return f'SM-{uuid.uuid4().hex[:8].upper()}'
 
 # =============================================================================
 # FRAGMENT DETECTION (full port from Streamlit version)
@@ -9020,18 +9021,18 @@ def separate_touching_fragments(mask, min_area=100, separation_strength=0.5):
     return separated
 
 
-def segment_fragments(image, min_area=100, project="", mode="auto", separation_strength=0.5):
+def segment_fragments(image, min_area=100, project='', mode='auto', separation_strength=0.5):
     try:
         return _segment_fragments_inner(image, min_area, project, mode, separation_strength)
     except Exception as e:
-        print(f"[ShardMind] CRITICAL: segment_fragments failed: {str(e)[:150]}")
+        print(f'[ShardMind] CRITICAL: segment_fragments failed: {str(e)[:150]}')
         try:
-            js.window.toast(f"Segmentierung fehlgeschlagen: {str(e)[:60]}", "error")
+            js.window.toast(f'Segmentierung fehlgeschlagen: {str(e)[:60]}', 'error')
         except:
             pass
         return []
 
-def _segment_fragments_inner(image, min_area=100, project="", mode="auto", separation_strength=0.5):
+def _segment_fragments_inner(image, min_area=100, project='', mode='auto', separation_strength=0.5):
     h, w = image.shape[:2]
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
     gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
@@ -9039,7 +9040,7 @@ def _segment_fragments_inner(image, min_area=100, project="", mode="auto", separ
     
     masks = []
     
-    if mode in ["auto", "light_bg", "porcelain"]:
+    if mode in ['auto', 'light_bg', 'porcelain']:
         adapt = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 8)
         masks.append(adapt)
         _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
@@ -9048,11 +9049,11 @@ def _segment_fragments_inner(image, min_area=100, project="", mode="auto", separ
         _, lab_th = cv2.threshold(l_ch, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         masks.append(lab_th)
     
-    if mode in ["auto", "dark_bg"]:
+    if mode in ['auto', 'dark_bg']:
         _, inv = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         masks.append(inv)
     
-    if mode in ["porcelain"]:
+    if mode in ['porcelain']:
         margin = 30
         corners = [
             gray[margin:2*margin, margin:2*margin],
@@ -9082,7 +9083,7 @@ def _segment_fragments_inner(image, min_area=100, project="", mode="auto", separ
         color_expanded = cv2.dilate(color_mask, kernel_dilate, iterations=2)
         masks.append(color_expanded)
     
-    if mode in ["auto", "high_contrast"]:
+    if mode in ['auto', 'high_contrast']:
         edges = cv2.Canny(gray, 30, 100)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
         edges = cv2.dilate(edges, kernel, iterations=3)
@@ -9099,7 +9100,7 @@ def _segment_fragments_inner(image, min_area=100, project="", mode="auto", separ
         fg_mask = np.any(diff > bg_std_c * 2, axis=2).astype(np.uint8) * 255
         masks.append(fg_mask)
     
-    if mode in ["aerial", "field_survey"]:
+    if mode in ['aerial', 'field_survey']:
         # Aerial/survey mode: detect ceramic sherds on natural ground
         # Strategy: find color anomalies against earth background
         hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
@@ -9145,7 +9146,7 @@ def _segment_fragments_inner(image, min_area=100, project="", mode="auto", separ
         edge_anomaly = cv2.dilate(edge_anomaly, kernel_fill, iterations=3)
         masks.append(edge_anomaly)
         
-        if mode == "field_survey":
+        if mode == 'field_survey':
             # Field survey: also use texture/LBP-like features
             # Detect smooth regions (ceramic) vs rough (soil/gravel)
             local_std = cv2.blur((gray.astype(float) - cv2.blur(gray.astype(float), (11,11)))**2, (11,11))
@@ -9200,7 +9201,7 @@ def _segment_fragments_inner(image, min_area=100, project="", mode="auto", separ
                 roi_mean = np.mean(roi_check)
                 # Scale bars have very high stddev (alternating black/white)
                 if roi_std > 60:
-                    print(f"[ShardMind] Filtered scale bar: aspect={aspect:.1f}, std={roi_std:.0f}")
+                    print(f'[ShardMind] Filtered scale bar: aspect={aspect:.1f}, std={roi_std:.0f}')
                     continue
         
         hull = cv2.convexHull(c)
@@ -9266,53 +9267,53 @@ def _segment_fragments_inner(image, min_area=100, project="", mode="auto", separ
         # Red=0-8 or 170-180, Orange=8-18, Brown=18-30,
         # Yellow=30-38, Green=38-75, Blue=75-135, Violet=135-170
         if s_val < 25:
-            color_name = "Weiß" if v_val > 180 else ("Grau" if v_val > 100 else "Schwarz")
-        elif h_val < 8 or h_val > 170: color_name = "Rot"
-        elif h_val < 18: color_name = "Orange"
-        elif h_val < 30: color_name = "Braun"
-        elif h_val < 38: color_name = "Gelb"
-        elif h_val < 75: color_name = "Grün"
-        elif h_val < 135: color_name = "Blau"
-        else: color_name = "Violett"
+            color_name = 'Weiß' if v_val > 180 else ('Grau' if v_val > 100 else 'Schwarz')
+        elif h_val < 8 or h_val > 170: color_name = 'Rot'
+        elif h_val < 18: color_name = 'Orange'
+        elif h_val < 30: color_name = 'Braun'
+        elif h_val < 38: color_name = 'Gelb'
+        elif h_val < 75: color_name = 'Grün'
+        elif h_val < 135: color_name = 'Blau'
+        else: color_name = 'Violett'
         
         # Approximate Munsell notation from HSV
         # Munsell: Hue Value/Chroma (e.g. 7.5YR 5/4)
-        munsell = ""
+        munsell = ''
         m_value = round(v_val / 255 * 9 + 1)  # Munsell Value 1-10
         m_chroma = round(s_val / 255 * 8)      # Munsell Chroma 0-8
         if s_val < 25:
-            munsell = f"N {m_value}/" # Neutral
+            munsell = f'N {m_value}/' # Neutral
         elif h_val < 8 or h_val > 170:
-            munsell = f"5R {m_value}/{m_chroma}"
+            munsell = f'5R {m_value}/{m_chroma}'
         elif h_val < 13:
-            munsell = f"5YR {m_value}/{m_chroma}"
+            munsell = f'5YR {m_value}/{m_chroma}'
         elif h_val < 18:
-            munsell = f"7.5YR {m_value}/{m_chroma}"
+            munsell = f'7.5YR {m_value}/{m_chroma}'
         elif h_val < 25:
-            munsell = f"10YR {m_value}/{m_chroma}"
+            munsell = f'10YR {m_value}/{m_chroma}'
         elif h_val < 32:
-            munsell = f"2.5Y {m_value}/{m_chroma}"
+            munsell = f'2.5Y {m_value}/{m_chroma}'
         elif h_val < 38:
-            munsell = f"5Y {m_value}/{m_chroma}"
+            munsell = f'5Y {m_value}/{m_chroma}'
         elif h_val < 55:
-            munsell = f"5GY {m_value}/{m_chroma}"
+            munsell = f'5GY {m_value}/{m_chroma}'
         elif h_val < 75:
-            munsell = f"5G {m_value}/{m_chroma}"
+            munsell = f'5G {m_value}/{m_chroma}'
         elif h_val < 100:
-            munsell = f"5BG {m_value}/{m_chroma}"
+            munsell = f'5BG {m_value}/{m_chroma}'
         elif h_val < 135:
-            munsell = f"5B {m_value}/{m_chroma}"
+            munsell = f'5B {m_value}/{m_chroma}'
         elif h_val < 155:
-            munsell = f"5PB {m_value}/{m_chroma}"
+            munsell = f'5PB {m_value}/{m_chroma}'
         else:
-            munsell = f"5P {m_value}/{m_chroma}"
+            munsell = f'5P {m_value}/{m_chroma}'
         
-        if s_val < 20 and v_val > 200: material = "Porzellan"
-        elif 10 < h_val < 30 and s_val > 30: material = "Keramik"
-        elif s_val < 25 and v_val < 100: material = "Metall"
-        else: material = "Keramik"
+        if s_val < 20 and v_val > 200: material = 'Porzellan'
+        elif 10 < h_val < 30 and s_val > 30: material = 'Keramik'
+        elif s_val < 25 and v_val < 100: material = 'Metall'
+        else: material = 'Keramik'
         
-        name = f"{material}_{color_name}"
+        name = f'{material}_{color_name}'
         
         # ---- Decoration analysis ----
         # Decoration = VARIED/PATTERNED painted areas
@@ -9548,7 +9549,7 @@ def reconstruct_group(pieces_data, canvas_size=800):
             plate_cy = result[1] / 2
             plate_r = np.sqrt(max(0, result[2] + plate_cx**2 + plate_cy**2))
             if plate_r < 20:
-                raise ValueError("too small")
+                raise ValueError('too small')
         except:
             plate_cx = float(np.mean(x_arr))
             plate_cy = float(np.mean(y_arr))
@@ -9781,7 +9782,7 @@ def py_analyze(uint8_data, min_area, mode, separation, project):
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
         if img is None:
-            print("[ShardMind] ERROR: Could not decode image")
+            print('[ShardMind] ERROR: Could not decode image')
             return to_js([])
         
         # CRITICAL: Resize large images to prevent WASM memory crash
@@ -9792,7 +9793,7 @@ def py_analyze(uint8_data, min_area, mode, separation, project):
             new_w = int(w * scale)
             new_h = int(h * scale)
             img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
-            print(f"[ShardMind] Resized {w}x{h} → {new_w}x{new_h} to prevent memory issues")
+            print(f'[ShardMind] Resized {w}x{h} → {new_w}x{new_h} to prevent memory issues')
         
         # Ensure min_area is reasonable relative to image size
         img_area = img.shape[0] * img.shape[1]
@@ -9803,10 +9804,10 @@ def py_analyze(uint8_data, min_area, mode, separation, project):
         return to_js(pieces, dict_converter=js.Object.fromEntries)
     except Exception as e:
         error_msg = str(e)[:200]
-        print(f"[ShardMind] Analysis error: {error_msg}")
+        print(f'[ShardMind] Analysis error: {error_msg}')
         # Signal error to JS
         try:
-            js.window.toast(f"Analyse-Fehler: {error_msg[:80]}", "error")
+            js.window.toast(f'Analyse-Fehler: {error_msg[:80]}', 'error')
         except:
             pass
         return to_js([])
@@ -9842,7 +9843,7 @@ def py_reconstruct(pieces_json, canvas_size):
 # DECORATION → LINE DRAWING EXTRACTION
 # =============================================================================
 
-def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge_sensitivity=50, deco_type="auto"):
+def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge_sensitivity=50, deco_type='auto'):
     # Extract decoration from a fragment photo and create a scaled line drawing.
     # Process:
     # 1. Isolate decorated areas (colored regions) from the ceramic body
@@ -9874,7 +9875,7 @@ def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge
     h_ch = hsv[:, :, 0]
     
     # Decoration types affect processing
-    if deco_type == "painted" or deco_type == "auto":
+    if deco_type == 'painted' or deco_type == 'auto':
         # Painted: look for saturated color areas
         color_mask = (s_ch > 25).astype(np.uint8) * 255
         
@@ -9884,25 +9885,25 @@ def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge
         l_mask = (np.abs(l_ch.astype(float) - l_mean) > 20).astype(np.uint8) * 255
         deco_mask = cv2.bitwise_or(color_mask, l_mask)
         
-    elif deco_type == "incised":
+    elif deco_type == 'incised':
         # Incised: look for shadow lines (dark narrow features)
         clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(4, 4))
         enhanced = clahe.apply(gray)
         _, deco_mask = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         
-    elif deco_type == "stamped":
+    elif deco_type == 'stamped':
         # Stamped/relief: look for local height variation via shadow
         blur_large = cv2.GaussianBlur(gray, (31, 31), 0)
         local_diff = cv2.absdiff(gray, blur_large)
         _, deco_mask = cv2.threshold(local_diff, 15, 255, cv2.THRESH_BINARY)
         
-    elif deco_type == "band":
+    elif deco_type == 'band':
         # Band decoration: horizontal/circular patterns
         blue_mask = cv2.inRange(hsv, np.array([90, 25, 40]), np.array([130, 255, 255]))
         color_general = (s_ch > 30).astype(np.uint8) * 255
         deco_mask = cv2.bitwise_or(blue_mask, color_general)
         
-    elif deco_type == "figural":
+    elif deco_type == 'figural':
         # Figural: strong contrast features
         clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
         enhanced = clahe.apply(gray)
@@ -9910,7 +9911,7 @@ def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge
         _, lum_mask = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         deco_mask = cv2.bitwise_or(color_mask, lum_mask)
         
-    elif deco_type == "ornamental":
+    elif deco_type == 'ornamental':
         # Ornamental/geometric: regular patterns
         color_mask = (s_ch > 25).astype(np.uint8) * 255
         edges = cv2.Canny(gray, 30, 100)
@@ -10010,9 +10011,9 @@ def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge
         approx = cv2.approxPolyDP(c, epsilon, False)
         if len(approx) >= 2:
             pts = approx.reshape(-1, 2)
-            path_d = f"M {pts[0][0]},{pts[0][1]}"
+            path_d = f'M {pts[0][0]},{pts[0][1]}'
             for pt in pts[1:]:
-                path_d += f" L {pt[0]},{pt[1]}"
+                path_d += f' L {pt[0]},{pt[1]}'
             svg_paths.append(path_d)
     
     # Add piece outline to SVG
@@ -10021,16 +10022,16 @@ def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge
         outline_approx = cv2.approxPolyDP(largest, 2.0, True)
         if len(outline_approx) >= 3:
             pts = outline_approx.reshape(-1, 2)
-            path_d = f"M {pts[0][0]},{pts[0][1]}"
+            path_d = f'M {pts[0][0]},{pts[0][1]}'
             for pt in pts[1:]:
-                path_d += f" L {pt[0]},{pt[1]}"
-            path_d += " Z"
+                path_d += f' L {pt[0]},{pt[1]}'
+            path_d += ' Z'
             svg_paths.insert(0, path_d)  # Outline first
     
-    svg_content = f'''<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" 
-     viewBox="0 0 {w} {h}" 
-     width="{w}" height="{h}">
+    svg_content = f'''<?xml version={DQ}1.0{DQ} encoding={DQ}UTF-8{DQ}?>
+<svg xmlns={DQ}http://www.w3.org/2000/svg{DQ} 
+     viewBox={DQ}0 0 {w} {h}{DQ} 
+     width={DQ}{w}{DQ} height={DQ}{h}{DQ}>
   <title>ShardMind Decoration Line Drawing</title>
   <desc>Automatically extracted decoration from archaeological fragment</desc>
   <style>
@@ -10038,14 +10039,14 @@ def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge
     .decoration {{ fill: none; stroke: #1e1e1e; stroke-width: {line_thickness}; stroke-linecap: round; stroke-linejoin: round; }}
   </style>
 
-  <rect width="{w}" height="{h}" fill="#faf8f5"/>
+  <rect width={DQ}{w}{DQ} height={DQ}{h}{DQ} fill={DQ}#faf8f5{DQ}/>
 '''
 
 ```
 if svg_paths:
-    svg_content += f'  <path class="outline" d="{svg_paths[0]}"/>\n'
+    svg_content += f'  <path class={DQ}outline{DQ} d={DQ}{svg_paths[0]}{DQ}/>\n'
     for path_d in svg_paths[1:]:
-        svg_content += f'  <path class="decoration" d="{path_d}"/>\n'
+        svg_content += f'  <path class={DQ}decoration{DQ} d={DQ}{path_d}{DQ}/>\n'
 
 svg_content += '</svg>'
 
@@ -10104,7 +10105,7 @@ return to_js(result, dict_converter=js.Object.fromEntries)
 # =============================================================================
 
 try:
-update_loading(“Registriere Funktionen…”)
+update_loading(‘Registriere Funktionen…’)
 js.window.py_analyze = create_proxy(py_analyze)
 js.window.py_cluster = create_proxy(py_cluster)
 js.window.py_reconstruct = create_proxy(py_reconstruct)
@@ -10113,12 +10114,12 @@ js.window.py_extract_decoration = create_proxy(py_extract_decoration)
 ```
 # Signal ready
 set_py_ready()
-print("ShardMind Python engine ready!")
+print('ShardMind Python engine ready!')
 ```
 
 except Exception as e:
-error_msg = f”Registrierungs-Fehler: {str(e)[:100]}”
-print(f”[ShardMind ERROR] {error_msg}”)
+error_msg = f’Registrierungs-Fehler: {str(e)[:100]}’
+print(f’[ShardMind ERROR] {error_msg}’)
 set_py_error(error_msg)
 </script>
 
