@@ -7,8 +7,9 @@
     <title>ShardMind — Archaeological Fragment Analysis</title>
 
 ```
-<!-- PyScript: core.js loaded dynamically after page renders (see end of body) -->
-<!-- No PyScript CSS needed — we don't use the PyScript editor UI -->
+<!-- PyScript (both CSS and JS required for proper initialization) -->
+<link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+<script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
 
 <!-- QR Code Library -->
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -22,10 +23,6 @@
 <!-- Google Fonts (non-blocking) -->
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
-<style>
-    /* Override PyScript CSS that might hide page content */
-    body { visibility: visible !important; opacity: 1 !important; }
-</style>
 <style>
     :root {
         --bg-primary: #0f1117;
@@ -101,19 +98,12 @@
     .loading-text { color: var(--text-secondary); font-size: 14px; }
     .loading-packages { color: var(--text-muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
 
-    /* CRITICAL: Hide PyScript's built-in splash screen & terminal overlay */
-    /* PyScript 2024.x creates py-splashscreen that covers entire viewport while loading 50+MB of packages */
-    py-splashscreen, py-terminal, .py-overlay, .pyscript-splash {
-        display: none !important;
-        visibility: hidden !important;
-        position: absolute !important;
-        width: 0 !important; height: 0 !important;
-        overflow: hidden !important;
-    }
-    /* Also hide any iframes PyScript might inject */
-    iframe[src*="pyscript"], iframe[src*="pyodide"] {
+    /* Hide PyScript's built-in splash screen (we use our own loading UI) */
+    py-splashscreen, .pyscript-splash {
         display: none !important;
     }
+    /* Hide PyScript terminal unless explicitly needed */
+    py-terminal { display: none; }
 
     /* Python status indicator (non-blocking) */
     .py-status-bar {
@@ -1168,7 +1158,7 @@
     </div>
 </noscript>
 <script>
-// IMMEDIATE: If this runs, JS works. Hide loading screen after 2s max.
+// IMMEDIATE: If init() somehow fails, show login after 3s
 (function() {
     var t = setTimeout(function() {
         var ls = document.getElementById('loading-screen');
@@ -1176,32 +1166,8 @@
         var lp = document.getElementById('login-page');
         if (lp) lp.style.display = '';
         console.log('[ShardMind] Emergency: loading screen forced hidden by inline script');
-    }, 2000);
-    // Store timer so init() can clear it if it works
+    }, 3000);
     window.__smLoadingTimer = t;
-
-```
-// KILL PyScript splash screens as they appear
-var observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(m) {
-        m.addedNodes.forEach(function(node) {
-            if (node.nodeType === 1) {
-                var tag = node.tagName ? node.tagName.toLowerCase() : '';
-                if (tag === 'py-splashscreen' || tag === 'py-terminal' || 
-                    (node.classList && (node.classList.contains('py-overlay') || node.classList.contains('pyscript-splash')))) {
-                    node.style.display = 'none';
-                    node.remove();
-                    console.log('[ShardMind] Killed PyScript overlay:', tag);
-                }
-            }
-        });
-    });
-});
-observer.observe(document.documentElement, { childList: true, subtree: true });
-// Stop observing after 60s
-setTimeout(function() { observer.disconnect(); }, 60000);
-```
-
 })();
 </script>
 
@@ -8915,27 +8881,11 @@ document.getElementById(‘loading-screen’).style.display = ‘none’;
 document.getElementById(‘login-page’).style.display = ‘’;
 } catch(e2) {}
 }
-
-// Load PyScript dynamically (after page is visible)
-function loadPyScript() {
-const script = document.createElement(‘script’);
-script.type = ‘module’;
-script.src = ‘https://pyscript.net/releases/2024.1.1/core.js’;
-script.onerror = () => {
-console.warn(’[ShardMind] PyScript failed to load — analysis unavailable’);
-setPyStatus(‘error’, currentLang === ‘de’
-? ‘Python konnte nicht geladen werden — Analyse nicht verfügbar. Seite neu laden zum Wiederholen.’
-: ‘Python failed to load — analysis unavailable. Reload to retry.’);
-};
-document.head.appendChild(script);
-}
-// Start loading PyScript shortly after page renders
-setTimeout(loadPyScript, 100);
 </script>
 
 <!-- ======================= PYSCRIPT - PYTHON CODE ======================= -->
 
-<script type="py" config='{"packages":["numpy","opencv-python","scikit-learn","scipy","Pillow"],"terminal":false,"splashscreen":{"enabled":false}}'>
+<script type="py" config='{"packages":["numpy","opencv-python","scikit-learn","scipy","Pillow"]}'>
 import js
 import sys
 
