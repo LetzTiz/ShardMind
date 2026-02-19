@@ -8890,7 +8890,7 @@ import js
 import sys
 
 def update_loading(msg):
-    """Update both loading screen and sidebar status"""
+    # Update both loading screen and sidebar status
     try:
         el = js.document.getElementById('loading-packages')
         if el:
@@ -8903,7 +8903,7 @@ def update_loading(msg):
     print(f"[ShardMind] {msg}")
 
 def set_py_ready():
-    """Signal to JavaScript that Python engine is ready"""
+    # Signal to JavaScript that Python engine is ready
     js.pyReady = True
     # Hide loading screen
     loading = js.document.getElementById('loading-screen')
@@ -8919,7 +8919,7 @@ def set_py_ready():
         pass
 
 def set_py_error(msg):
-    """Signal to JavaScript that Python loading failed"""
+    # Signal to JavaScript that Python loading failed
     try:
         if js.window.setPyStatus:
             js.window.setPyStatus('error', msg)
@@ -8971,14 +8971,14 @@ except Exception as e:
 # =============================================================================
 
 def uint8_to_cv2(uint8_array):
-    """Convert JS Uint8Array to OpenCV image"""
+    # Convert JS Uint8Array to OpenCV image
     buf = bytes(uint8_array)
     nparr = np.frombuffer(buf, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     return img
 
 def cv2_to_dataurl(img):
-    """Convert OpenCV image to data URL"""
+    # Convert OpenCV image to data URL
     rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     pil = Image.fromarray(rgb)
     buf = BytesIO()
@@ -9471,7 +9471,7 @@ def cluster_pieces(pieces, threshold=35):
 # =============================================================================
 
 def reconstruct_group(pieces_data, canvas_size=800):
-    """Reconstruct using circle fitting — places fragments using centroids and contour masks"""
+    # Reconstruct using circle fitting — places fragments using centroids and contour masks
     n = len(pieces_data)
     canvas = np.ones((canvas_size, canvas_size, 3), dtype=np.uint8) * 240
     canvas_center = canvas_size // 2
@@ -9773,7 +9773,7 @@ def find_edge_matches(pieces_data, min_match_score=0.3):
 # =============================================================================
 
 def py_analyze(uint8_data, min_area, mode, separation, project):
-    """Main analysis function called from JS"""
+    # Main analysis function called from JS
     try:
         # Convert Uint8Array to numpy
         buf = bytes(uint8_data)
@@ -9812,13 +9812,13 @@ def py_analyze(uint8_data, min_area, mode, separation, project):
         return to_js([])
 
 def py_cluster(pieces_json, threshold):
-    """Clustering function called from JS"""
+    # Clustering function called from JS
     pieces = pieces_json.to_py()
     labels = cluster_pieces(pieces, threshold)
     return to_js(labels)
 
 def py_reconstruct(pieces_json, canvas_size):
-    """Reconstruction function called from JS"""
+    # Reconstruction function called from JS
     pieces = pieces_json.to_py()
     
     canvas = reconstruct_group(pieces, canvas_size)
@@ -9843,15 +9843,12 @@ def py_reconstruct(pieces_json, canvas_size):
 # =============================================================================
 
 def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge_sensitivity=50, deco_type="auto"):
-    """
-    Extract decoration from a fragment photo and create a scaled line drawing.
-    
-    Process:
-    1. Isolate decorated areas (colored regions) from the ceramic body
-    2. Apply adaptive edge detection tuned by deco_type
-    3. Clean and vectorize edges into line art
-    4. Generate SVG with proper scale
-    """
+    # Extract decoration from a fragment photo and create a scaled line drawing.
+    # Process:
+    # 1. Isolate decorated areas (colored regions) from the ceramic body
+    # 2. Apply adaptive edge detection tuned by deco_type
+    # 3. Clean and vectorize edges into line art
+    # 4. Generate SVG with proper scale
     # Decode image from data URL
     try:
         b64_data = data_url.split(',')[1]
@@ -10084,7 +10081,7 @@ return {
 ```
 
 def py_extract_decoration(data_url, line_thickness, detail_level, edge_sensitivity, deco_type):
-“”“Called from JavaScript”””
+# Called from JavaScript
 result = extract_decoration_lineart(
 str(data_url),
 int(line_thickness),
