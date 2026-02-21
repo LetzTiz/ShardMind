@@ -9957,42 +9957,42 @@ def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge
   <rect width={DQ}{w}{DQ} height={DQ}{h}{DQ} fill={DQ}#faf8f5{DQ}/>
 '''
 
-if svg_paths:
-    svg_content += f'  <path class={DQ}outline{DQ} d={DQ}{svg_paths[0]}{DQ}/>\n'
-    for path_d in svg_paths[1:]:
-        svg_content += f'  <path class={DQ}decoration{DQ} d={DQ}{path_d}{DQ}/>\n'
+    if svg_paths:
+        svg_content += f'  <path class={DQ}outline{DQ} d={DQ}{svg_paths[0]}{DQ}/>\n'
+        for path_d in svg_paths[1:]:
+            svg_content += f'  <path class={DQ}decoration{DQ} d={DQ}{path_d}{DQ}/>\n'
 
-svg_content += '</svg>'
+    svg_content += '</svg>'
 
-# ---- Dimensions estimate ----
-# Rough estimate: typical pottery shard is 3-15cm
-# Use area to estimate scale
-piece_area_px = 0
-if piece_contours:
-    piece_area_px = cv2.contourArea(max(piece_contours, key=cv2.contourArea))
+    # ---- Dimensions estimate ----
+    # Rough estimate: typical pottery shard is 3-15cm
+    # Use area to estimate scale
+    piece_area_px = 0
+    if piece_contours:
+        piece_area_px = cv2.contourArea(max(piece_contours, key=cv2.contourArea))
 
-# Estimate pixels per mm (rough heuristic)
-estimated_size_mm = 60  # assume ~60mm for a typical shard
-if piece_contours:
-    x_, y_, bw_, bh_ = cv2.boundingRect(max(piece_contours, key=cv2.contourArea))
-    max_dim = max(bw_, bh_)
-    ppmm = max_dim / estimated_size_mm if estimated_size_mm > 0 else 1.0
-else:
-    ppmm = max(w, h) / estimated_size_mm
+    # Estimate pixels per mm (rough heuristic)
+    estimated_size_mm = 60  # assume ~60mm for a typical shard
+    if piece_contours:
+        x_, y_, bw_, bh_ = cv2.boundingRect(max(piece_contours, key=cv2.contourArea))
+        max_dim = max(bw_, bh_)
+        ppmm = max_dim / estimated_size_mm if estimated_size_mm > 0 else 1.0
+    else:
+        ppmm = max(w, h) / estimated_size_mm
 
-lineart_url = cv2_to_dataurl(lineart)
+    lineart_url = cv2_to_dataurl(lineart)
 
-return {
-    'lineartDataUrl': lineart_url,
-    'svgData': svg_content,
-    'dimensions': {
-        'width_px': int(w),
-        'height_px': int(h),
-        'width_mm': float(w / ppmm),
-        'height_mm': float(h / ppmm),
-        'ppmm': float(ppmm),
+    return {
+        'lineartDataUrl': lineart_url,
+        'svgData': svg_content,
+        'dimensions': {
+            'width_px': int(w),
+            'height_px': int(h),
+            'width_mm': float(w / ppmm),
+            'height_mm': float(h / ppmm),
+            'ppmm': float(ppmm),
+        }
     }
-}
 
 def py_extract_decoration(data_url, line_thickness, detail_level, edge_sensitivity, deco_type):
     # Called from JavaScript
