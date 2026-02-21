@@ -5348,17 +5348,17 @@ function exportUserData() {
 
 }
 
-function showDeleteAccountModal() { document.getElementById(‘delete-modal’).classList.add(‘show’); }
-function hideDeleteAccountModal() { document.getElementById(‘delete-modal’).classList.remove(‘show’); }
+function showDeleteAccountModal() { document.getElementById('delete-modal').classList.add('show'); }
+function hideDeleteAccountModal() { document.getElementById('delete-modal').classList.remove('show'); }
 
 function confirmDeleteAccount() {
 const db = getDB();
 delete db[currentUser];
 saveDB(db);
-localStorage.removeItem(‘shardmind_cookie_consent’);
+localStorage.removeItem('shardmind_cookie_consent');
 hideDeleteAccountModal();
 handleLogout();
-toast(‘Account deleted’, ‘info’);
+toast('Account deleted', 'info');
 }
 
 // ==================================================
@@ -5366,7 +5366,7 @@ toast(‘Account deleted’, ‘info’);
 // ==================================================
 function createLabelsPDF() {
 // Determine which pieces to label
-const activeSource = document.querySelector(’.label-option.active’)?.textContent;
+const activeSource = document.querySelector('.label-option.active')?.textContent;
 let pieces = [];
 
 ```
@@ -5534,7 +5534,7 @@ setTimeout(() => {
 // ==================================================
 async function runAnalysis() {
 if (uploadedFiles.length === 0) {
-toast(T(‘upload_first’), ‘error’);
+toast(T('upload_first'), 'error');
 return;
 }
 
@@ -5798,7 +5798,7 @@ return matches.sort((a, b) => b.score - a.score).slice(0, 5);
 // Re-identification button handler
 async function runReIdentification() {
 if (activePieces.length === 0) {
-toast(T(‘upload_first’), ‘error’);
+toast(T('upload_first'), 'error');
 return;
 }
 
@@ -5891,7 +5891,7 @@ return hint ? { hint, confidence } : null;
 // BATCH STATS (Throughput Display)
 // ==================================================
 function showBatchStats(totalTime, timePerFrag) {
-const container = document.getElementById(‘gallery-content’);
+const container = document.getElementById('gallery-content');
 if (!container || activePieces.length === 0) return;
 
 ```
@@ -6063,7 +6063,7 @@ function copyInventoryToClipboard() {
 const lang = currentLang;
 const partCounts = {};
 activePieces.forEach(p => {
-const label = p.vessel_part ? getPartLabel(p.vessel_part) : (lang === ‘de’ ? ‘Wandscherbe’ : ‘Body sherd’);
+const label = p.vessel_part ? getPartLabel(p.vessel_part) : (lang === 'de' ? 'Wandscherbe' : 'Body sherd');
 if (!partCounts[label]) partCounts[label] = 0;
 partCounts[label]++;
 });
@@ -6107,9 +6107,9 @@ clusterNames = {};
 reconImage = null;
 reconMatches = [];
 uploadedFiles = [];
-document.getElementById(‘file-input’).value = ‘’;
-document.getElementById(‘upload-files-list’).innerHTML = ‘’;
-document.getElementById(‘metrics-row’).style.display = ‘none’;
+document.getElementById('file-input').value = '';
+document.getElementById('upload-files-list').innerHTML = '';
+document.getElementById('metrics-row').style.display = 'none';
 
 ```
 renderGallery();
@@ -6132,10 +6132,10 @@ toast('Cleared', 'info');
 // RECONSTRUCTION (calls Python)
 // ==================================================
 async function runReconstruction() {
-const select = document.getElementById(‘recon-group-select’);
+const select = document.getElementById('recon-group-select');
 if (!select) return;
 const cid = parseInt(select.value);
-const canvasSize = parseInt(document.getElementById(‘slider-canvas-size’)?.value || 800);
+const canvasSize = parseInt(document.getElementById('slider-canvas-size')?.value || 800);
 
 ```
 const rp = activePieces.filter(p => p.cluster === cid);
@@ -6186,7 +6186,7 @@ let threeScene = null, threeCamera = null, threeRenderer = null;
 let plateMesh = null, plateWireframe = null, fragmentBoundaries = null;
 let threeAnimId = null;
 let autoRotate = false;
-let currentPlateType = ‘flat’;
+let currentPlateType = 'flat';
 let threeReady = false;
 let assemblyAnimating = false;
 let fragmentMeshes = [];
@@ -6196,7 +6196,7 @@ let reconImageData = null; // stores 2D reconstruction result
 // Plate profiles: each is array of [radius_fraction, height_fraction] points
 const PLATE_PROFILES = {
 flat: {
-name: ‘Flachteller’,
+name: 'Flachteller',
 points: [
 [0,     0],
 [0.15,  0],       // center flat
@@ -6214,7 +6214,7 @@ defaultDepth: 15,
 defaultRim: 25,
 },
 soup: {
-name: ‘Suppenteller’,
+name: 'Suppenteller',
 points: [
 [0,     0],
 [0.10,  0],
@@ -6234,7 +6234,7 @@ defaultDepth: 35,
 defaultRim: 30,
 },
 bowl: {
-name: ‘Schüssel’,
+name: 'Schüssel',
 points: [
 [0,     0],
 [0.08,  0],
@@ -6254,7 +6254,7 @@ defaultDepth: 50,
 defaultRim: 55,
 },
 cup: {
-name: ‘Tasse’,
+name: 'Tasse',
 points: [
 [0,     0],
 [0.08,  0],
@@ -6281,8 +6281,8 @@ defaultRim: 45,
 };
 
 function setReconMode(mode, btn) {
-document.querySelectorAll(’.recon-mode-btn’).forEach(b => b.classList.remove(‘active’));
-btn.classList.add(‘active’);
+document.querySelectorAll('.recon-mode-btn').forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
 
 ```
 document.getElementById('recon-2d-panel').style.display = mode === '2d' ? '' : 'none';
@@ -6303,24 +6303,24 @@ if (mode === '3d') {
 }
 
 function updateRecon3DGroupSelect() {
-const select = document.getElementById(‘recon-3d-group-select’);
+const select = document.getElementById('recon-3d-group-select');
 if (!select) return;
 const clusterIds = […new Set(activePieces.map(p => p.cluster ?? -1))].filter(c => c >= 0).sort();
-let html = ‘’;
+let html = '';
 clusterIds.forEach(cid => {
 const cp = activePieces.filter(p => p.cluster === cid);
 const name = clusterNames[cid] || `Group_${cid + 1}`;
 html += `<option value="${cid}">${name} (${cp.length} Teile)</option>`;
 });
-// Also add “all” option
+// Also add "all" option
 html += `<option value="-99">Alle Fragmente (${activePieces.length})</option>`;
 select.innerHTML = html;
 }
 
 function selectPlateType(type, btn) {
 currentPlateType = type;
-document.querySelectorAll(’.plate-type-btn’).forEach(b => b.classList.remove(‘active’));
-btn.classList.add(‘active’);
+document.querySelectorAll('.plate-type-btn').forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
 
 ```
 // Set defaults
@@ -6338,10 +6338,10 @@ if (threeReady) update3DPlate();
 // ––––– THREE.JS SCENE SETUP –––––
 
 function initThreeScene() {
-const container = document.getElementById(‘three-container’);
+const container = document.getElementById('three-container');
 if (!container || threeScene) return;
-if (typeof THREE === ‘undefined’) {
-container.innerHTML = ‘<div style="padding:20px;text-align:center;color:var(--text-muted);">⏳ 3D-Bibliothek lädt noch…</div>’;
+if (typeof THREE === 'undefined') {
+container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);">⏳ 3D-Bibliothek lädt noch…</div>';
 setTimeout(initThreeScene, 2000);
 return;
 }
@@ -6423,7 +6423,7 @@ animate3D();
 let orbitState = { isDown: false, isRight: false, prevX: 0, prevY: 0, theta: 0.3, phi: 1.1, distance: 6, targetX: 0, targetY: 0 };
 
 function setupOrbitControls(container) {
-container.addEventListener(‘mousedown’, (e) => {
+container.addEventListener('mousedown', (e) => {
 orbitState.isDown = true;
 orbitState.isRight = (e.button === 2);
 orbitState.prevX = e.clientX;
@@ -6595,10 +6595,10 @@ return { innerGeo, outerGeo, profilePoints, outerProfilePts, segments };
 
 function createPlateTexture(pieces, plateRadius, plateCX, plateCY) {
 const texSize = 2048;
-const canvas = document.createElement(‘canvas’);
+const canvas = document.createElement('canvas');
 canvas.width = texSize;
 canvas.height = texSize;
-const ctx = canvas.getContext(‘2d’);
+const ctx = canvas.getContext('2d');
 
 ```
 // Background: ceramic/clay color
@@ -6720,7 +6720,7 @@ return new Promise((resolve) => {
 
 async function run3DReconstruction() {
 if (activePieces.length === 0) {
-toast(‘Bitte zuerst Fotos analysieren’, ‘error’);
+toast('Bitte zuerst Fotos analysieren', 'error');
 return;
 }
 
@@ -6875,8 +6875,8 @@ toast('3D-Rekonstruktion abgeschlossen!', 'success');
 function fixPlateUVs(geometry, profilePoints) {
 // For a plate, we want UV mapping where:
 // u,v map to a top-down circular projection (like looking straight down at the plate)
-const posAttr = geometry.getAttribute(‘position’);
-const uvAttr = geometry.getAttribute(‘uv’);
+const posAttr = geometry.getAttribute('position');
+const uvAttr = geometry.getAttribute('uv');
 
 ```
 if (!uvAttr) return;
@@ -6944,10 +6944,10 @@ return geo;
 
 function runAssemblyAnimation(pieces, geoData, plateCX, plateCY, plateRadius) {
 assemblyAnimating = true;
-const progress = document.getElementById(‘assembly-progress’);
-const progressBar = document.getElementById(‘assembly-bar-fill’);
-const progressText = document.getElementById(‘assembly-progress-text’);
-progress.style.display = ‘’;
+const progress = document.getElementById('assembly-progress');
+const progressBar = document.getElementById('assembly-bar-fill');
+const progressText = document.getElementById('assembly-progress-text');
+progress.style.display = '';
 
 ```
 // Make plate transparent initially
@@ -7030,8 +7030,8 @@ run3DReconstruction();
 let showTexture = true, showWireframe = false, showFragBounds = false, showUnderside = false;
 
 function toggle3DOption(el, option) {
-el.classList.toggle(‘active’);
-const isActive = el.classList.contains(‘active’);
+el.classList.toggle('active');
+const isActive = el.classList.contains('active');
 
 ```
 switch (option) {
@@ -7080,11 +7080,11 @@ switch (option) {
 function export3DScreenshot() {
 if (!threeRenderer) return;
 threeRenderer.render(threeScene, threeCamera);
-const link = document.createElement(‘a’);
+const link = document.createElement('a');
 link.download = `shardmind_3d_${Date.now()}.png`;
-link.href = threeRenderer.domElement.toDataURL(‘image/png’);
+link.href = threeRenderer.domElement.toDataURL('image/png');
 link.click();
-toast(‘Screenshot gespeichert!’, ‘success’);
+toast('Screenshot gespeichert!', 'success');
 }
 
 // ––––– ANIMATION LOOP –––––
@@ -7108,184 +7108,184 @@ threeRenderer.render(threeScene, threeCamera);
 // ==================================================
 const CULTURE_DB = {
 neolithic: {
-name_de: ‘Neolithikum’, name_en: ‘Neolithic’,
-period: ‘ca. 5500–2200 v.Chr.’,
+name_de: 'Neolithikum', name_en: 'Neolithic',
+period: 'ca. 5500–2200 v.Chr.',
 date_range: [-5500, -2200],
-icon: ‘🪨’,
-class: ‘neolithic’,
+icon: '🪨',
+class: 'neolithic',
 sub_dating: {
-‘ritzlinien’: { period_de: ‘Linearbandkeramik (LBK)’, date: [-5500, -4500] },
-‘stiche’: { period_de: ‘Stichbandkeramik (SBK)’, date: [-4900, -4500] },
-‘kornstich’: { period_de: ‘Rössener Kultur’, date: [-4600, -4300] },
-‘dellen’: { period_de: ‘Michelsberger Kultur / Trichterbecherkultur’, date: [-4400, -2800] },
-‘leisten’: { period_de: ‘Schnurkeramik / Endneolithikum’, date: [-2800, -2200] },
+'ritzlinien': { period_de: 'Linearbandkeramik (LBK)', date: [-5500, -4500] },
+'stiche': { period_de: 'Stichbandkeramik (SBK)', date: [-4900, -4500] },
+'kornstich': { period_de: 'Rössener Kultur', date: [-4600, -4300] },
+'dellen': { period_de: 'Michelsberger Kultur / Trichterbecherkultur', date: [-4400, -2800] },
+'leisten': { period_de: 'Schnurkeramik / Endneolithikum', date: [-2800, -2200] },
 },
 criteria: {
-wall_thickness: { de: ‘Dick (8–15 mm), unregelmäßig’, en: ‘Thick (8–15 mm), irregular’ },
-surface: { de: ‘Rau, oft geglättet oder poliert’, en: ‘Rough, often smoothed or polished’ },
-firing: { de: ‘Niedrig (600–800°C), oxidierend/reduzierend gemischt’, en: ‘Low (600–800°C), mixed oxidizing/reducing’ },
-temper: { de: ‘Grob: Quarz, Feldspat, Schamotte, Pflanzenmaterial’, en: ‘Coarse: quartz, feldspar, grog, plant material’ },
-decoration: { de: ‘Ritzlinien, Einstiche, Bandkeramik, Schnureindrücke’, en: ‘Incised lines, punctures, Linear Pottery, cord impressions’ },
-typical_forms: { de: ‘Kugeltöpfe, Schüsseln, Vorratsgefäße’, en: ‘Globular pots, bowls, storage vessels’ },
+wall_thickness: { de: 'Dick (8–15 mm), unregelmäßig', en: 'Thick (8–15 mm), irregular' },
+surface: { de: 'Rau, oft geglättet oder poliert', en: 'Rough, often smoothed or polished' },
+firing: { de: 'Niedrig (600–800°C), oxidierend/reduzierend gemischt', en: 'Low (600–800°C), mixed oxidizing/reducing' },
+temper: { de: 'Grob: Quarz, Feldspat, Schamotte, Pflanzenmaterial', en: 'Coarse: quartz, feldspar, grog, plant material' },
+decoration: { de: 'Ritzlinien, Einstiche, Bandkeramik, Schnureindrücke', en: 'Incised lines, punctures, Linear Pottery, cord impressions' },
+typical_forms: { de: 'Kugeltöpfe, Schüsseln, Vorratsgefäße', en: 'Globular pots, bowls, storage vessels' },
 },
-color_hints: [‘Braun’, ‘Schwarz’, ‘Grau’, ‘Orange’],
-material_hints: [‘Keramik’],
-decoration_hints: [‘incised’, ‘stamped’],
-deco_type_hints: [‘ritzlinien’, ‘stiche’, ‘kornstich’, ‘dellen’, ‘leisten’],
-deco_tech_hints: [‘spatel_einzinkig’, ‘spatel_mehrzinkig’, ‘finger’, ‘schnur’, ‘ritzung’],
+color_hints: ['Braun', 'Schwarz', 'Grau', 'Orange'],
+material_hints: ['Keramik'],
+decoration_hints: ['incised', 'stamped'],
+deco_type_hints: ['ritzlinien', 'stiche', 'kornstich', 'dellen', 'leisten'],
+deco_tech_hints: ['spatel_einzinkig', 'spatel_mehrzinkig', 'finger', 'schnur', 'ritzung'],
 },
-‘bronze-age’: {
-name_de: ‘Bronzezeit’, name_en: ‘Bronze Age’,
-period: ‘ca. 2200–800 v.Chr.’,
+'bronze-age': {
+name_de: 'Bronzezeit', name_en: 'Bronze Age',
+period: 'ca. 2200–800 v.Chr.',
 date_range: [-2200, -800],
-icon: ‘⚔️’,
-class: ‘bronze-age’,
+icon: '⚔️',
+class: 'bronze-age',
 sub_dating: {
-‘ritzlinien’: { period_de: ‘Frühe Bronzezeit (Aunjetitz)’, date: [-2200, -1600] },
-‘gurtfurchen’: { period_de: ‘Mittlere Bronzezeit (Hügelgräberkultur)’, date: [-1600, -1300] },
-‘dellen’: { period_de: ‘Urnenfelderkultur’, date: [-1300, -800] },
-‘leisten’: { period_de: ‘Späte Bronzezeit’, date: [-1200, -800] },
+'ritzlinien': { period_de: 'Frühe Bronzezeit (Aunjetitz)', date: [-2200, -1600] },
+'gurtfurchen': { period_de: 'Mittlere Bronzezeit (Hügelgräberkultur)', date: [-1600, -1300] },
+'dellen': { period_de: 'Urnenfelderkultur', date: [-1300, -800] },
+'leisten': { period_de: 'Späte Bronzezeit', date: [-1200, -800] },
 },
 criteria: {
-wall_thickness: { de: ‘Mittel (5–10 mm), regelmäßiger’, en: ‘Medium (5–10 mm), more regular’ },
-surface: { de: ‘Geglättet, teils poliert oder geschlickt’, en: ‘Smoothed, partly polished or slipped’ },
-firing: { de: ‘Verbessert (700–900°C)’, en: ‘Improved (700–900°C)’ },
-temper: { de: ‘Feiner: Quarz, Glimmer, Kalkstein’, en: ‘Finer: quartz, mica, limestone’ },
-decoration: { de: ‘Rillen, Buckel, Kerbleisten, Fingertupfen’, en: ‘Grooves, bosses, notched strips, finger impressions’ },
-typical_forms: { de: ‘Urnen, Tassen, Amphoren, Siebgefäße’, en: ‘Urns, cups, amphorae, strainer vessels’ },
+wall_thickness: { de: 'Mittel (5–10 mm), regelmäßiger', en: 'Medium (5–10 mm), more regular' },
+surface: { de: 'Geglättet, teils poliert oder geschlickt', en: 'Smoothed, partly polished or slipped' },
+firing: { de: 'Verbessert (700–900°C)', en: 'Improved (700–900°C)' },
+temper: { de: 'Feiner: Quarz, Glimmer, Kalkstein', en: 'Finer: quartz, mica, limestone' },
+decoration: { de: 'Rillen, Buckel, Kerbleisten, Fingertupfen', en: 'Grooves, bosses, notched strips, finger impressions' },
+typical_forms: { de: 'Urnen, Tassen, Amphoren, Siebgefäße', en: 'Urns, cups, amphorae, strainer vessels' },
 },
-color_hints: [‘Braun’, ‘Orange’, ‘Rot’],
-material_hints: [‘Keramik’],
-decoration_hints: [‘ornamental’, ‘band’, ‘stamped’],
-deco_type_hints: [‘gurtfurchen’, ‘dellen’, ‘ritzlinien’, ‘leisten’, ‘appliken’],
-deco_tech_hints: [‘finger’, ‘spatel_einzinkig’, ‘ritzung’, ‘schlick’],
+color_hints: ['Braun', 'Orange', 'Rot'],
+material_hints: ['Keramik'],
+decoration_hints: ['ornamental', 'band', 'stamped'],
+deco_type_hints: ['gurtfurchen', 'dellen', 'ritzlinien', 'leisten', 'appliken'],
+deco_tech_hints: ['finger', 'spatel_einzinkig', 'ritzung', 'schlick'],
 },
-‘iron-age’: {
-name_de: ‘Eisenzeit’, name_en: ‘Iron Age’,
-period: ‘ca. 800 v.Chr. – Zeitenwende’,
+'iron-age': {
+name_de: 'Eisenzeit', name_en: 'Iron Age',
+period: 'ca. 800 v.Chr. – Zeitenwende',
 date_range: [-800, 0],
-icon: ‘🗡️’,
-class: ‘iron-age’,
+icon: '🗡️',
+class: 'iron-age',
 sub_dating: {
-‘kammstrich’: { period_de: ‘Hallstattzeit (Ha C/D)’, date: [-800, -450] },
-‘stempel’: { period_de: ‘Latènezeit’, date: [-450, -50] },
-‘bemalung’: { period_de: ‘Späte Latènezeit (Graphittonmalerei)’, date: [-250, -50] },
+'kammstrich': { period_de: 'Hallstattzeit (Ha C/D)', date: [-800, -450] },
+'stempel': { period_de: 'Latènezeit', date: [-450, -50] },
+'bemalung': { period_de: 'Späte Latènezeit (Graphittonmalerei)', date: [-250, -50] },
 },
 criteria: {
-wall_thickness: { de: ‘Variabel (3–10 mm), fein bei Drehscheibenware’, en: ‘Variable (3–10 mm), fine on wheel-thrown ware’ },
-surface: { de: ‘Graphitiert, poliert, Kammstrich’, en: ‘Graphite-coated, polished, combed’ },
-firing: { de: ‘Fortgeschritten (800–1000°C)’, en: ‘Advanced (800–1000°C)’ },
-temper: { de: ‘Fein bis mittel, oft Graphit-Beimengung’, en: ‘Fine to medium, often graphite admixture’ },
-decoration: { de: ‘Graphitbemalung, Stempelmuster, Kammstrich, plastische Leisten’, en: ‘Graphite painting, stamp patterns, comb decoration, applied strips’ },
-typical_forms: { de: ‘Situlae, Schalen, Graphittonware, Drehscheibenkeramik’, en: ‘Situlae, bowls, graphite ware, wheel-thrown ceramics’ },
+wall_thickness: { de: 'Variabel (3–10 mm), fein bei Drehscheibenware', en: 'Variable (3–10 mm), fine on wheel-thrown ware' },
+surface: { de: 'Graphitiert, poliert, Kammstrich', en: 'Graphite-coated, polished, combed' },
+firing: { de: 'Fortgeschritten (800–1000°C)', en: 'Advanced (800–1000°C)' },
+temper: { de: 'Fein bis mittel, oft Graphit-Beimengung', en: 'Fine to medium, often graphite admixture' },
+decoration: { de: 'Graphitbemalung, Stempelmuster, Kammstrich, plastische Leisten', en: 'Graphite painting, stamp patterns, comb decoration, applied strips' },
+typical_forms: { de: 'Situlae, Schalen, Graphittonware, Drehscheibenkeramik', en: 'Situlae, bowls, graphite ware, wheel-thrown ceramics' },
 },
-color_hints: [‘Schwarz’, ‘Grau’, ‘Braun’],
-material_hints: [‘Keramik’],
-decoration_hints: [‘stamped’, ‘painted’, ‘ornamental’],
-deco_type_hints: [‘kammstrich’, ‘stempel’, ‘bemalung’, ‘leisten’, ‘ritzlinien’],
-deco_tech_hints: [‘kamm’, ‘stempel_einzel’, ‘pinsel’, ‘ritzung’],
+color_hints: ['Schwarz', 'Grau', 'Braun'],
+material_hints: ['Keramik'],
+decoration_hints: ['stamped', 'painted', 'ornamental'],
+deco_type_hints: ['kammstrich', 'stempel', 'bemalung', 'leisten', 'ritzlinien'],
+deco_tech_hints: ['kamm', 'stempel_einzel', 'pinsel', 'ritzung'],
 },
 roman: {
-name_de: ‘Römisch’, name_en: ‘Roman’,
-period: ‘ca. 1. Jh. v.Chr. – 5. Jh. n.Chr.’,
+name_de: 'Römisch', name_en: 'Roman',
+period: 'ca. 1. Jh. v.Chr. – 5. Jh. n.Chr.',
 date_range: [-50, 450],
-icon: ‘🏛️’,
-class: ‘roman’,
+icon: '🏛️',
+class: 'roman',
 sub_dating: {
-‘stempel’: { period_de: ‘Frühe Kaiserzeit (Terra Sigillata)’, date: [-50, 150] },
-‘rollraedchen’: { period_de: ‘Mittlere Kaiserzeit (Argonnenware)’, date: [150, 350] },
-‘engobe’: { period_de: ‘Römische Kaiserzeit allgemein’, date: [0, 400] },
+'stempel': { period_de: 'Frühe Kaiserzeit (Terra Sigillata)', date: [-50, 150] },
+'rollraedchen': { period_de: 'Mittlere Kaiserzeit (Argonnenware)', date: [150, 350] },
+'engobe': { period_de: 'Römische Kaiserzeit allgemein', date: [0, 400] },
 },
 criteria: {
-wall_thickness: { de: ‘Dünn (2–6 mm), gleichmäßig, Drehscheibe’, en: ‘Thin (2–6 mm), uniform, wheel-thrown’ },
-surface: { de: ‘Terra Sigillata: Glanztonüberzug; Gebrauchskeramik: glatt’, en: ‘Terra sigillata: gloss slip; common ware: smooth’ },
-firing: { de: ‘Hoch (900–1100°C), kontrolliert oxidierend’, en: ‘High (900–1100°C), controlled oxidizing’ },
-temper: { de: ‘Sehr fein, kaum sichtbar’, en: ‘Very fine, barely visible’ },
-decoration: { de: ‘Reliefdekor (Formschüssel), Barbotine, Rädchenverzierung, Stempel’, en: ‘Relief decor (mold), barbotine, rouletting, stamps’ },
-typical_forms: { de: ‘Terra Sigillata, Amphoren, Mortaria, Dolien’, en: ‘Terra sigillata, amphorae, mortaria, dolia’ },
+wall_thickness: { de: 'Dünn (2–6 mm), gleichmäßig, Drehscheibe', en: 'Thin (2–6 mm), uniform, wheel-thrown' },
+surface: { de: 'Terra Sigillata: Glanztonüberzug; Gebrauchskeramik: glatt', en: 'Terra sigillata: gloss slip; common ware: smooth' },
+firing: { de: 'Hoch (900–1100°C), kontrolliert oxidierend', en: 'High (900–1100°C), controlled oxidizing' },
+temper: { de: 'Sehr fein, kaum sichtbar', en: 'Very fine, barely visible' },
+decoration: { de: 'Reliefdekor (Formschüssel), Barbotine, Rädchenverzierung, Stempel', en: 'Relief decor (mold), barbotine, rouletting, stamps' },
+typical_forms: { de: 'Terra Sigillata, Amphoren, Mortaria, Dolien', en: 'Terra sigillata, amphorae, mortaria, dolia' },
 },
-color_hints: [‘Rot’, ‘Orange’],
-material_hints: [‘Keramik’, ‘Porzellan’],
-decoration_hints: [‘figural’, ‘stamped’, ‘ornamental’],
-deco_type_hints: [‘stempel’, ‘rollraedchen’, ‘appliken’, ‘engobe’],
-deco_tech_hints: [‘stempel_roll’, ‘stempel_einzel’, ‘schlick’, ‘polierung’],
+color_hints: ['Rot', 'Orange'],
+material_hints: ['Keramik', 'Porzellan'],
+decoration_hints: ['figural', 'stamped', 'ornamental'],
+deco_type_hints: ['stempel', 'rollraedchen', 'appliken', 'engobe'],
+deco_tech_hints: ['stempel_roll', 'stempel_einzel', 'schlick', 'polierung'],
 },
 medieval: {
-name_de: ‘Mittelalter’, name_en: ‘Medieval’,
-period: ‘ca. 5.–15. Jh. n.Chr.’,
+name_de: 'Mittelalter', name_en: 'Medieval',
+period: 'ca. 5.–15. Jh. n.Chr.',
 date_range: [450, 1500],
-icon: ‘🏰’,
-class: ‘medieval’,
+icon: '🏰',
+class: 'medieval',
 sub_dating: {
-‘gurtfurchen’: { period_de: ‘Frühmittelalter (Kugeltöpfe)’, date: [450, 900] },
-‘rollraedchen’: { period_de: ‘Hochmittelalter’, date: [900, 1250] },
-‘stempel’: { period_de: ‘Hoch-/Spätmittelalter’, date: [1000, 1400] },
-‘glasur’: { period_de: ‘Spätmittelalter (Bleiglasur)’, date: [1200, 1500] },
-‘ritzlinien’: { period_de: ‘Früh-/Hochmittelalter (Ritzdekor)’, date: [600, 1100] },
+'gurtfurchen': { period_de: 'Frühmittelalter (Kugeltöpfe)', date: [450, 900] },
+'rollraedchen': { period_de: 'Hochmittelalter', date: [900, 1250] },
+'stempel': { period_de: 'Hoch-/Spätmittelalter', date: [1000, 1400] },
+'glasur': { period_de: 'Spätmittelalter (Bleiglasur)', date: [1200, 1500] },
+'ritzlinien': { period_de: 'Früh-/Hochmittelalter (Ritzdekor)', date: [600, 1100] },
 },
 criteria: {
-wall_thickness: { de: ‘Mittel (4–8 mm), Drehscheibe und Handaufbau’, en: ‘Medium (4–8 mm), wheel and hand-built’ },
-surface: { de: ‘Steinzeug: gesintert; Irdenware: engobiert/glasiert’, en: ‘Stoneware: sintered; earthenware: slipped/glazed’ },
-firing: { de: ‘Steinzeug bis 1300°C; Irdenware 900–1100°C’, en: ‘Stoneware up to 1300°C; earthenware 900–1100°C’ },
-temper: { de: ‘Fein bis mittel, Quarz, Feldspat’, en: ‘Fine to medium, quartz, feldspar’ },
-decoration: { de: ‘Wellenbänder, Rollstempel, Glasur, Ritzdekor, aufgelegte Leisten’, en: ‘Wavy bands, roller stamps, glaze, incised, applied strips’ },
-typical_forms: { de: ‘Kugeltöpfe, Kannen, Krüge, Grapen’, en: ‘Globular pots, pitchers, jugs, tripod pots’ },
+wall_thickness: { de: 'Mittel (4–8 mm), Drehscheibe und Handaufbau', en: 'Medium (4–8 mm), wheel and hand-built' },
+surface: { de: 'Steinzeug: gesintert; Irdenware: engobiert/glasiert', en: 'Stoneware: sintered; earthenware: slipped/glazed' },
+firing: { de: 'Steinzeug bis 1300°C; Irdenware 900–1100°C', en: 'Stoneware up to 1300°C; earthenware 900–1100°C' },
+temper: { de: 'Fein bis mittel, Quarz, Feldspat', en: 'Fine to medium, quartz, feldspar' },
+decoration: { de: 'Wellenbänder, Rollstempel, Glasur, Ritzdekor, aufgelegte Leisten', en: 'Wavy bands, roller stamps, glaze, incised, applied strips' },
+typical_forms: { de: 'Kugeltöpfe, Kannen, Krüge, Grapen', en: 'Globular pots, pitchers, jugs, tripod pots' },
 },
-color_hints: [‘Grau’, ‘Braun’, ‘Grün’],
-material_hints: [‘Keramik’],
-decoration_hints: [‘band’, ‘stamped’, ‘ornamental’, ‘incised’],
-deco_type_hints: [‘rollraedchen’, ‘stempel’, ‘glasur’, ‘ritzlinien’, ‘leisten’, ‘gurtfurchen’],
-deco_tech_hints: [‘stempel_roll’, ‘stempel_einzel’, ‘ritzung’, ‘schlick’],
+color_hints: ['Grau', 'Braun', 'Grün'],
+material_hints: ['Keramik'],
+decoration_hints: ['band', 'stamped', 'ornamental', 'incised'],
+deco_type_hints: ['rollraedchen', 'stempel', 'glasur', 'ritzlinien', 'leisten', 'gurtfurchen'],
+deco_tech_hints: ['stempel_roll', 'stempel_einzel', 'ritzung', 'schlick'],
 },
-‘early-modern’: {
-name_de: ‘Frühe Neuzeit’, name_en: ‘Early Modern’,
-period: ‘ca. 15.–18. Jh.’,
+'early-modern': {
+name_de: 'Frühe Neuzeit', name_en: 'Early Modern',
+period: 'ca. 15.–18. Jh.',
 date_range: [1450, 1800],
-icon: ‘⚙️’,
-class: ‘modern’,
+icon: '⚙️',
+class: 'modern',
 sub_dating: {
-‘bemalung’: { period_de: ‘Fayence / Blaumalerei’, date: [1550, 1800] },
-‘glasur’: { period_de: ‘Glasierte Irdenware / Steinzeug’, date: [1450, 1750] },
-‘engobe’: { period_de: ‘Engobierte Ware’, date: [1500, 1700] },
-‘stempel’: { period_de: ‘Westerwälder Steinzeug’, date: [1590, 1800] },
+'bemalung': { period_de: 'Fayence / Blaumalerei', date: [1550, 1800] },
+'glasur': { period_de: 'Glasierte Irdenware / Steinzeug', date: [1450, 1750] },
+'engobe': { period_de: 'Engobierte Ware', date: [1500, 1700] },
+'stempel': { period_de: 'Westerwälder Steinzeug', date: [1590, 1800] },
 },
 criteria: {
-wall_thickness: { de: ‘Dünn (2–5 mm), Fayence/Steinzeug’, en: ‘Thin (2–5 mm), faience/stoneware’ },
-surface: { de: ‘Zinnglasur (Fayence), Salzglasur (Steinzeug)’, en: ‘Tin glaze (faience), salt glaze (stoneware)’ },
-firing: { de: ‘Hoch (1100–1400°C)’, en: ‘High (1100–1400°C)’ },
-temper: { de: ‘Sehr fein, industriell aufbereitet’, en: ‘Very fine, industrially processed’ },
-decoration: { de: ‘Blaumalerei, Mangan-Dekor, Reliefauflagen, Figuraldekor’, en: ‘Blue painting, manganese decor, relief, figural decoration’ },
-typical_forms: { de: ‘Teller, Krüge, Apothekengefäße, Ofenkacheln’, en: ‘Plates, jugs, pharmacy vessels, stove tiles’ },
+wall_thickness: { de: 'Dünn (2–5 mm), Fayence/Steinzeug', en: 'Thin (2–5 mm), faience/stoneware' },
+surface: { de: 'Zinnglasur (Fayence), Salzglasur (Steinzeug)', en: 'Tin glaze (faience), salt glaze (stoneware)' },
+firing: { de: 'Hoch (1100–1400°C)', en: 'High (1100–1400°C)' },
+temper: { de: 'Sehr fein, industriell aufbereitet', en: 'Very fine, industrially processed' },
+decoration: { de: 'Blaumalerei, Mangan-Dekor, Reliefauflagen, Figuraldekor', en: 'Blue painting, manganese decor, relief, figural decoration' },
+typical_forms: { de: 'Teller, Krüge, Apothekengefäße, Ofenkacheln', en: 'Plates, jugs, pharmacy vessels, stove tiles' },
 },
-color_hints: [‘Weiß’, ‘Blau’, ‘Braun’],
-material_hints: [‘Keramik’, ‘Porzellan’],
-decoration_hints: [‘painted’, ‘figural’, ‘ornamental’],
-deco_type_hints: [‘bemalung’, ‘glasur’, ‘engobe’, ‘appliken’, ‘stempel’],
-deco_tech_hints: [‘pinsel’, ‘stempel_einzel’, ‘stempel_roll’, ‘polierung’],
+color_hints: ['Weiß', 'Blau', 'Braun'],
+material_hints: ['Keramik', 'Porzellan'],
+decoration_hints: ['painted', 'figural', 'ornamental'],
+deco_type_hints: ['bemalung', 'glasur', 'engobe', 'appliken', 'stempel'],
+deco_tech_hints: ['pinsel', 'stempel_einzel', 'stempel_roll', 'polierung'],
 },
 modern: {
-name_de: ‘Neuzeit (Industriezeitalter)’, name_en: ‘Modern (Industrial)’,
-period: ‘ab 18. Jh.’,
+name_de: 'Neuzeit (Industriezeitalter)', name_en: 'Modern (Industrial)',
+period: 'ab 18. Jh.',
 date_range: [1750, 2000],
-icon: ‘🏭’,
-class: ‘modern’,
+icon: '🏭',
+class: 'modern',
 sub_dating: {
-‘bemalung’: { period_de: ‘Porzellanmanufaktur / Steingut’, date: [1750, 1900] },
-‘glasur’: { period_de: ‘Industrielle Keramik’, date: [1800, 2000] },
+'bemalung': { period_de: 'Porzellanmanufaktur / Steingut', date: [1750, 1900] },
+'glasur': { period_de: 'Industrielle Keramik', date: [1800, 2000] },
 },
 criteria: {
-wall_thickness: { de: ‘Sehr dünn (1–4 mm), gleichmäßig’, en: ‘Very thin (1–4 mm), uniform’ },
-surface: { de: ‘Porzellan: glatt, glasiert; Steingut: engobiert’, en: ‘Porcelain: smooth, glazed; earthenware: slipped’ },
-firing: { de: ‘Sehr hoch (1200–1450°C)’, en: ‘Very high (1200–1450°C)’ },
-temper: { de: ‘Kaolin, Feldspat, Quarz (Porzellanmasse)’, en: ‘Kaolin, feldspar, quartz (porcelain body)’ },
-decoration: { de: ‘Unterglasurmalerei, Aufglasur, Transfer-Druck, Vergoldung’, en: ‘Underglaze painting, overglaze, transfer printing, gilding’ },
-typical_forms: { de: ‘Teller, Tassen, Vasen, industrielle Serienproduktion’, en: ‘Plates, cups, vases, industrial mass production’ },
+wall_thickness: { de: 'Sehr dünn (1–4 mm), gleichmäßig', en: 'Very thin (1–4 mm), uniform' },
+surface: { de: 'Porzellan: glatt, glasiert; Steingut: engobiert', en: 'Porcelain: smooth, glazed; earthenware: slipped' },
+firing: { de: 'Sehr hoch (1200–1450°C)', en: 'Very high (1200–1450°C)' },
+temper: { de: 'Kaolin, Feldspat, Quarz (Porzellanmasse)', en: 'Kaolin, feldspar, quartz (porcelain body)' },
+decoration: { de: 'Unterglasurmalerei, Aufglasur, Transfer-Druck, Vergoldung', en: 'Underglaze painting, overglaze, transfer printing, gilding' },
+typical_forms: { de: 'Teller, Tassen, Vasen, industrielle Serienproduktion', en: 'Plates, cups, vases, industrial mass production' },
 },
-color_hints: [‘Weiß’, ‘Blau’],
-material_hints: [‘Porzellan’],
-decoration_hints: [‘painted’, ‘band’, ‘figural’, ‘ornamental’],
-deco_type_hints: [‘bemalung’, ‘glasur’, ‘engobe’],
-deco_tech_hints: [‘pinsel’, ‘polierung’],
+color_hints: ['Weiß', 'Blau'],
+material_hints: ['Porzellan'],
+decoration_hints: ['painted', 'band', 'figural', 'ornamental'],
+deco_type_hints: ['bemalung', 'glasur', 'engobe'],
+deco_tech_hints: ['pinsel', 'polierung'],
 }
 };
 
@@ -7295,34 +7295,34 @@ deco_tech_hints: [‘pinsel’, ‘polierung’],
 // ==================================================
 
 let contextData = {
-site: ‘’, befund: ‘’, stratum: ‘’, fundnr: ‘’, date: ‘’, finder: ‘’,
-closed: ‘unknown’, associated: ‘’, notes: ‘’,
-clay: ‘’, temper: ‘’, firing: ‘’, surface: ‘’, wallthick: ‘’, technique: ‘’
+site: '', befund: '', stratum: '', fundnr: '', date: '', finder: '',
+closed: 'unknown', associated: '', notes: '',
+clay: '', temper: '', firing: '', surface: '', wallthick: '', technique: ''
 };
 
 function updateContextData() {
-contextData.site = document.getElementById(‘ctx-site’)?.value || ‘’;
-contextData.befund = document.getElementById(‘ctx-befund’)?.value || ‘’;
-contextData.stratum = document.getElementById(‘ctx-stratum’)?.value || ‘’;
-contextData.fundnr = document.getElementById(‘ctx-fundnr’)?.value || ‘’;
-contextData.date = document.getElementById(‘ctx-date’)?.value || ‘’;
-contextData.finder = document.getElementById(‘ctx-finder’)?.value || ‘’;
-contextData.associated = document.getElementById(‘ctx-associated’)?.value || ‘’;
-contextData.notes = document.getElementById(‘ctx-notes’)?.value || ‘’;
-contextData.clay = document.getElementById(‘ctx-clay’)?.value || ‘’;
-contextData.temper = document.getElementById(‘ctx-temper’)?.value || ‘’;
-contextData.firing = document.getElementById(‘ctx-firing’)?.value || ‘’;
-contextData.surface = document.getElementById(‘ctx-surface’)?.value || ‘’;
-contextData.wallthick = document.getElementById(‘ctx-wallthick’)?.value || ‘’;
-contextData.technique = document.getElementById(‘ctx-technique’)?.value || ‘’;
+contextData.site = document.getElementById('ctx-site')?.value || '';
+contextData.befund = document.getElementById('ctx-befund')?.value || '';
+contextData.stratum = document.getElementById('ctx-stratum')?.value || '';
+contextData.fundnr = document.getElementById('ctx-fundnr')?.value || '';
+contextData.date = document.getElementById('ctx-date')?.value || '';
+contextData.finder = document.getElementById('ctx-finder')?.value || '';
+contextData.associated = document.getElementById('ctx-associated')?.value || '';
+contextData.notes = document.getElementById('ctx-notes')?.value || '';
+contextData.clay = document.getElementById('ctx-clay')?.value || '';
+contextData.temper = document.getElementById('ctx-temper')?.value || '';
+contextData.firing = document.getElementById('ctx-firing')?.value || '';
+contextData.surface = document.getElementById('ctx-surface')?.value || '';
+contextData.wallthick = document.getElementById('ctx-wallthick')?.value || '';
+contextData.technique = document.getElementById('ctx-technique')?.value || '';
 }
 
 function setContextClosed(val, btn) {
 contextData.closed = val;
-[‘ctx-closed-yes’, ‘ctx-closed-no’, ‘ctx-closed-unknown’].forEach(id => {
-document.getElementById(id)?.classList.remove(‘active’);
+['ctx-closed-yes', 'ctx-closed-no', 'ctx-closed-unknown'].forEach(id => {
+document.getElementById(id)?.classList.remove('active');
 });
-btn.classList.add(‘active’);
+btn.classList.add('active');
 }
 
 function saveContextToDB() {
@@ -7331,9 +7331,9 @@ const data = getUserData();
 data.context = contextData;
 try {
 saveUserData(data);
-toast(currentLang === ‘de’ ? ‘Fundkontext gespeichert!’ : ‘Find context saved!’, ‘success’);
+toast(currentLang === 'de' ? 'Fundkontext gespeichert!' : 'Find context saved!', 'success');
 } catch (e) {
-toast(’Speicherfehler: ’ + e.message, ‘error’);
+toast('Speicherfehler: ' + e.message, 'error');
 }
 }
 
@@ -7342,17 +7342,17 @@ const data = getUserData();
 if (data.context) {
 contextData = { …contextData, …data.context };
 // Populate form fields
-const fields = [‘site’, ‘befund’, ‘stratum’, ‘fundnr’, ‘date’, ‘finder’, ‘associated’, ‘notes’,
-‘clay’, ‘temper’, ‘firing’, ‘surface’, ‘wallthick’, ‘technique’];
+const fields = ['site', 'befund', 'stratum', 'fundnr', 'date', 'finder', 'associated', 'notes',
+'clay', 'temper', 'firing', 'surface', 'wallthick', 'technique'];
 fields.forEach(f => {
-const el = document.getElementById(‘ctx-’ + f);
+const el = document.getElementById('ctx-' + f);
 if (el && contextData[f]) el.value = contextData[f];
 });
 // Set closed state
 if (contextData.closed) {
-[‘yes’, ‘no’, ‘unknown’].forEach(v => {
-const btn = document.getElementById(‘ctx-closed-’ + v);
-if (btn) btn.classList.toggle(‘active’, contextData.closed === v);
+['yes', 'no', 'unknown'].forEach(v => {
+const btn = document.getElementById('ctx-closed-' + v);
+if (btn) btn.classList.toggle('active', contextData.closed === v);
 });
 }
 }
@@ -7360,13 +7360,13 @@ if (btn) btn.classList.toggle(‘active’, contextData.closed === v);
 
 function exportContextPDF() {
 updateContextData();
-if (typeof jspdf === ‘undefined’ && typeof window.jspdf === ‘undefined’) {
-toast(‘PDF library not loaded’, ‘error’);
+if (typeof jspdf === 'undefined' && typeof window.jspdf === 'undefined') {
+toast('PDF library not loaded', 'error');
 return;
 }
-if (!checkLib(‘jsPDF’)) return;
+if (!checkLib('jsPDF')) return;
 const { jsPDF } = window.jspdf;
-const doc = new jsPDF(‘p’, ‘mm’, ‘a4’);
+const doc = new jsPDF('p', 'mm', 'a4');
 
 ```
 doc.setFontSize(18);
@@ -7416,9 +7416,9 @@ toast('PDF exportiert!', 'success');
 // PROFILE DRAWING (Cross-section / Profilschnitt)
 // ==================================================
 
-let profileDrawColor = ‘#222222’;
+let profileDrawColor = '#222222';
 let profileBrushSize = 2;
-let profileTool = ‘pen’;
+let profileTool = 'pen';
 let profileIsDrawing = false;
 let profileLastX = 0, profileLastY = 0;
 let profileHistory = [];
@@ -7427,7 +7427,7 @@ let profileShowSymmetry = false;
 let profileInitialized = false;
 
 function initProfileCanvas() {
-const canvas = document.getElementById(‘profile-canvas’);
+const canvas = document.getElementById('profile-canvas');
 if (!canvas || profileInitialized) return;
 
 ```
@@ -7544,7 +7544,7 @@ profileInitialized = true;
 function drawProfileBackground(ctx, w, h) {
 // Clear
 ctx.clearRect(0, 0, w, h);
-ctx.fillStyle = ‘#faf8f5’;
+ctx.fillStyle = '#faf8f5';
 ctx.fillRect(0, 0, w, h);
 
 ```
@@ -7593,25 +7593,25 @@ if (profileShowSymmetry) {
 
 function setProfileTool(tool, btn) {
 profileTool = tool;
-document.querySelectorAll(’#tab-profile .three-toggle’).forEach(b => b.classList.remove(‘active’));
-btn.classList.add(‘active’);
-const canvas = document.getElementById(‘profile-canvas’);
-if (canvas) canvas.style.cursor = tool === ‘eraser’ ? ‘cell’ : ‘crosshair’;
+document.querySelectorAll('#tab-profile .three-toggle').forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
+const canvas = document.getElementById('profile-canvas');
+if (canvas) canvas.style.cursor = tool === 'eraser' ? 'cell' : 'crosshair';
 }
 
 function undoProfile() {
 if (profileHistory.length === 0) return;
-const canvas = document.getElementById(‘profile-canvas’);
+const canvas = document.getElementById('profile-canvas');
 if (!canvas) return;
-const ctx = canvas.getContext(‘2d’);
+const ctx = canvas.getContext('2d');
 const prev = profileHistory.pop();
 ctx.putImageData(prev, 0, 0);
 }
 
 function clearProfile() {
-const canvas = document.getElementById(‘profile-canvas’);
+const canvas = document.getElementById('profile-canvas');
 if (!canvas) return;
-const ctx = canvas.getContext(‘2d’);
+const ctx = canvas.getContext('2d');
 profileHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 drawProfileBackground(ctx, canvas.width, canvas.height);
 }
@@ -7619,22 +7619,22 @@ drawProfileBackground(ctx, canvas.width, canvas.height);
 function toggleProfileGrid() {
 profileShowGrid = !profileShowGrid;
 // Redraw background while preserving drawing
-toast(profileShowGrid ? ‘Raster ein’ : ‘Raster aus’, ‘info’);
+toast(profileShowGrid ? 'Raster ein' : 'Raster aus', 'info');
 }
 
 function toggleProfileSymmetry() {
 profileShowSymmetry = !profileShowSymmetry;
-toast(profileShowSymmetry ? ‘Symmetrie-Modus ein’ : ‘Symmetrie-Modus aus’, ‘info’);
+toast(profileShowSymmetry ? 'Symmetrie-Modus ein' : 'Symmetrie-Modus aus', 'info');
 // Update label
-const canvas = document.getElementById(‘profile-canvas’);
+const canvas = document.getElementById('profile-canvas');
 if (canvas) {
-const ctx = canvas.getContext(‘2d’);
+const ctx = canvas.getContext('2d');
 // Redraw symmetry indicator
 if (profileShowSymmetry) {
-ctx.fillStyle = ‘rgba(200,50,50,0.25)’;
-ctx.font = ‘11px “DM Sans”, sans-serif’;
-ctx.textAlign = ‘center’;
-ctx.fillText(‘↔ Symmetrie aktiv’, canvas.width / 2, 28);
+ctx.fillStyle = 'rgba(200,50,50,0.25)';
+ctx.font = '11px "DM Sans", sans-serif';
+ctx.textAlign = 'center';
+ctx.fillText('↔ Symmetrie aktiv', canvas.width / 2, 28);
 }
 }
 }
@@ -7644,8 +7644,8 @@ function updateProfileScale() {
 }
 
 function loadProfileReference() {
-const select = document.getElementById(‘profile-fragment-select’);
-const container = document.getElementById(‘profile-reference-img’);
+const select = document.getElementById('profile-fragment-select');
+const container = document.getElementById('profile-reference-img');
 if (!select || !container) return;
 
 ```
@@ -7664,16 +7664,16 @@ if (piece.thumbnailDataUrl) {
 }
 
 function updateProfileFragmentSelect() {
-const select = document.getElementById(‘profile-fragment-select’);
+const select = document.getElementById('profile-fragment-select');
 if (!select) return;
-select.innerHTML = ‘<option value="">— Fragment wählen —</option>’;
+select.innerHTML = '<option value="">— Fragment wählen —</option>';
 activePieces.forEach((p, i) => {
 select.innerHTML += `<option value="${i}">${p.id} — ${p.name || 'Fragment'}</option>`;
 });
 }
 
 function downloadProfile(format) {
-const canvas = document.getElementById(‘profile-canvas’);
+const canvas = document.getElementById('profile-canvas');
 if (!canvas) return;
 
 ```
@@ -7707,62 +7707,62 @@ let selectedCultureOverride = null;
 
 const CRITERIA_LABELS = {
 de: {
-‘has_decoration’: ‘Verzierung vorhanden’,
-‘high_curvature’: ‘Hohe Krümmung (dünne Wandung)’,
-‘low_curvature’: ‘Niedrige Krümmung (dicke Wandung)’,
-‘thick_walls’: ‘Dicke Wandung’,
-‘thin_walls’: ‘Dünne Wandung’,
-‘very_thin_walls’: ‘Sehr dünne Wandung’,
-‘regular_shape’: ‘Regelmäßige Form (Drehscheibe)’,
-‘irregular_shape’: ‘Unregelmäßige Form (Handarbeit)’,
-‘circular’: ‘Kreisförmig’,
-‘manual_override’: ‘Manuell zugeordnet’,
+'has_decoration': 'Verzierung vorhanden',
+'high_curvature': 'Hohe Krümmung (dünne Wandung)',
+'low_curvature': 'Niedrige Krümmung (dicke Wandung)',
+'thick_walls': 'Dicke Wandung',
+'thin_walls': 'Dünne Wandung',
+'very_thin_walls': 'Sehr dünne Wandung',
+'regular_shape': 'Regelmäßige Form (Drehscheibe)',
+'irregular_shape': 'Unregelmäßige Form (Handarbeit)',
+'circular': 'Kreisförmig',
+'manual_override': 'Manuell zugeordnet',
 },
 en: {
-‘has_decoration’: ‘Decoration present’,
-‘high_curvature’: ‘High curvature (thin walls)’,
-‘low_curvature’: ‘Low curvature (thick walls)’,
-‘thick_walls’: ‘Thick walls’,
-‘thin_walls’: ‘Thin walls’,
-‘very_thin_walls’: ‘Very thin walls’,
-‘regular_shape’: ‘Regular shape (wheel-thrown)’,
-‘irregular_shape’: ‘Irregular shape (hand-built)’,
-‘circular’: ‘Circular’,
-‘manual_override’: ‘Manual assignment’,
+'has_decoration': 'Decoration present',
+'high_curvature': 'High curvature (thin walls)',
+'low_curvature': 'Low curvature (thick walls)',
+'thick_walls': 'Thick walls',
+'thin_walls': 'Thin walls',
+'very_thin_walls': 'Very thin walls',
+'regular_shape': 'Regular shape (wheel-thrown)',
+'irregular_shape': 'Irregular shape (hand-built)',
+'circular': 'Circular',
+'manual_override': 'Manual assignment',
 }
 };
 
 function formatCriteria(raw) {
 const labels = CRITERIA_LABELS[currentLang] || CRITERIA_LABELS.de;
-if (raw.startsWith(‘color:’)) {
-const color = raw.split(’:’)[1];
-return (currentLang === ‘de’ ? ‘Farbe: ’ : ‘Color: ‘) + color;
+if (raw.startsWith('color:')) {
+const color = raw.split(':')[1];
+return (currentLang === 'de' ? 'Farbe: ' : 'Color: ') + color;
 }
-if (raw.startsWith(‘material:’)) {
-const mat = raw.split(’:’)[1];
-return ‘Material: ’ + mat;
+if (raw.startsWith('material:')) {
+const mat = raw.split(':')[1];
+return 'Material: ' + mat;
 }
-if (raw.startsWith(‘deco_type:’)) {
-const dt = raw.split(’:’)[1];
-return (currentLang === ‘de’ ? ’Dekortyp: ’ : ‘Decor type: ‘) + getDecoLabel(dt);
+if (raw.startsWith('deco_type:')) {
+const dt = raw.split(':')[1];
+return (currentLang === 'de' ? 'Dekortyp: ' : 'Decor type: ') + getDecoLabel(dt);
 }
-if (raw.startsWith(‘vessel_part:’)) {
-const vp = raw.split(’:’)[1];
-return (currentLang === ‘de’ ? ’Gefäßbereich: ’ : ‘Vessel part: ‘) + getPartLabel(vp);
+if (raw.startsWith('vessel_part:')) {
+const vp = raw.split(':')[1];
+return (currentLang === 'de' ? 'Gefäßbereich: ' : 'Vessel part: ') + getPartLabel(vp);
 }
-if (raw.startsWith(‘sub_dating:’)) {
-const dt = raw.split(’:’)[1];
-return (currentLang === ‘de’ ? ’📅 Datierung verfeinert durch: ’ : ’📅 Dating refined by: ’) + getDecoLabel(dt);
+if (raw.startsWith('sub_dating:')) {
+const dt = raw.split(':')[1];
+return (currentLang === 'de' ? '📅 Datierung verfeinert durch: ' : '📅 Dating refined by: ') + getDecoLabel(dt);
 }
-return labels[raw] || raw.replace(/_/g, ’ ’);
+return labels[raw] || raw.replace(/_/g, ' ');
 }
 
 function toggleCultureChip(el) {
-document.querySelectorAll(’.culture-chip’).forEach(c => c.classList.remove(‘selected’));
-if (el.classList.contains(‘selected’)) {
+document.querySelectorAll('.culture-chip').forEach(c => c.classList.remove('selected'));
+if (el.classList.contains('selected')) {
 selectedCultureOverride = null;
 } else {
-el.classList.add(‘selected’);
+el.classList.add('selected');
 selectedCultureOverride = el.dataset.culture;
 }
 }
@@ -7892,7 +7892,7 @@ return sorted.slice(0, 3);
 function formatDateRange(from, to) {
 const fmtYear = (y) => {
 if (y < 0) return `${Math.abs(y)} v.Chr.`;
-if (y === 0) return ‘Zeitenwende’;
+if (y === 0) return 'Zeitenwende';
 return `${y} n.Chr.`;
 };
 return `${fmtYear(from)} – ${fmtYear(to)}`;
@@ -7900,7 +7900,7 @@ return `${fmtYear(from)} – ${fmtYear(to)}`;
 
 function runCultureClassification() {
 if (activePieces.length === 0) {
-toast(T(‘upload_first’), ‘error’);
+toast(T('upload_first'), 'error');
 return;
 }
 
@@ -8024,13 +8024,13 @@ renderCultureKnowledgeBase();
 // TECHNICAL REPORT EXPORT (Schnellbericht für Firmenarchäologie)
 // ==================================================
 function exportTechnicalReport() {
-if (typeof jspdf === ‘undefined’ && typeof window.jspdf === ‘undefined’) {
-toast(‘PDF library not loaded’, ‘error’);
+if (typeof jspdf === 'undefined' && typeof window.jspdf === 'undefined') {
+toast('PDF library not loaded', 'error');
 return;
 }
-if (!checkLib(‘jsPDF’)) return;
+if (!checkLib('jsPDF')) return;
 const { jsPDF } = window.jspdf;
-const doc = new jsPDF(‘p’, ‘mm’, ‘a4’);
+const doc = new jsPDF('p', 'mm', 'a4');
 const pageW = 210, marginL = 18, marginR = 18, contentW = pageW - marginL - marginR;
 let y = 20;
 
@@ -8240,9 +8240,9 @@ toast(currentLang === 'de' ? 'Technischer Schnellbericht exportiert!' : 'Technic
 }
 
 function renderCultureKnowledgeBase() {
-const container = document.getElementById(‘culture-kb-content’);
+const container = document.getElementById('culture-kb-content');
 const lang = currentLang;
-let html = ‘’;
+let html = '';
 
 ```
 Object.entries(CULTURE_DB).forEach(([key, culture]) => {
@@ -8276,9 +8276,9 @@ let decoLineArtImg = null;
 let decoSvgData = null;
 
 function renderDecoSelection() {
-const grid = document.getElementById(‘deco-select-grid’);
-const empty = document.getElementById(‘deco-empty’);
-const main = document.getElementById(‘deco-main’);
+const grid = document.getElementById('deco-select-grid');
+const empty = document.getElementById('deco-empty');
+const main = document.getElementById('deco-main');
 
 ```
 // Show all pieces, highlight decorated ones
@@ -8311,14 +8311,14 @@ grid.innerHTML = html;
 
 function selectDecoFragment(idx) {
 selectedDecoFragment = idx;
-document.querySelectorAll(’.deco-select-item’).forEach((el, i) => {
-el.classList.toggle(‘selected’, i === idx);
+document.querySelectorAll('.deco-select-item').forEach((el, i) => {
+el.classList.toggle('selected', i === idx);
 });
 }
 
 async function runDecoExtraction() {
 if (selectedDecoFragment === null || !activePieces[selectedDecoFragment]) {
-toast(currentLang === ‘de’ ? ‘Bitte erst ein Fragment wählen’ : ‘Please select a fragment first’, ‘error’);
+toast(currentLang === 'de' ? 'Bitte erst ein Fragment wählen' : 'Please select a fragment first', 'error');
 return;
 }
 
@@ -8409,19 +8409,19 @@ try {
 
 }
 
-let overlayMode = ‘lines’;
+let overlayMode = 'lines';
 function toggleOverlayMode(el, mode) {
 overlayMode = mode;
-document.querySelectorAll(’.deco-overlay-toggle’).forEach(t => t.classList.remove(‘active’));
-el.classList.add(‘active’);
+document.querySelectorAll('.deco-overlay-toggle').forEach(t => t.classList.remove('active'));
+el.classList.add('active');
 updateDecoOverlay();
 }
 
 function updateDecoOverlay() {
 if (!decoOriginalImg || !decoLineArtImg) return;
-const canvas = document.getElementById(‘deco-canvas-overlay’);
-const ctx = canvas.getContext(‘2d’);
-const opacity = parseInt(document.getElementById(‘slider-overlay-opacity’).value) / 100;
+const canvas = document.getElementById('deco-canvas-overlay');
+const ctx = canvas.getContext('2d');
+const opacity = parseInt(document.getElementById('slider-overlay-opacity').value) / 100;
 
 ```
 const imgA = new Image();
@@ -8448,8 +8448,8 @@ imgA.src = base;
 
 function downloadDecoImage(type) {
 let canvas;
-if (type === ‘lineart’) canvas = document.getElementById(‘deco-canvas-lineart’);
-else if (type === ‘overlay’) canvas = document.getElementById(‘deco-canvas-overlay’);
+if (type === 'lineart') canvas = document.getElementById('deco-canvas-lineart');
+else if (type === 'overlay') canvas = document.getElementById('deco-canvas-overlay');
 else return;
 
 ```
@@ -8463,12 +8463,12 @@ link.click();
 
 function downloadDecoSVG() {
 if (!decoSvgData) {
-toast(‘No SVG data available’, ‘error’);
+toast('No SVG data available', 'error');
 return;
 }
-const blob = new Blob([decoSvgData], { type: ‘image/svg+xml’ });
+const blob = new Blob([decoSvgData], { type: 'image/svg+xml' });
 const url = URL.createObjectURL(blob);
-const link = document.createElement(‘a’);
+const link = document.createElement('a');
 link.download = `shardmind_decoration_${Date.now()}.svg`;
 link.href = url;
 link.click();
@@ -8479,15 +8479,15 @@ URL.revokeObjectURL(url);
 // DECORATION DRAWING TOOLS
 // ==================================================
 
-let drawTool = ‘pen’;
-let drawColor = ‘#222’;
+let drawTool = 'pen';
+let drawColor = '#222';
 let drawBrushSize = 2;
 let drawIsDrawing = false;
 let drawLastX = 0, drawLastY = 0;
 let drawInitialized = false;
 
 function initDrawCanvas() {
-const canvas = document.getElementById(‘deco-canvas-draw’);
+const canvas = document.getElementById('deco-canvas-draw');
 if (!canvas || drawInitialized) return;
 
 ```
@@ -8590,32 +8590,32 @@ drawInitialized = true;
 
 function setDrawTool(tool, btn) {
 drawTool = tool;
-document.querySelectorAll(’.draw-tool-btn’).forEach(b => b.classList.remove(‘active’));
-btn.classList.add(‘active’);
-const canvas = document.getElementById(‘deco-canvas-draw’);
-if (canvas) canvas.style.cursor = tool === ‘eraser’ ? ‘cell’ : ‘crosshair’;
+document.querySelectorAll('.draw-tool-btn').forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
+const canvas = document.getElementById('deco-canvas-draw');
+if (canvas) canvas.style.cursor = tool === 'eraser' ? 'cell' : 'crosshair';
 }
 
 function setDrawColor(color, swatch) {
 drawColor = color;
-document.querySelectorAll(’.draw-color-swatch’).forEach(s => s.classList.remove(‘active’));
-swatch.classList.add(‘active’);
+document.querySelectorAll('.draw-color-swatch').forEach(s => s.classList.remove('active'));
+swatch.classList.add('active');
 // Also switch to pen tool
-drawTool = ‘pen’;
-document.querySelectorAll(’.draw-tool-btn’).forEach(b => b.classList.remove(‘active’));
-document.querySelector(’.draw-tool-btn’)?.classList.add(‘active’);
+drawTool = 'pen';
+document.querySelectorAll('.draw-tool-btn').forEach(b => b.classList.remove('active'));
+document.querySelector('.draw-tool-btn')?.classList.add('active');
 }
 
 function clearDrawing() {
-const canvas = document.getElementById(‘deco-canvas-draw’);
+const canvas = document.getElementById('deco-canvas-draw');
 if (!canvas) return;
-const ctx = canvas.getContext(‘2d’);
+const ctx = canvas.getContext('2d');
 ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
 function mergeDrawingAndDownload() {
-const lineartCanvas = document.getElementById(‘deco-canvas-lineart’);
-const drawCanvas = document.getElementById(‘deco-canvas-draw’);
+const lineartCanvas = document.getElementById('deco-canvas-lineart');
+const drawCanvas = document.getElementById('deco-canvas-draw');
 if (!lineartCanvas || !drawCanvas) return;
 
 ```
@@ -8697,15 +8697,15 @@ console.log('[ShardMind] init() completed successfully');
 }
 
 function updateOfflineStatus() {
-const indicator = document.getElementById(‘offline-indicator’);
+const indicator = document.getElementById('offline-indicator');
 if (indicator) {
 if (!navigator.onLine) {
-indicator.style.display = ‘’;
-indicator.innerHTML = currentLang === ‘de’
-? ‘📡 Offline — Nach dem ersten Laden funktioniert die Analyse lokal ohne Internet’
-: ‘📡 Offline — After initial load, analysis runs locally without internet’;
+indicator.style.display = '';
+indicator.innerHTML = currentLang === 'de'
+? '📡 Offline — Nach dem ersten Laden funktioniert die Analyse lokal ohne Internet'
+: '📡 Offline — After initial load, analysis runs locally without internet';
 } else {
-indicator.style.display = ‘none’;
+indicator.style.display = 'none';
 }
 }
 }
@@ -8718,7 +8718,7 @@ const url = BASE_URL;
 const text = `ShardMind — KI-gestützte Analyse archäologischer Fundfragmente\n${url}\n\nBrowser-basiert, offline-fähig, kostenlos. Feedback willkommen!`;
 if (navigator.clipboard) {
 navigator.clipboard.writeText(text).then(() => {
-toast(currentLang === ‘de’ ? ‘🔗 Link kopiert!’ : ‘🔗 Link copied!’, ‘success’);
+toast(currentLang === 'de' ? '🔗 Link kopiert!' : '🔗 Link copied!', 'success');
 }).catch(() => {
 fallbackCopy(text);
 });
@@ -8728,19 +8728,19 @@ fallbackCopy(text);
 }
 
 function fallbackCopy(text) {
-const ta = document.createElement(‘textarea’);
+const ta = document.createElement('textarea');
 ta.value = text;
-ta.style.position = ‘fixed’;
-ta.style.left = ‘-999px’;
+ta.style.position = 'fixed';
+ta.style.left = '-999px';
 document.body.appendChild(ta);
 ta.select();
-document.execCommand(‘copy’);
+document.execCommand('copy');
 document.body.removeChild(ta);
-toast(currentLang === ‘de’ ? ‘🔗 Link kopiert!’ : ‘🔗 Link copied!’, ‘success’);
+toast(currentLang === 'de' ? '🔗 Link kopiert!' : '🔗 Link copied!', 'success');
 }
 
 function shareViaEmail() {
-const subject = encodeURIComponent(‘ShardMind — KI-Analyse für archäologische Fundfragmente’);
+const subject = encodeURIComponent('ShardMind — KI-Analyse für archäologische Fundfragmente');
 const body = encodeURIComponent(
 `Hallo,\n\nich möchte dir ShardMind zeigen — ein browser-basiertes Tool zur automatischen Analyse und Dokumentation archäologischer Fundfragmente (Keramik, Glas, Knochen u.a.).\n\n` +
 `→ ${BASE_URL}\n\n` +
@@ -8834,9 +8834,9 @@ window.addEventListener('unhandledrejection', (e) => {
 }
 
 function setPyStatus(state, text) {
-const bar = document.getElementById(‘py-status-bar’);
-const textEl = document.getElementById(‘py-status-text’);
-const retryBtn = document.getElementById(‘py-retry-btn’);
+const bar = document.getElementById('py-status-bar');
+const textEl = document.getElementById('py-status-text');
+const retryBtn = document.getElementById('py-retry-btn');
 
 ```
 if (!bar) return;
@@ -8865,20 +8865,20 @@ if (state === 'error') {
 }
 
 function retryPyLoad() {
-setPyStatus(‘loading’, currentLang === ‘de’ ? ‘Neustart…’ : ‘Restarting…’);
-toast(currentLang === ‘de’ ? ‘Seite wird neu geladen…’ : ‘Reloading page…’, ‘info’);
+setPyStatus('loading', currentLang === 'de' ? 'Neustart…' : 'Restarting…');
+toast(currentLang === 'de' ? 'Seite wird neu geladen…' : 'Reloading page…', 'info');
 setTimeout(() => location.reload(), 800);
 }
 
-// Don’t wait for DOMContentLoaded — script is at end of body, DOM is ready
+// Don't wait for DOMContentLoaded — script is at end of body, DOM is ready
 try {
 init();
 } catch(e) {
-console.error(’[ShardMind] CRITICAL: init() crashed:’, e);
+console.error('[ShardMind] CRITICAL: init() crashed:', e);
 // Emergency: force show login page
 try {
-document.getElementById(‘loading-screen’).style.display = ‘none’;
-document.getElementById(‘login-page’).style.display = ‘’;
+document.getElementById('loading-screen').style.display = 'none';
+document.getElementById('login-page').style.display = '';
 } catch(e2) {}
 }
 </script>
@@ -10105,7 +10105,7 @@ return to_js(result, dict_converter=js.Object.fromEntries)
 # =============================================================================
 
 try:
-update_loading(‘Registriere Funktionen…’)
+update_loading('Registriere Funktionen…')
 js.window.py_analyze = create_proxy(py_analyze)
 js.window.py_cluster = create_proxy(py_cluster)
 js.window.py_reconstruct = create_proxy(py_reconstruct)
@@ -10118,8 +10118,8 @@ print('ShardMind Python engine ready!')
 ```
 
 except Exception as e:
-error_msg = f’Registrierungs-Fehler: {str(e)[:100]}’
-print(f’[ShardMind ERROR] {error_msg}’)
+error_msg = f'Registrierungs-Fehler: {str(e)[:100]}'
+print(f'[ShardMind ERROR] {error_msg}')
 set_py_error(error_msg)
 </script>
 
