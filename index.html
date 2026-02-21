@@ -10026,10 +10026,10 @@ def py_extract_decoration(data_url, line_thickness, detail_level, edge_sensitivi
     set_py_ready()
     print('ShardMind Python engine ready!')
 
-    except Exception as e:
-        error_msg = f'Registrierungs-Fehler: {str(e)[:100]}'
-        print(f'[ShardMind ERROR] {error_msg}')
-        set_py_error(error_msg)
+except Exception as e:
+    error_msg = f'Registrierungs-Fehler: {str(e)[:100]}'
+    print(f'[ShardMind ERROR] {error_msg}')
+    set_py_error(error_msg)
 </script>
 
 <!-- Bridge functions between JS and Python -->
