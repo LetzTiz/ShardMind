@@ -9995,19 +9995,19 @@ return {
 }
 
 def py_extract_decoration(data_url, line_thickness, detail_level, edge_sensitivity, deco_type):
-# Called from JavaScript
-result = extract_decoration_lineart(
-str(data_url),
-int(line_thickness),
-int(detail_level),
-int(edge_sensitivity),
-str(deco_type)
-)
+    # Called from JavaScript
+    result = extract_decoration_lineart(
+    str(data_url),
+    int(line_thickness),
+    int(detail_level),
+    int(edge_sensitivity),
+    str(deco_type)
+    )
 
-if result is None:
-    return to_js({'lineartDataUrl': None, 'svgData': None, 'dimensions': {}}, dict_converter=js.Object.fromEntries)
+    if result is None:
+        return to_js({'lineartDataUrl': None, 'svgData': None, 'dimensions': {}}, dict_converter=js.Object.fromEntries)
 
-return to_js(result, dict_converter=js.Object.fromEntries)
+    return to_js(result, dict_converter=js.Object.fromEntries)
 
 # =============================================================================
 
@@ -10015,21 +10015,21 @@ return to_js(result, dict_converter=js.Object.fromEntries)
 
 # =============================================================================
 
-try:
-update_loading('Registriere Funktionen…')
-js.window.py_analyze = create_proxy(py_analyze)
-js.window.py_cluster = create_proxy(py_cluster)
-js.window.py_reconstruct = create_proxy(py_reconstruct)
-js.window.py_extract_decoration = create_proxy(py_extract_decoration)
+    try:
+        update_loading('Registriere Funktionen…')
+        js.window.py_analyze = create_proxy(py_analyze)
+        js.window.py_cluster = create_proxy(py_cluster)
+        js.window.py_reconstruct = create_proxy(py_reconstruct)
+        js.window.py_extract_decoration = create_proxy(py_extract_decoration)
 
-# Signal ready
-set_py_ready()
-print('ShardMind Python engine ready!')
+    # Signal ready
+    set_py_ready()
+    print('ShardMind Python engine ready!')
 
-except Exception as e:
-error_msg = f'Registrierungs-Fehler: {str(e)[:100]}'
-print(f'[ShardMind ERROR] {error_msg}')
-set_py_error(error_msg)
+    except Exception as e:
+        error_msg = f'Registrierungs-Fehler: {str(e)[:100]}'
+        print(f'[ShardMind ERROR] {error_msg}')
+        set_py_error(error_msg)
 </script>
 
 <!-- Bridge functions between JS and Python -->
