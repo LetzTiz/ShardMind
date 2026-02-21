@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ShardMind — Archaeological Fragment Analysis</title>
 
-```
 <!-- PyScript (both CSS and JS required for proper initialization) -->
 <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
 <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
@@ -1135,7 +1134,6 @@
         font-size: 13px;
     }
 </style>
-```
 
 </head>
 <body>
@@ -1213,7 +1211,6 @@
             <p id="login-tagline">Archäologische Fragmentanalyse & Rekonstruktion</p>
         </div>
 
-```
     <div style="display:flex; justify-content:center; margin-bottom:20px;">
         <div class="lang-toggle">
             <button class="lang-btn active" id="lang-de-btn" onclick="setLanguage('de')">🇩🇪 Deutsch</button>
@@ -1265,7 +1262,6 @@
         <span style="color:var(--text-muted);font-size:12px;">🔒 <span id="privacy-link-text">Datenschutzerklärung</span> | ShardMind <span class="app-version-display">v2.7</span></span>
     </div>
 </div>
-```
 
 </div>
 
@@ -1279,7 +1275,6 @@
             <span class="sidebar-version app-version-display">v2.7</span>
         </div>
 
-```
     <div class="sidebar-user">
         <span>👤 <span id="sidebar-username"></span></span>
         <button class="btn btn-sm btn-secondary" onclick="handleLogout()" title="Logout">🚪</button>
@@ -2683,7 +2678,6 @@
         <div class="help-content" id="help-content-area"></div>
     </div>
 </div>
-```
 
 </div>
 
@@ -5369,7 +5363,6 @@ function createLabelsPDF() {
 const activeSource = document.querySelector('.label-option.active')?.textContent;
 let pieces = [];
 
-```
 if (activeSource?.includes(T('label_session')) || activeSource?.includes('session') || activeSource?.includes('Aktuelle')) {
     pieces = activePieces;
 } else if (activeSource?.includes(T('label_database')) || activeSource?.includes('Datenbank') || activeSource?.includes('Database')) {
@@ -5525,7 +5518,6 @@ setTimeout(() => {
     doc.save(`labels_${new Date().toISOString().slice(0,10)}.pdf`);
     toast('PDF created!', 'success');
 }, 200);
-```
 
 }
 
@@ -5538,7 +5530,6 @@ toast(T('upload_first'), 'error');
 return;
 }
 
-```
 if (!pyReady) {
     const elapsed = Math.round((Date.now() - pyLoadStartTime) / 1000);
     const statusBar = document.getElementById('py-status-bar');
@@ -5676,7 +5667,6 @@ setTimeout(() => {
     
     toast(`${activePieces.length} ${T('success_fragments')} · ${analysisTime}s · ${timePerFragment}s/Fragment`, 'success');
 }, 500);
-```
 
 }
 
@@ -5688,7 +5678,6 @@ setTimeout(() => {
 function generateVisualFingerprint(piece) {
 if (!piece.thumbnailDataUrl) return null;
 
-```
 // Create a small canvas to compute fingerprint
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
@@ -5739,7 +5728,6 @@ return new Promise((resolve) => {
     img.onerror = () => resolve(null);
     img.src = piece.thumbnailDataUrl;
 });
-```
 
 }
 
@@ -5758,7 +5746,6 @@ async function searchByFingerprint(piece) {
 const fp = await generateVisualFingerprint(piece);
 if (!fp) return [];
 
-```
 const data = getUserData();
 const dbPieces = Object.values(data.pieces || {});
 const matches = [];
@@ -5791,7 +5778,6 @@ for (const dbP of dbPieces) {
 }
 
 return matches.sort((a, b) => b.score - a.score).slice(0, 5);
-```
 
 }
 
@@ -5802,7 +5788,6 @@ toast(T('upload_first'), 'error');
 return;
 }
 
-```
 const container = document.getElementById('reid-results');
 if (!container) return;
 container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">🔍 Suche nach bekannten Fragmenten...</p>';
@@ -5845,7 +5830,6 @@ if (foundCount === 0) {
         <strong>${foundCount}</strong> ${currentLang === 'de' ? 'mögliche Wiedererkennung(en)' : 'possible re-identification(s)'}:
     </p>` + html;
 }
-```
 
 }
 
@@ -5862,7 +5846,6 @@ const area = piece.area || 0;
 const bbox = piece.bbox || [0,0,100,100];
 const aspectRatio = bbox[2] / (bbox[3] + 1);
 
-```
 let hint = '';
 let confidence = 'low';
 
@@ -5883,7 +5866,6 @@ else if (curv >= 0.003 && curv <= 0.012) {
 }
 
 return hint ? { hint, confidence } : null;
-```
 
 }
 
@@ -5894,7 +5876,6 @@ function showBatchStats(totalTime, timePerFrag) {
 const container = document.getElementById('gallery-content');
 if (!container || activePieces.length === 0) return;
 
-```
 const nPieces = activePieces.length;
 const colors = [...new Set(activePieces.map(p => p.color_name).filter(Boolean))];
 const materials = [...new Set(activePieces.map(p => p.material).filter(Boolean))];
@@ -5948,7 +5929,6 @@ container.insertAdjacentHTML('afterbegin', statsHtml);
 
 // Also generate inventory summary
 generateInventorySummary(container);
-```
 
 }
 
@@ -5959,7 +5939,6 @@ function generateInventorySummary(container) {
 if (activePieces.length === 0) return;
 const lang = currentLang;
 
-```
 // Morphometric statistics helper
 function calcStats(values) {
     if (values.length === 0) return null;
@@ -6055,7 +6034,6 @@ let invHtml = `<div style="background:var(--bg-card);border:1px solid var(--bord
 </div>`;
 
 container.insertAdjacentHTML('afterbegin', invHtml);
-```
 
 }
 
@@ -6068,7 +6046,6 @@ if (!partCounts[label]) partCounts[label] = 0;
 partCounts[label]++;
 });
 
-```
 let text = lang === 'de' ? 'Fundbeutel-Inventar\n' : 'Find Bag Inventory\n';
 text += '─'.repeat(30) + '\n';
 Object.entries(partCounts).sort((a,b) => b[1]-a[1]).forEach(([label, count]) => {
@@ -6087,7 +6064,6 @@ navigator.clipboard.writeText(text).then(() => {
 }).catch(() => {
     toast('Clipboard error', 'error');
 });
-```
 
 }
 
@@ -6111,7 +6087,6 @@ document.getElementById('file-input').value = '';
 document.getElementById('upload-files-list').innerHTML = '';
 document.getElementById('metrics-row').style.display = 'none';
 
-```
 renderGallery();
 renderGroups();
 renderReconOptions();
@@ -6124,7 +6099,6 @@ decoLineArtImg = null;
 decoSvgData = null;
 
 toast('Cleared', 'info');
-```
 
 }
 
@@ -6137,7 +6111,6 @@ if (!select) return;
 const cid = parseInt(select.value);
 const canvasSize = parseInt(document.getElementById('slider-canvas-size')?.value || 800);
 
-```
 const rp = activePieces.filter(p => p.cluster === cid);
 if (rp.length === 0) { toast('No pieces in group', 'error'); return; }
 
@@ -6174,7 +6147,6 @@ try {
     console.error('Reconstruction error', err);
     toast('Reconstruction error: ' + err.message, 'error');
 }
-```
 
 }
 
@@ -6284,7 +6256,6 @@ function setReconMode(mode, btn) {
 document.querySelectorAll('.recon-mode-btn').forEach(b => b.classList.remove('active'));
 btn.classList.add('active');
 
-```
 document.getElementById('recon-2d-panel').style.display = mode === '2d' ? '' : 'none';
 document.getElementById('recon-3d-panel').style.display = mode === '3d' ? '' : 'none';
 
@@ -6298,7 +6269,6 @@ if (mode === '3d') {
         document.getElementById('recon-3d-main').style.display = 'none';
     }
 }
-```
 
 }
 
@@ -6322,7 +6292,6 @@ currentPlateType = type;
 document.querySelectorAll('.plate-type-btn').forEach(b => b.classList.remove('active'));
 btn.classList.add('active');
 
-```
 // Set defaults
 const profile = PLATE_PROFILES[type];
 document.getElementById('slider-plate-depth').value = profile.defaultDepth;
@@ -6331,7 +6300,6 @@ document.getElementById('slider-rim-angle').value = profile.defaultRim;
 document.getElementById('val-rim-angle').textContent = profile.defaultRim;
 
 if (threeReady) update3DPlate();
-```
 
 }
 
@@ -6346,7 +6314,6 @@ setTimeout(initThreeScene, 2000);
 return;
 }
 
-```
 const w = container.clientWidth || 600;
 const h = w; // square
 
@@ -6414,7 +6381,6 @@ resizeObs.observe(container);
 
 threeReady = true;
 animate3D();
-```
 
 }
 
@@ -6431,7 +6397,6 @@ orbitState.prevY = e.clientY;
 e.preventDefault();
 });
 
-```
 container.addEventListener('contextmenu', (e) => e.preventDefault());
 
 window.addEventListener('mouseup', () => { orbitState.isDown = false; });
@@ -6502,7 +6467,6 @@ container.addEventListener('touchmove', (e) => {
 container.addEventListener('touchend', () => { orbitState.isDown = false; });
 
 updateOrbitCamera();
-```
 
 }
 
@@ -6528,7 +6492,6 @@ function generatePlateGeometry(plateType, depthMM, rimAngleDeg, baseFrac, wallTh
 const profile = PLATE_PROFILES[plateType];
 if (!profile) return null;
 
-```
 const depthScale = depthMM / 30; // normalize to a "standard" depth
 const rimScale = rimAngleDeg / 30;
 const radius = 2.0; // world units
@@ -6587,7 +6550,6 @@ const outerProfilePts = profilePoints.map((pt, idx) => {
 const outerGeo = new THREE.LatheGeometry(outerProfilePts, segments, 0, Math.PI * 2);
 
 return { innerGeo, outerGeo, profilePoints, outerProfilePts, segments };
-```
 
 }
 
@@ -6600,7 +6562,6 @@ canvas.width = texSize;
 canvas.height = texSize;
 const ctx = canvas.getContext('2d');
 
-```
 // Background: ceramic/clay color
 ctx.fillStyle = '#d4c4a8';
 ctx.beginPath();
@@ -6712,7 +6673,6 @@ return new Promise((resolve) => {
         img.src = fb.dataUrl;
     });
 });
-```
 
 }
 
@@ -6724,7 +6684,6 @@ toast('Bitte zuerst Fotos analysieren', 'error');
 return;
 }
 
-```
 const select = document.getElementById('recon-3d-group-select');
 const cid = parseInt(select?.value ?? -99);
 let pieces = cid === -99 ? activePieces : activePieces.filter(p => p.cluster === cid);
@@ -6868,7 +6827,6 @@ document.getElementById('stat-diameter').textContent = (plateRadius * 0.5).toFix
 runAssemblyAnimation(pieces, geoData, plateCX, plateCY, plateRadius);
 
 toast('3D-Rekonstruktion abgeschlossen!', 'success');
-```
 
 }
 
@@ -6878,7 +6836,6 @@ function fixPlateUVs(geometry, profilePoints) {
 const posAttr = geometry.getAttribute('position');
 const uvAttr = geometry.getAttribute('uv');
 
-```
 if (!uvAttr) return;
 
 const maxR = profilePoints[profilePoints.length - 1]?.x || 2;
@@ -6896,7 +6853,6 @@ for (let i = 0; i < posAttr.count; i++) {
     uvAttr.setXY(i, u, v);
 }
 uvAttr.needsUpdate = true;
-```
 
 }
 
@@ -6904,7 +6860,6 @@ function createRimGeometry(innerProfile, outerProfile, segments) {
 // Connect the last points of inner and outer profiles around the circumference
 if (!innerProfile || !outerProfile || innerProfile.length < 2 || outerProfile.length < 2) return null;
 
-```
 const innerLast = innerProfile[innerProfile.length - 1];
 const outerLast = outerProfile[outerProfile.length - 1];
 
@@ -6936,7 +6891,6 @@ geo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
 geo.setIndex(indices);
 geo.computeVertexNormals();
 return geo;
-```
 
 }
 
@@ -6949,7 +6903,6 @@ const progressBar = document.getElementById('assembly-bar-fill');
 const progressText = document.getElementById('assembly-progress-text');
 progress.style.display = '';
 
-```
 // Make plate transparent initially
 plateMesh.children.forEach(child => {
     if (child.material) {
@@ -7006,7 +6959,6 @@ function animateAssembly() {
 }
 
 requestAnimationFrame(animateAssembly);
-```
 
 }
 
@@ -7033,7 +6985,6 @@ function toggle3DOption(el, option) {
 el.classList.toggle('active');
 const isActive = el.classList.contains('active');
 
-```
 switch (option) {
     case 'texture':
         showTexture = isActive;
@@ -7071,7 +7022,6 @@ switch (option) {
         updateOrbitCamera();
         break;
 }
-```
 
 }
 
@@ -7093,13 +7043,11 @@ function animate3D() {
 threeAnimId = requestAnimationFrame(animate3D);
 if (!threeScene || !threeCamera || !threeRenderer) return;
 
-```
 if (autoRotate && plateMesh && !assemblyAnimating) {
     plateMesh.rotation.y += 0.005;
 }
 
 threeRenderer.render(threeScene, threeCamera);
-```
 
 }
 
@@ -7368,7 +7316,6 @@ if (!checkLib('jsPDF')) return;
 const { jsPDF } = window.jspdf;
 const doc = new jsPDF('p', 'mm', 'a4');
 
-```
 doc.setFontSize(18);
 doc.text('ShardMind — Fundkontext-Dokumentation', 20, 25);
 doc.setFontSize(10);
@@ -7408,7 +7355,6 @@ entries.forEach(([label, val]) => {
 
 doc.save(`shardmind_fundkontext_${Date.now()}.pdf`);
 toast('PDF exportiert!', 'success');
-```
 
 }
 
@@ -7430,7 +7376,6 @@ function initProfileCanvas() {
 const canvas = document.getElementById('profile-canvas');
 if (!canvas || profileInitialized) return;
 
-```
 const ctx = canvas.getContext('2d');
 
 // Draw initial grid and center line
@@ -7537,7 +7482,6 @@ canvas.addEventListener('touchmove', (e) => {
 canvas.addEventListener('touchend', () => { profileIsDrawing = false; });
 
 profileInitialized = true;
-```
 
 }
 
@@ -7547,7 +7491,6 @@ ctx.clearRect(0, 0, w, h);
 ctx.fillStyle = '#faf8f5';
 ctx.fillRect(0, 0, w, h);
 
-```
 // Grid
 if (profileShowGrid) {
     ctx.strokeStyle = 'rgba(0,0,0,0.06)';
@@ -7587,7 +7530,6 @@ if (profileShowSymmetry) {
     ctx.fillStyle = 'rgba(200,50,50,0.25)';
     ctx.fillText('↔ Symmetrie aktiv', w / 2, 28);
 }
-```
 
 }
 
@@ -7648,7 +7590,6 @@ const select = document.getElementById('profile-fragment-select');
 const container = document.getElementById('profile-reference-img');
 if (!select || !container) return;
 
-```
 const idx = parseInt(select.value);
 if (isNaN(idx) || !activePieces[idx]) {
     container.innerHTML = '<p style="font-size:12px;color:var(--text-muted);">Fragment als Vorlage einblenden</p>';
@@ -7659,7 +7600,6 @@ const piece = activePieces[idx];
 if (piece.thumbnailDataUrl) {
     container.innerHTML = `<img src="${piece.thumbnailDataUrl}" style="max-width:100%;border-radius:var(--radius);opacity:0.7;">`;
 }
-```
 
 }
 
@@ -7676,7 +7616,6 @@ function downloadProfile(format) {
 const canvas = document.getElementById('profile-canvas');
 if (!canvas) return;
 
-```
 if (format === 'png') {
     const link = document.createElement('a');
     link.download = `shardmind_profil_${Date.now()}.png`;
@@ -7687,7 +7626,6 @@ if (format === 'png') {
     const w = canvas.width, h = canvas.height;
     const dataUrl = canvas.toDataURL('image/png');
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
-```
 
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <image width="${w}" height="${h}" xlink:href="${dataUrl}"/>
@@ -7770,7 +7708,6 @@ selectedCultureOverride = el.dataset.culture;
 function classifyPieceCulture(piece) {
 const scores = {};
 
-```
 Object.entries(CULTURE_DB).forEach(([key, culture]) => {
     let score = 0;
     const matchedCriteria = [];
@@ -7885,7 +7822,6 @@ const sorted = Object.entries(scores)
     .filter(([, v]) => v.score > 15);
 
 return sorted.slice(0, 3);
-```
 
 }
 
@@ -7904,7 +7840,6 @@ toast(T('upload_first'), 'error');
 return;
 }
 
-```
 const results = document.getElementById('culture-results');
 const empty = document.getElementById('culture-empty');
 empty.style.display = 'none';
@@ -8016,7 +7951,6 @@ results.innerHTML = html;
 
 // Render knowledge base
 renderCultureKnowledgeBase();
-```
 
 }
 
@@ -8034,7 +7968,6 @@ const doc = new jsPDF('p', 'mm', 'a4');
 const pageW = 210, marginL = 18, marginR = 18, contentW = pageW - marginL - marginR;
 let y = 20;
 
-```
 // Header
 doc.setFontSize(16);
 doc.setFont('helvetica', 'bold');
@@ -8235,7 +8168,6 @@ doc.text(`Datierung basiert auf visuellen Merkmalen. Materialanalyse (Dünnschli
 
 doc.save(`shardmind_schnellbericht_${new Date().toISOString().slice(0,10)}.pdf`);
 toast(currentLang === 'de' ? 'Technischer Schnellbericht exportiert!' : 'Technical report exported!', 'success');
-```
 
 }
 
@@ -8244,7 +8176,6 @@ const container = document.getElementById('culture-kb-content');
 const lang = currentLang;
 let html = '';
 
-```
 Object.entries(CULTURE_DB).forEach(([key, culture]) => {
     html += `<div class="culture-card ${culture.class}" style="padding:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -8263,7 +8194,6 @@ Object.entries(CULTURE_DB).forEach(([key, culture]) => {
 });
 
 container.innerHTML = html;
-```
 
 }
 
@@ -8280,7 +8210,6 @@ const grid = document.getElementById('deco-select-grid');
 const empty = document.getElementById('deco-empty');
 const main = document.getElementById('deco-main');
 
-```
 // Show all pieces, highlight decorated ones
 const decorated = activePieces.filter(p => p.has_decoration);
 const all = activePieces;
@@ -8305,7 +8234,6 @@ all.forEach((p, idx) => {
     </div>`;
 });
 grid.innerHTML = html;
-```
 
 }
 
@@ -8322,7 +8250,6 @@ toast(currentLang === 'de' ? 'Bitte erst ein Fragment wählen' : 'Please select 
 return;
 }
 
-```
 if (!pyReady || !window.py_extract_decoration) {
     toast(currentLang === 'de'
         ? 'Python-Umgebung noch nicht bereit. Bitte warten.'
@@ -8405,7 +8332,7 @@ try {
     console.error('Decoration extraction error:', err);
     toast('Error: ' + err.message, 'error');
 }
-```
+ä
 
 }
 
@@ -8423,7 +8350,6 @@ const canvas = document.getElementById('deco-canvas-overlay');
 const ctx = canvas.getContext('2d');
 const opacity = parseInt(document.getElementById('slider-overlay-opacity').value) / 100;
 
-```
 const imgA = new Image();
 const imgB = new Image();
 
@@ -8442,7 +8368,6 @@ imgA.onload = () => {
     imgB.src = overlay;
 };
 imgA.src = base;
-```
 
 }
 
@@ -8452,12 +8377,10 @@ if (type === 'lineart') canvas = document.getElementById('deco-canvas-lineart');
 else if (type === 'overlay') canvas = document.getElementById('deco-canvas-overlay');
 else return;
 
-```
 const link = document.createElement('a');
 link.download = `shardmind_${type}_${Date.now()}.png`;
 link.href = canvas.toDataURL('image/png');
 link.click();
-```
 
 }
 
@@ -8490,7 +8413,6 @@ function initDrawCanvas() {
 const canvas = document.getElementById('deco-canvas-draw');
 if (!canvas || drawInitialized) return;
 
-```
 // Make draw canvas match lineart canvas size
 const lineartCanvas = document.getElementById('deco-canvas-lineart');
 if (lineartCanvas) {
@@ -8584,7 +8506,6 @@ canvas.addEventListener('touchmove', (e) => {
 canvas.addEventListener('touchend', () => { drawIsDrawing = false; });
 
 drawInitialized = true;
-```
 
 }
 
@@ -8618,7 +8539,6 @@ const lineartCanvas = document.getElementById('deco-canvas-lineart');
 const drawCanvas = document.getElementById('deco-canvas-draw');
 if (!lineartCanvas || !drawCanvas) return;
 
-```
 // Create merged canvas
 const merged = document.createElement('canvas');
 merged.width = lineartCanvas.width;
@@ -8634,7 +8554,6 @@ link.download = `shardmind_annotated_${Date.now()}.png`;
 link.href = merged.toDataURL('image/png');
 link.click();
 toast(currentLang === 'de' ? 'Annotierte Zeichnung gespeichert!' : 'Annotated drawing saved!', 'success');
-```
 
 }
 
@@ -8645,7 +8564,6 @@ function init() {
 // Clear emergency fallback timer — init() is running properly
 if (window.__smLoadingTimer) clearTimeout(window.__smLoadingTimer);
 
-```
 try {
     currentLang = localStorage.getItem('shardmind_lang') || 'de';
 } catch(e) { currentLang = 'de'; }
@@ -8692,7 +8610,7 @@ try {
 } catch(e) {}
 
 console.log('[ShardMind] init() completed successfully');
-```
+
 
 }
 
@@ -8763,7 +8681,6 @@ const PY_TIMEOUT_MS = 120000; // 120 seconds
 function monitorPythonLoading() {
 pyLoadStartTime = Date.now();
 
-```
 // Poll for pyReady every 500ms
 pyMonitorInterval = setInterval(() => {
     const elapsed = Date.now() - pyLoadStartTime;
@@ -8829,7 +8746,7 @@ window.addEventListener('unhandledrejection', (e) => {
             : `Package error: ${reason.substring(0, 60)}`);
     }
 });
-```
+
 
 }
 
@@ -8838,7 +8755,6 @@ const bar = document.getElementById('py-status-bar');
 const textEl = document.getElementById('py-status-text');
 const retryBtn = document.getElementById('py-retry-btn');
 
-```
 if (!bar) return;
 
 bar.className = 'py-status-bar ' + state;
@@ -8860,7 +8776,6 @@ if (state === 'error') {
 } else {
     retryBtn.style.display = 'none';
 }
-```
 
 }
 
@@ -10042,7 +9957,6 @@ def extract_decoration_lineart(data_url, line_thickness=2, detail_level=50, edge
   <rect width={DQ}{w}{DQ} height={DQ}{h}{DQ} fill={DQ}#faf8f5{DQ}/>
 '''
 
-```
 if svg_paths:
     svg_content += f'  <path class={DQ}outline{DQ} d={DQ}{svg_paths[0]}{DQ}/>\n'
     for path_d in svg_paths[1:]:
@@ -10079,7 +9993,6 @@ return {
         'ppmm': float(ppmm),
     }
 }
-```
 
 def py_extract_decoration(data_url, line_thickness, detail_level, edge_sensitivity, deco_type):
 # Called from JavaScript
@@ -10091,12 +10004,10 @@ int(edge_sensitivity),
 str(deco_type)
 )
 
-```
 if result is None:
     return to_js({'lineartDataUrl': None, 'svgData': None, 'dimensions': {}}, dict_converter=js.Object.fromEntries)
 
 return to_js(result, dict_converter=js.Object.fromEntries)
-```
 
 # =============================================================================
 
@@ -10111,11 +10022,9 @@ js.window.py_cluster = create_proxy(py_cluster)
 js.window.py_reconstruct = create_proxy(py_reconstruct)
 js.window.py_extract_decoration = create_proxy(py_extract_decoration)
 
-```
 # Signal ready
 set_py_ready()
 print('ShardMind Python engine ready!')
-```
 
 except Exception as e:
 error_msg = f'Registrierungs-Fehler: {str(e)[:100]}'
