@@ -1436,6 +1436,7 @@
             <button class="tab-btn" onclick="switchTab('decoration')">🎨 <span class="tab-label" data-key="tab_decoration">Verzierung</span></button>
             <button class="tab-btn" onclick="switchTab('culture')">🏛️ <span class="tab-label" data-key="tab_culture">Kulturstufe</span></button>
             <button class="tab-btn" onclick="switchTab('database')">💾 <span class="tab-label" data-key="tab_database">Datenbank</span></button>
+            <button class="tab-btn" onclick="switchTab('clouddb')">☁️ <span class="tab-label" data-key="tab_clouddb">Cloud-DB</span></button>
             <button class="tab-btn" onclick="switchTab('labels')">🏷️ <span class="tab-label" data-key="tab_labels">Etiketten</span></button>
             <button class="tab-btn" onclick="switchTab('inventory')">📋 <span class="tab-label" data-key="tab_inventory">Inventarliste</span></button>
             <button class="tab-btn" onclick="switchTab('changelog')">📋 <span class="tab-label" data-key="tab_changelog">Changelog</span></button>
@@ -2340,6 +2341,88 @@
             </div>
         </div>
 
+        <!-- TAB: Cloud Database -->
+        <div class="tab-content" id="tab-clouddb">
+            <h2 class="section-header">☁️ <span id="clouddb-header-text">Gemeinsame Funddatenbank</span></h2>
+            
+            <div class="feature-explanation" style="margin-bottom:16px;">
+                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">
+                    <strong>🌍 Open Science für die Archäologie:</strong>
+                    <span id="clouddb-explain">
+                    Viele Funde werden nie publiziert und gehen der Forschung verloren. 
+                    Die Cloud-DB ermöglicht es, analysierte Fragmente mit allen Metadaten für andere Forschende sichtbar zu machen — 
+                    direkt aus ShardMind heraus. So wird jede Scherbe Teil eines wachsenden, gemeinsamen Wissensschatzes.
+                    </span>
+                </p>
+                <p style="font-size:11px;color:var(--text-muted);">
+                    💡 Fragmente können einzeln (Galerie → ☁️ Teilen) oder gesammelt veröffentlicht werden.
+                    Andere Nutzer können Funde durchsuchen und in ihre eigene Analyse importieren.
+                </p>
+            </div>
+            
+            <!-- Cloud stats -->
+            <div class="db-stats-bar" style="margin-bottom:16px;">
+                <div class="db-stat">
+                    <div class="db-stat-value" id="cloud-stat-count">0</div>
+                    <div class="db-stat-label">Funde</div>
+                </div>
+                <div class="db-stat">
+                    <div class="db-stat-value" id="cloud-stat-users">0</div>
+                    <div class="db-stat-label">Beitragende</div>
+                </div>
+                <div class="db-stat">
+                    <div class="db-stat-value" id="cloud-stat-sites">0</div>
+                    <div class="db-stat-label">Fundstellen</div>
+                </div>
+            </div>
+            
+            <!-- Publish buttons -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                <button class="btn btn-primary" onclick="publishAllToCloud()" style="font-size:12px;padding:6px 14px;">
+                    ☁️ Aktuelle Sitzung veröffentlichen
+                </button>
+                <button class="btn btn-secondary" onclick="publishDBToCloud()" style="font-size:12px;padding:6px 14px;">
+                    💾→☁️ Gespeicherte DB veröffentlichen
+                </button>
+            </div>
+            
+            <!-- Import/Export -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+                <button class="btn btn-secondary" onclick="exportCloudJSON()" style="font-size:11px;padding:5px 10px;">
+                    📤 Cloud-DB exportieren (JSON)
+                </button>
+                <label class="btn btn-secondary" style="font-size:11px;padding:5px 10px;cursor:pointer;">
+                    📥 Cloud-DB importieren
+                    <input type="file" accept=".json" style="display:none;" onchange="if(this.files[0])importCloudJSON(this.files[0])">
+                </label>
+                <span style="font-size:10px;color:var(--text-muted);align-self:center;">
+                    → JSON-Dateien können zwischen Geräten ausgetauscht werden
+                </span>
+            </div>
+            
+            <!-- Search -->
+            <div style="margin-bottom:12px;">
+                <input type="text" id="cloud-search" placeholder="🔍 Suche nach ID, Material, Grabung, Nutzer..." 
+                       oninput="renderCloudDB()"
+                       style="width:100%;padding:8px 12px;font-size:13px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+            </div>
+            
+            <!-- Content grid -->
+            <div id="clouddb-content">
+                <div class="empty-state"><div class="icon">☁️</div><p>Noch keine Funde veröffentlicht.</p></div>
+            </div>
+            
+            <div style="margin-top:24px;padding:16px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);">
+                <h4 style="font-size:14px;color:var(--accent);margin-bottom:8px;">🔮 Zukunftsvision: Echte Cloud-Datenbank</h4>
+                <p style="font-size:12px;color:var(--text-muted);line-height:1.6;">
+                    Aktuell werden geteilte Funde lokal im Browser gespeichert (localStorage). 
+                    Der nächste Schritt ist eine echte Server-Datenbank, die institutionsübergreifend zugänglich ist — 
+                    damit ein Fund in Bamberg sofort in Heidelberg sichtbar wird. 
+                    Das JSON-Export/Import-Format ist bereits kompatibel und zukunftssicher.
+                </p>
+            </div>
+        </div>
+
         <!-- TAB: Labels -->
         <div class="tab-content" id="tab-labels">
             <h2 class="section-header" id="labels-header">Etiketten erstellen</h2>
@@ -2691,7 +2774,7 @@
 // ==================================================
 // STATE & CONFIG
 // ==================================================
-const APP_VERSION = "2.7";
+const APP_VERSION = "2.8";
 
 // Library availability checks (defer-loaded, may not be ready immediately)
 function checkLib(name) {
@@ -2855,7 +2938,7 @@ const TRANSLATIONS = {
         analyze: 'Analysieren', clear: 'Leeren',
         fragments: 'Fragmente', groups: 'Gruppen',
         tab_start: 'Start', tab_gallery: 'Galerie', tab_context: 'Fundkontext', tab_groups: 'Gruppen',
-        tab_reconstruction: 'Rekonstruktion', tab_profile: 'Profilschnitt', tab_database: 'Datenbank',
+        tab_reconstruction: 'Rekonstruktion', tab_profile: 'Profilschnitt', tab_database: 'Datenbank', tab_clouddb: 'Cloud-DB',
         tab_decoration: 'Verzierung', tab_culture: 'Kulturstufe',
         tab_labels: 'Etiketten', tab_changelog: 'Changelog',
         tab_privacy: 'Datenschutz', tab_help: 'Hilfe',
@@ -2948,7 +3031,7 @@ const TRANSLATIONS = {
         analyze: 'Analyze', clear: 'Clear',
         fragments: 'Fragments', groups: 'Groups',
         tab_start: 'Start', tab_gallery: 'Gallery', tab_context: 'Find Context', tab_groups: 'Groups',
-        tab_reconstruction: 'Reconstruction', tab_profile: 'Profile', tab_database: 'Database',
+        tab_reconstruction: 'Reconstruction', tab_profile: 'Profile', tab_database: 'Database', tab_clouddb: 'Cloud DB',
         tab_decoration: 'Decoration', tab_culture: 'Culture',
         tab_labels: 'Labels', tab_changelog: 'Changelog',
         tab_privacy: 'Privacy', tab_help: 'Help',
@@ -3028,6 +3111,14 @@ function T(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || 
 // CHANGELOG DATA
 // ==================================================
 const CHANGELOG = {
+    '2.8': { date: '2025-02-23', title: 'Cloud-Datenbank, Galerie-Löschfunktion & Open Science', features: [
+        '☁️ CLOUD-DB: Neuer Tab — Gemeinsame Funddatenbank für alle Forschenden',
+        '☁️ VERÖFFENTLICHEN: Einzelne Fragmente (Galerie) oder ganze Sammlungen in die Cloud-DB publizieren',
+        '📥 IMPORT/EXPORT: Cloud-DB als JSON exportieren und auf anderen Geräten importieren',
+        '🔍 CLOUD-SUCHE: Veröffentlichte Funde nach ID, Material, Grabung, Nutzer durchsuchbar',
+        '🗑️ GALERIE-LÖSCHFUNKTION: Einzelne Fragmente direkt in der Galerie entfernen',
+        '🌍 OPEN SCIENCE: Funde werden sichtbar statt in privaten Datenbanken zu verschwinden',
+    ], fixes: [] },
     '2.7': { date: '2025-02-19', title: 'Gefäßformen, Herstellungsmerkmale, Crash-Schutz & Schauhütte-Feedback', features: [
         '🏺 GEFÄSSFORMEN: 16 Typen (Kumpf, Topf, Schüssel, Schale, Becher, Flasche, Terrine, Amphore, Krug, Teller etc.)',
         '🔥 BRANDATMOSPHÄRE: Oxidierend, Reduzierend, Wechselnd, Sekundär gebrannt',
@@ -3437,6 +3528,9 @@ function switchTab(name) {
     }
     if (name === 'database') {
         renderDatabase();
+    }
+    if (name === 'clouddb') {
+        renderCloudDB();
     }
 }
 
@@ -4228,6 +4322,10 @@ function renderGallery() {
                     </div>
                 </details>
             </div>
+            <div style="display:flex;gap:4px;margin-top:6px;padding:0 8px 8px;">
+                <button onclick="removePiece(${idx})" class="btn btn-sm" style="flex:1;font-size:10px;padding:4px 8px;background:transparent;color:#ef4444;border:1px solid #ef4444;border-radius:6px;" title="${currentLang === 'de' ? 'Fragment entfernen' : 'Remove fragment'}">🗑️ ${currentLang === 'de' ? 'Entfernen' : 'Remove'}</button>
+                <button onclick="publishToCloud(${idx})" class="btn btn-sm" style="flex:1;font-size:10px;padding:4px 8px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;" title="${currentLang === 'de' ? 'In Cloud-DB veröffentlichen' : 'Publish to Cloud DB'}">☁️ ${currentLang === 'de' ? 'Teilen' : 'Share'}</button>
+            </div>
         </div>`;
     });
     html += '</div>';
@@ -4246,6 +4344,235 @@ function renderGallery() {
             // completeness is at index 4, haptics at 5 — but completeness uses inline selected
         });
     }, 50);
+}
+
+function removePiece(idx) {
+    if (idx < 0 || idx >= activePieces.length) return;
+    const piece = activePieces[idx];
+    const confirmMsg = currentLang === 'de' 
+        ? `Fragment "${piece.name || piece.id}" entfernen?`
+        : `Remove fragment "${piece.name || piece.id}"?`;
+    if (!confirm(confirmMsg)) return;
+    activePieces.splice(idx, 1);
+    // Re-cluster if needed
+    if (activePieces.length > 0 && typeof cluster_pieces === 'function') {
+        try { cluster_pieces(activePieces); } catch(e) {}
+    }
+    renderGallery();
+    renderGroups();
+    toast(currentLang === 'de' ? '🗑️ Fragment entfernt' : '🗑️ Fragment removed', 'info');
+}
+
+function publishToCloud(idx) {
+    const piece = activePieces[idx];
+    if (!piece) return;
+    
+    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+    const entry = {
+        ...piece,
+        published_by: currentUser || 'Anonym',
+        published_at: new Date().toISOString(),
+        excavation: document.getElementById('context-excavation')?.value || '',
+        site: document.getElementById('context-site')?.value || ''
+    };
+    // Remove large data to save space
+    delete entry.thumbnailDataUrl_full;
+    
+    cloud[piece.id] = entry;
+    localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
+    toast(currentLang === 'de' ? '☁️ In Cloud-DB veröffentlicht!' : '☁️ Published to Cloud DB!', 'success');
+}
+
+function publishAllToCloud() {
+    if (activePieces.length === 0) {
+        toast(currentLang === 'de' ? 'Keine Fragmente zum Veröffentlichen' : 'No fragments to publish', 'info');
+        return;
+    }
+    const confirmMsg = currentLang === 'de'
+        ? `Alle ${activePieces.length} Fragmente in die Cloud-DB veröffentlichen?`
+        : `Publish all ${activePieces.length} fragments to Cloud DB?`;
+    if (!confirm(confirmMsg)) return;
+    
+    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+    activePieces.forEach(p => {
+        cloud[p.id] = {
+            ...p,
+            published_by: currentUser || 'Anonym',
+            published_at: new Date().toISOString(),
+            excavation: document.getElementById('context-excavation')?.value || '',
+            site: document.getElementById('context-site')?.value || ''
+        };
+        delete cloud[p.id].thumbnailDataUrl_full;
+    });
+    localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
+    toast(currentLang === 'de' ? `☁️ ${activePieces.length} Fragmente veröffentlicht!` : `☁️ ${activePieces.length} fragments published!`, 'success');
+    if (document.getElementById('tab-clouddb')) renderCloudDB();
+}
+
+function renderCloudDB() {
+    const container = document.getElementById('clouddb-content');
+    if (!container) return;
+    
+    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+    const entries = Object.values(cloud);
+    
+    // Update stats
+    const statCount = document.getElementById('cloud-stat-count');
+    const statUsers = document.getElementById('cloud-stat-users');
+    const statSites = document.getElementById('cloud-stat-sites');
+    
+    if (statCount) statCount.textContent = entries.length;
+    if (statUsers) {
+        const users = [...new Set(entries.map(e => e.published_by))];
+        statUsers.textContent = users.length;
+    }
+    if (statSites) {
+        const sites = [...new Set(entries.map(e => e.excavation || e.site).filter(Boolean))];
+        statSites.textContent = sites.length;
+    }
+    
+    if (entries.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">☁️</div><p>${currentLang === 'de' ? 'Noch keine Funde veröffentlicht. Teile Fragmente aus der Galerie oder Datenbank!' : 'No finds published yet. Share fragments from the Gallery or Database!'}</p></div>`;
+        return;
+    }
+    
+    // Filter
+    const searchVal = (document.getElementById('cloud-search')?.value || '').toLowerCase();
+    let filtered = entries;
+    if (searchVal) {
+        filtered = entries.filter(e => 
+            (e.id || '').toLowerCase().includes(searchVal) ||
+            (e.name || '').toLowerCase().includes(searchVal) ||
+            (e.material || '').toLowerCase().includes(searchVal) ||
+            (e.color_name || '').toLowerCase().includes(searchVal) ||
+            (e.excavation || '').toLowerCase().includes(searchVal) ||
+            (e.site || '').toLowerCase().includes(searchVal) ||
+            (e.published_by || '').toLowerCase().includes(searchVal)
+        );
+    }
+    
+    // Sort by publish date (newest first)
+    filtered.sort((a, b) => (b.published_at || '').localeCompare(a.published_at || ''));
+    
+    let html = `<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">${filtered.length} / ${entries.length} ${currentLang === 'de' ? 'Funde' : 'finds'}</div>`;
+    html += '<div class="gallery-grid">';
+    
+    filtered.forEach(p => {
+        const pubDate = p.published_at ? new Date(p.published_at).toLocaleDateString('de-DE') : '?';
+        const isDiag = !!(p.vessel_part && p.vessel_part !== 'wand') || !!(p.deco_type && p.deco_type !== 'keine');
+        
+        html += `<div class="gallery-item" style="position:relative;">
+            <div class="gallery-item-border" style="background:${isDiag ? 'var(--accent)' : '#B0B0B0'};"></div>
+            ${p.thumbnailDataUrl ? `<img class="gallery-thumb" src="${p.thumbnailDataUrl}" alt="${p.id}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);"></div>'}
+            <div class="gallery-info">
+                <div class="gallery-id">${(p.name || p.id || '?').substring(0, 20)}</div>
+                <div style="font-size:10px;color:var(--text-muted);">${p.material || '?'} · ${p.color_name || '?'}</div>
+                ${p.excavation ? `<div style="font-size:10px;color:var(--text-muted);">📍 ${p.excavation}</div>` : ''}
+                <div style="font-size:9px;color:var(--text-muted);margin-top:2px;">👤 ${p.published_by} · ${pubDate}</div>
+            </div>
+            <div style="padding:4px 8px 8px;display:flex;gap:4px;">
+                <button onclick="importFromCloud('${p.id}')" class="btn btn-sm" style="flex:1;font-size:9px;padding:3px 6px;background:var(--accent);color:white;border:none;border-radius:6px;">📥 ${currentLang === 'de' ? 'Importieren' : 'Import'}</button>
+                <button onclick="removeFromCloud('${p.id}')" class="btn btn-sm" style="font-size:9px;padding:3px 6px;background:transparent;color:#ef4444;border:1px solid #ef4444;border-radius:6px;">🗑️</button>
+            </div>
+        </div>`;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function importFromCloud(pieceId) {
+    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+    const piece = cloud[pieceId];
+    if (!piece) return;
+    
+    // Check if already in active pieces
+    if (activePieces.find(p => p.id === pieceId)) {
+        toast(currentLang === 'de' ? 'Fragment bereits in der Sitzung' : 'Fragment already in session', 'info');
+        return;
+    }
+    
+    activePieces.push({...piece});
+    renderGallery();
+    renderGroups();
+    toast(currentLang === 'de' ? '📥 Fragment importiert!' : '📥 Fragment imported!', 'success');
+}
+
+function removeFromCloud(pieceId) {
+    const confirmMsg = currentLang === 'de' ? 'Aus Cloud-DB entfernen?' : 'Remove from Cloud DB?';
+    if (!confirm(confirmMsg)) return;
+    
+    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+    delete cloud[pieceId];
+    localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
+    renderCloudDB();
+    toast(currentLang === 'de' ? '🗑️ Aus Cloud-DB entfernt' : '🗑️ Removed from Cloud DB', 'info');
+}
+
+function publishDBToCloud() {
+    const data = getUserData();
+    const pieces = data.pieces || {};
+    const keys = Object.keys(pieces);
+    if (keys.length === 0) {
+        toast(currentLang === 'de' ? 'Datenbank ist leer' : 'Database is empty', 'info');
+        return;
+    }
+    const confirmMsg = currentLang === 'de'
+        ? `${keys.length} gespeicherte Fragmente in die Cloud-DB veröffentlichen?`
+        : `Publish ${keys.length} saved fragments to Cloud DB?`;
+    if (!confirm(confirmMsg)) return;
+    
+    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+    keys.forEach(k => {
+        const p = pieces[k];
+        cloud[p.id || k] = {
+            ...p,
+            published_by: currentUser || 'Anonym',
+            published_at: new Date().toISOString()
+        };
+    });
+    localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
+    toast(currentLang === 'de' ? `☁️ ${keys.length} Fragmente veröffentlicht!` : `☁️ ${keys.length} fragments published!`, 'success');
+    if (document.getElementById('tab-clouddb')) renderCloudDB();
+}
+
+function exportCloudJSON() {
+    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+    if (Object.keys(cloud).length === 0) {
+        toast(currentLang === 'de' ? 'Cloud-DB ist leer' : 'Cloud DB is empty', 'info');
+        return;
+    }
+    const blob = new Blob([JSON.stringify(cloud, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shardmind_cloud_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast(currentLang === 'de' ? '📥 Cloud-DB exportiert!' : '📥 Cloud DB exported!', 'success');
+}
+
+function importCloudJSON(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const imported = JSON.parse(e.target.result);
+            const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+            let count = 0;
+            for (const [k, v] of Object.entries(imported)) {
+                if (v && typeof v === 'object') {
+                    cloud[k] = v;
+                    count++;
+                }
+            }
+            localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
+            renderCloudDB();
+            toast(currentLang === 'de' ? `📥 ${count} Funde importiert!` : `📥 ${count} finds imported!`, 'success');
+        } catch(err) {
+            toast(currentLang === 'de' ? 'Fehler beim Import' : 'Import error', 'error');
+        }
+    };
+    reader.readAsText(file);
 }
 
 function renderGroups() {
