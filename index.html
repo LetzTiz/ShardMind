@@ -18,6 +18,9 @@
     <!-- Three.js for 3D reconstruction -->
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
+    <!-- Supabase for Cloud DB & Auth -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
     <!-- Google Fonts (non-blocking) -->
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
@@ -214,7 +217,7 @@
             font-weight: 500; letter-spacing: 0.3px;
         }
         input[type="text"], input[type="password"], input[type="number"],
-        select, textarea {
+        input[type="email"], select, textarea {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
             border-radius: var(--radius);
@@ -1220,35 +1223,41 @@
 
             <form class="login-form active" id="login-form" onsubmit="return handleLogin(event)">
                 <div class="form-group">
-                    <label id="lbl-username">Benutzername</label>
-                    <input type="text" id="login-username" required>
+                    <label id="lbl-username">E-Mail</label>
+                    <input type="email" id="login-username" required placeholder="name@beispiel.de" autocomplete="email">
                 </div>
                 <div class="form-group">
                     <label id="lbl-password">Passwort</label>
-                    <input type="password" id="login-password" required>
+                    <input type="password" id="login-password" required autocomplete="current-password">
                 </div>
                 <button class="btn btn-primary btn-full" type="submit" id="btn-login">🔐 Anmelden</button>
-                <div id="login-error" style="color:var(--error);font-size:13px;display:none;text-align:center;"></div>
+                <div id="login-error" style="color:var(--error);font-size:13px;display:none;text-align:center;margin-top:4px;"></div>
             </form>
 
             <form class="login-form" id="register-form" onsubmit="return handleRegister(event)">
                 <div class="form-group">
-                    <label id="lbl-reg-username">Benutzername</label>
-                    <input type="text" id="reg-username" required>
+                    <label id="lbl-reg-displayname">Benutzername</label>
+                    <input type="text" id="reg-displayname" required placeholder="z.B. MaxMustermann" minlength="2" maxlength="30" autocomplete="username">
+                    <span style="font-size:10px;color:var(--text-muted);">Wird anderen Nutzern angezeigt (z.B. in der Cloud-DB)</span>
+                </div>
+                <div class="form-group">
+                    <label id="lbl-reg-username">E-Mail</label>
+                    <input type="email" id="reg-username" required placeholder="name@beispiel.de" autocomplete="email">
                 </div>
                 <div class="form-group">
                     <label id="lbl-reg-password">Passwort</label>
-                    <input type="password" id="reg-password" required>
+                    <input type="password" id="reg-password" required minlength="6" autocomplete="new-password">
+                    <span style="font-size:10px;color:var(--text-muted);">Mindestens 6 Zeichen</span>
                 </div>
                 <div class="form-group">
                     <label id="lbl-reg-confirm">Passwort bestätigen</label>
-                    <input type="password" id="reg-confirm" required>
+                    <input type="password" id="reg-confirm" required autocomplete="new-password">
                 </div>
-                <div style="padding:10px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:var(--radius);font-size:13px;color:var(--info);" id="account-info-text">
-                    ℹ️ Dein Account wird im Browser gespeichert
+                <div style="padding:10px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:var(--radius);font-size:12px;color:var(--info);" id="account-info-text">
+                    ☁️ Dein Account wird sicher in der Cloud gespeichert — du kannst dich von jedem Gerät anmelden.
                 </div>
                 <button class="btn btn-primary btn-full" type="submit" id="btn-register">📝 Registrieren</button>
-                <div id="register-msg" style="font-size:13px;display:none;text-align:center;"></div>
+                <div id="register-msg" style="font-size:13px;display:none;text-align:center;margin-top:4px;"></div>
             </form>
         </div>
 
@@ -2413,12 +2422,12 @@
             </div>
             
             <div style="margin-top:24px;padding:16px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);">
-                <h4 style="font-size:14px;color:var(--accent);margin-bottom:8px;">🔮 Zukunftsvision: Echte Cloud-Datenbank</h4>
+                <h4 style="font-size:14px;color:var(--accent);margin-bottom:8px;">☁️ Cloud-Backend: Supabase</h4>
                 <p style="font-size:12px;color:var(--text-muted);line-height:1.6;">
-                    Aktuell werden geteilte Funde lokal im Browser gespeichert (localStorage). 
-                    Der nächste Schritt ist eine echte Server-Datenbank, die institutionsübergreifend zugänglich ist — 
-                    damit ein Fund in Bamberg sofort in Heidelberg sichtbar wird. 
-                    Das JSON-Export/Import-Format ist bereits kompatibel und zukunftssicher.
+                    Funde werden in einer echten Cloud-Datenbank gespeichert (Supabase, Frankfurt). 
+                    Alle Nutzer:innen teilen sich dieselbe Datenbank — ein Fund in Bamberg ist sofort in Heidelberg sichtbar.
+                    Accounts und Daten sind sicher in der Cloud gespeichert und geräteübergreifend verfügbar.
+                    Bei Offline-Nutzung wird automatisch auf lokalen Speicher (localStorage) zurückgegriffen.
                 </p>
             </div>
         </div>
@@ -2795,8 +2804,25 @@ document.querySelectorAll('.app-version-display').forEach(el => {
 document.title = `ShardMind v${APP_VERSION} — Archaeological Fragment Analysis`;
 const BASE_URL = "https://letztiz.github.io/ShardMind/";
 
+// Supabase Cloud Backend
+const SUPABASE_URL = 'https://mytznsnsxggirmakpdwx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_X8v-Ae6-KsCw0cp9EMjscQ_K0pfP__v';
+let sb = null; // initialized when SDK loads
+function initSupabase() {
+    if (window.supabase && !sb) {
+        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log('[ShardMind] Supabase connected');
+    }
+}
+// Retry until SDK loads
+const _sbInterval = setInterval(() => {
+    if (window.supabase) { initSupabase(); clearInterval(_sbInterval); }
+}, 500);
+setTimeout(() => clearInterval(_sbInterval), 30000);
+
 let currentLang = 'de';
 let currentUser = null;
+let displayName = null; // shown in UI and cloud DB
 let activePieces = [];
 let selectedMaterialType = 'keramik';
 
@@ -3432,74 +3458,151 @@ function saveUserData(data) {
 }
 
 // ==================================================
-// AUTH
+// AUTH (Supabase with localStorage fallback)
 // ==================================================
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
-    const user = document.getElementById('login-username').value.trim();
+    const email = document.getElementById('login-username').value.trim();
     const pw = document.getElementById('login-password').value;
-    const db = getDB();
+    const err = document.getElementById('login-error');
+    err.style.display = 'none';
     
-    if (!db[user] || db[user].pw_hash !== hashPassword(pw)) {
-        const err = document.getElementById('login-error');
-        err.textContent = T('login_error');
-        err.style.display = 'block';
+    // Try Supabase first
+    if (sb) {
+        try {
+            const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+            if (!error && data.user) {
+                currentUser = data.user.email;
+                displayName = data.user.user_metadata?.display_name || email.split('@')[0];
+                localStorage.setItem('shardmind_user', currentUser);
+                localStorage.setItem('shardmind_display_name', displayName);
+                migrateLocalData(currentUser);
+                showApp();
+                return false;
+            }
+            if (error) {
+                // Translate common Supabase errors
+                let msg = error.message;
+                if (msg.includes('Invalid login')) msg = currentLang === 'de' ? 'E-Mail oder Passwort falsch' : 'Invalid email or password';
+                err.textContent = msg;
+                err.style.display = 'block';
+                return false;
+            }
+        } catch(ex) {
+            console.warn('[ShardMind] Supabase login failed, trying local:', ex);
+        }
+    }
+    
+    // Fallback: local auth
+    const db = getDB();
+    if (db[email] && db[email].pw_hash === hashPassword(pw)) {
+        currentUser = email;
+        displayName = db[email].display_name || email.split('@')[0];
+        localStorage.setItem('shardmind_user', email);
+        localStorage.setItem('shardmind_display_name', displayName);
+        showApp();
         return false;
     }
     
-    currentUser = user;
-    localStorage.setItem('shardmind_user', user);
-    showApp();
+    err.textContent = currentLang === 'de' ? 'E-Mail oder Passwort falsch' : 'Invalid email or password';
+    err.style.display = 'block';
     return false;
 }
 
-function handleRegister(e) {
+async function handleRegister(e) {
     e.preventDefault();
-    const user = document.getElementById('reg-username').value.trim();
+    const name = document.getElementById('reg-displayname').value.trim();
+    const email = document.getElementById('reg-username').value.trim();
     const pw = document.getElementById('reg-password').value;
     const confirm = document.getElementById('reg-confirm').value;
     const msg = document.getElementById('register-msg');
     
+    if (!name || name.length < 2) {
+        msg.textContent = currentLang === 'de' ? 'Benutzername muss mindestens 2 Zeichen haben' : 'Username must be at least 2 characters';
+        msg.style.color = 'var(--error)';
+        msg.style.display = 'block'; return false;
+    }
     if (pw !== confirm) {
         msg.textContent = T('register_error_password');
         msg.style.color = 'var(--error)';
         msg.style.display = 'block'; return false;
     }
-    if (pw.length < 4) {
-        msg.textContent = T('register_error_short');
+    if (pw.length < 6) {
+        msg.textContent = currentLang === 'de' ? 'Passwort muss mindestens 6 Zeichen lang sein' : 'Password must be at least 6 characters';
         msg.style.color = 'var(--error)';
         msg.style.display = 'block'; return false;
     }
     
+    // Try Supabase
+    if (sb) {
+        try {
+            const { data, error } = await sb.auth.signUp({ 
+                email, 
+                password: pw,
+                options: {
+                    data: { display_name: name }
+                }
+            });
+            if (!error) {
+                // Also create local entry for offline use
+                const db = getDB();
+                if (!db[email]) {
+                    db[email] = { pw_hash: hashPassword(pw), display_name: name, created: new Date().toISOString(), data: { pieces: {}, clusters: {} } };
+                    saveDB(db);
+                }
+                msg.textContent = currentLang === 'de' ? `✓ Willkommen, ${name}! Du kannst dich jetzt anmelden.` : `✓ Welcome, ${name}! You can now log in.`;
+                msg.style.color = 'var(--success)';
+                msg.style.display = 'block';
+                return false;
+            }
+            // Translate common errors
+            let errMsg = error.message;
+            if (errMsg.includes('already registered')) errMsg = currentLang === 'de' ? 'Diese E-Mail ist bereits registriert' : 'This email is already registered';
+            msg.textContent = errMsg;
+            msg.style.color = 'var(--error)';
+            msg.style.display = 'block';
+            return false;
+        } catch(ex) {
+            console.warn('[ShardMind] Supabase register failed, using local:', ex);
+        }
+    }
+    
+    // Fallback: local registration
     const db = getDB();
-    if (db[user]) {
+    if (db[email]) {
         msg.textContent = T('register_error_exists');
         msg.style.color = 'var(--error)';
         msg.style.display = 'block'; return false;
     }
-    
-    db[user] = {
-        pw_hash: hashPassword(pw),
-        created: new Date().toISOString(),
-        data: { pieces: {}, clusters: {} }
-    };
+    db[email] = { pw_hash: hashPassword(pw), display_name: name, created: new Date().toISOString(), data: { pieces: {}, clusters: {} } };
     saveDB(db);
-    
-    msg.textContent = T('register_success');
+    msg.textContent = currentLang === 'de' ? `✓ Willkommen, ${name}! Du kannst dich jetzt anmelden.` : `✓ Welcome, ${name}! You can now log in.`;
     msg.style.color = 'var(--success)';
     msg.style.display = 'block';
     return false;
 }
 
-function handleLogout() {
+async function handleLogout() {
+    if (sb) { try { await sb.auth.signOut(); } catch(e) {} }
     currentUser = null;
+    displayName = null;
     activePieces = [];
     clusterLabels = [];
     reconImage = null;
     localStorage.removeItem('shardmind_user');
+    localStorage.removeItem('shardmind_display_name');
     document.getElementById('app-page').classList.remove('active');
     document.getElementById('login-page').classList.remove('hidden');
     document.getElementById('login-page').style.display = '';
+}
+
+function migrateLocalData(email) {
+    // If user had data under old username format, keep it accessible
+    const db = getDB();
+    if (!db[email]) {
+        db[email] = { pw_hash: '', created: new Date().toISOString(), data: { pieces: {}, clusters: {} } };
+        saveDB(db);
+    }
 }
 
 // ==================================================
@@ -3830,7 +3933,7 @@ function downloadDemoImage(type) {
 function showApp() {
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('app-page').classList.add('active');
-    document.getElementById('sidebar-username').textContent = currentUser;
+    document.getElementById('sidebar-username').textContent = displayName || currentUser || '?';
     
     updateAllTranslations();
     updateDBMetrics();
@@ -4363,27 +4466,66 @@ function removePiece(idx) {
     toast(currentLang === 'de' ? '🗑️ Fragment entfernt' : '🗑️ Fragment removed', 'info');
 }
 
-function publishToCloud(idx) {
+// Cloud DB cache for offline/render
+let _cloudCache = [];
+
+function _pieceToRow(piece) {
+    const row = {
+        id: piece.id,
+        name: piece.name || null,
+        material: piece.material || null,
+        color_name: piece.color_name || null,
+        munsell: piece.munsell || null,
+        vessel_part: piece.vessel_part || null,
+        deco_type: piece.deco_type || null,
+        deco_technique: piece.deco_technique || null,
+        vessel_form: piece.vessel_form || null,
+        firing_atmosphere: piece.firing_atmosphere || null,
+        fracture_type: piece.fracture_type || null,
+        firing_hardness: piece.firing_hardness || null,
+        manufacturing: piece.manufacturing || null,
+        weight_g: piece.weight_g || null,
+        diameter_cm: piece.diameter_cm || null,
+        wall_thickness_mm: piece.wall_thickness_mm || null,
+        excavation: document.getElementById('context-excavation')?.value || null,
+        site: document.getElementById('context-site')?.value || null,
+        thumbnail_url: piece.thumbnailDataUrl || null,
+        published_by: displayName || currentUser || 'Anonym',
+        metadata: {}
+    };
+    // Store extra fields in metadata
+    const skip = new Set(Object.keys(row));
+    skip.add('thumbnailDataUrl_full');
+    for (const [k,v] of Object.entries(piece)) {
+        if (!skip.has(k) && v !== undefined) row.metadata[k] = v;
+    }
+    return row;
+}
+
+async function publishToCloud(idx) {
     const piece = activePieces[idx];
     if (!piece) return;
     
+    if (sb) {
+        try {
+            const row = _pieceToRow(piece);
+            const { error } = await sb.from('fragments').upsert(row, { onConflict: 'id' });
+            if (error) throw error;
+            toast(currentLang === 'de' ? '☁️ In Cloud-DB veröffentlicht!' : '☁️ Published to Cloud DB!', 'success');
+            return;
+        } catch(e) {
+            console.warn('[ShardMind] Supabase publish failed, using local:', e.message);
+        }
+    }
+    // Fallback: localStorage
     const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
-    const entry = {
-        ...piece,
-        published_by: currentUser || 'Anonym',
-        published_at: new Date().toISOString(),
-        excavation: document.getElementById('context-excavation')?.value || '',
-        site: document.getElementById('context-site')?.value || ''
-    };
-    // Remove large data to save space
-    delete entry.thumbnailDataUrl_full;
-    
-    cloud[piece.id] = entry;
+    cloud[piece.id] = { ...piece, published_by: displayName || currentUser || 'Anonym', published_at: new Date().toISOString() };
+    delete cloud[piece.id].thumbnailDataUrl_full;
     localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
-    toast(currentLang === 'de' ? '☁️ In Cloud-DB veröffentlicht!' : '☁️ Published to Cloud DB!', 'success');
+    toast(currentLang === 'de' ? '☁️ Lokal veröffentlicht (offline)' : '☁️ Published locally (offline)', 'success');
 }
 
-function publishAllToCloud() {
+async function publishAllToCloud() {
     if (activePieces.length === 0) {
         toast(currentLang === 'de' ? 'Keine Fragmente zum Veröffentlichen' : 'No fragments to publish', 'info');
         return;
@@ -4393,82 +4535,104 @@ function publishAllToCloud() {
         : `Publish all ${activePieces.length} fragments to Cloud DB?`;
     if (!confirm(confirmMsg)) return;
     
+    if (sb) {
+        try {
+            const rows = activePieces.map(p => _pieceToRow(p));
+            const { error } = await sb.from('fragments').upsert(rows, { onConflict: 'id' });
+            if (error) throw error;
+            toast(currentLang === 'de' ? `☁️ ${activePieces.length} Fragmente veröffentlicht!` : `☁️ ${activePieces.length} fragments published!`, 'success');
+            if (document.getElementById('tab-clouddb')) renderCloudDB();
+            return;
+        } catch(e) { console.warn('[ShardMind] Supabase batch failed:', e.message); }
+    }
+    // Fallback
     const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
     activePieces.forEach(p => {
-        cloud[p.id] = {
-            ...p,
-            published_by: currentUser || 'Anonym',
-            published_at: new Date().toISOString(),
-            excavation: document.getElementById('context-excavation')?.value || '',
-            site: document.getElementById('context-site')?.value || ''
-        };
+        cloud[p.id] = { ...p, published_by: displayName || currentUser || 'Anonym', published_at: new Date().toISOString() };
         delete cloud[p.id].thumbnailDataUrl_full;
     });
     localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
-    toast(currentLang === 'de' ? `☁️ ${activePieces.length} Fragmente veröffentlicht!` : `☁️ ${activePieces.length} fragments published!`, 'success');
+    toast(currentLang === 'de' ? `☁️ ${activePieces.length} lokal veröffentlicht` : `☁️ ${activePieces.length} published locally`, 'success');
     if (document.getElementById('tab-clouddb')) renderCloudDB();
 }
 
-function renderCloudDB() {
+async function renderCloudDB() {
     const container = document.getElementById('clouddb-content');
     if (!container) return;
     
-    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
-    const entries = Object.values(cloud);
+    const searchVal = (document.getElementById('cloud-search')?.value || '').toLowerCase();
+    let entries = [];
+    let fromSupabase = false;
+    
+    // Try Supabase
+    if (sb) {
+        try {
+            let query = sb.from('fragments').select('*').order('published_at', { ascending: false }).limit(300);
+            if (searchVal) {
+                query = query.or(`name.ilike.%${searchVal}%,material.ilike.%${searchVal}%,excavation.ilike.%${searchVal}%,site.ilike.%${searchVal}%,published_by.ilike.%${searchVal}%,id.ilike.%${searchVal}%`);
+            }
+            const { data, error } = await query;
+            if (!error && data) {
+                entries = data;
+                _cloudCache = data;
+                fromSupabase = true;
+            }
+        } catch(e) { console.warn('[ShardMind] Supabase fetch failed:', e.message); }
+    }
+    
+    // Fallback: localStorage
+    if (!fromSupabase) {
+        const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+        entries = Object.values(cloud);
+        if (searchVal) {
+            entries = entries.filter(e =>
+                (e.id || '').toLowerCase().includes(searchVal) ||
+                (e.name || '').toLowerCase().includes(searchVal) ||
+                (e.material || '').toLowerCase().includes(searchVal) ||
+                (e.excavation || '').toLowerCase().includes(searchVal) ||
+                (e.published_by || '').toLowerCase().includes(searchVal)
+            );
+        }
+        entries.sort((a, b) => (b.published_at || '').localeCompare(a.published_at || ''));
+    }
     
     // Update stats
     const statCount = document.getElementById('cloud-stat-count');
     const statUsers = document.getElementById('cloud-stat-users');
     const statSites = document.getElementById('cloud-stat-sites');
-    
     if (statCount) statCount.textContent = entries.length;
-    if (statUsers) {
-        const users = [...new Set(entries.map(e => e.published_by))];
-        statUsers.textContent = users.length;
-    }
-    if (statSites) {
-        const sites = [...new Set(entries.map(e => e.excavation || e.site).filter(Boolean))];
-        statSites.textContent = sites.length;
-    }
+    if (statUsers) statUsers.textContent = [...new Set(entries.map(e => e.published_by))].length;
+    if (statSites) statSites.textContent = [...new Set(entries.map(e => e.excavation || e.site).filter(Boolean))].length;
+    
+    // Connection indicator
+    const connHtml = fromSupabase
+        ? '<span style="font-size:10px;color:var(--success);">🟢 Supabase verbunden</span>'
+        : '<span style="font-size:10px;color:var(--warning);">🟡 Offline-Modus (localStorage)</span>';
     
     if (entries.length === 0) {
-        container.innerHTML = `<div class="empty-state"><div class="icon">☁️</div><p>${currentLang === 'de' ? 'Noch keine Funde veröffentlicht. Teile Fragmente aus der Galerie oder Datenbank!' : 'No finds published yet. Share fragments from the Gallery or Database!'}</p></div>`;
+        container.innerHTML = `${connHtml}<div class="empty-state"><div class="icon">☁️</div><p>${currentLang === 'de' ? 'Noch keine Funde veröffentlicht.' : 'No finds published yet.'}</p></div>`;
         return;
     }
     
-    // Filter
-    const searchVal = (document.getElementById('cloud-search')?.value || '').toLowerCase();
-    let filtered = entries;
-    if (searchVal) {
-        filtered = entries.filter(e => 
-            (e.id || '').toLowerCase().includes(searchVal) ||
-            (e.name || '').toLowerCase().includes(searchVal) ||
-            (e.material || '').toLowerCase().includes(searchVal) ||
-            (e.color_name || '').toLowerCase().includes(searchVal) ||
-            (e.excavation || '').toLowerCase().includes(searchVal) ||
-            (e.site || '').toLowerCase().includes(searchVal) ||
-            (e.published_by || '').toLowerCase().includes(searchVal)
-        );
-    }
-    
-    // Sort by publish date (newest first)
-    filtered.sort((a, b) => (b.published_at || '').localeCompare(a.published_at || ''));
-    
-    let html = `<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">${filtered.length} / ${entries.length} ${currentLang === 'de' ? 'Funde' : 'finds'}</div>`;
+    let html = `${connHtml}<div style="font-size:11px;color:var(--text-muted);margin:8px 0;">${entries.length} ${currentLang === 'de' ? 'Funde' : 'finds'}</div>`;
     html += '<div class="gallery-grid">';
     
-    filtered.forEach(p => {
+    entries.forEach(p => {
         const pubDate = p.published_at ? new Date(p.published_at).toLocaleDateString('de-DE') : '?';
         const isDiag = !!(p.vessel_part && p.vessel_part !== 'wand') || !!(p.deco_type && p.deco_type !== 'keine');
+        const thumbSrc = p.thumbnail_url || p.thumbnailDataUrl || '';
+        const thumbHtml = thumbSrc
+            ? `<img class="gallery-thumb" src="${thumbSrc}" alt="${p.id}">`
+            : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:24px;">🏺</div>';
         
         html += `<div class="gallery-item" style="position:relative;">
             <div class="gallery-item-border" style="background:${isDiag ? 'var(--accent)' : '#B0B0B0'};"></div>
-            ${p.thumbnailDataUrl ? `<img class="gallery-thumb" src="${p.thumbnailDataUrl}" alt="${p.id}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);"></div>'}
+            ${thumbHtml}
             <div class="gallery-info">
                 <div class="gallery-id">${(p.name || p.id || '?').substring(0, 20)}</div>
                 <div style="font-size:10px;color:var(--text-muted);">${p.material || '?'} · ${p.color_name || '?'}</div>
                 ${p.excavation ? `<div style="font-size:10px;color:var(--text-muted);">📍 ${p.excavation}</div>` : ''}
-                <div style="font-size:9px;color:var(--text-muted);margin-top:2px;">👤 ${p.published_by} · ${pubDate}</div>
+                <div style="font-size:9px;color:var(--text-muted);margin-top:2px;">👤 ${p.published_by || '?'} · ${pubDate}</div>
             </div>
             <div style="padding:4px 8px 8px;display:flex;gap:4px;">
                 <button onclick="importFromCloud('${p.id}')" class="btn btn-sm" style="flex:1;font-size:9px;padding:3px 6px;background:var(--accent);color:white;border:none;border-radius:6px;">📥 ${currentLang === 'de' ? 'Importieren' : 'Import'}</button>
@@ -4481,35 +4645,60 @@ function renderCloudDB() {
     container.innerHTML = html;
 }
 
-function importFromCloud(pieceId) {
-    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
-    const piece = cloud[pieceId];
-    if (!piece) return;
-    
-    // Check if already in active pieces
+async function importFromCloud(pieceId) {
     if (activePieces.find(p => p.id === pieceId)) {
         toast(currentLang === 'de' ? 'Fragment bereits in der Sitzung' : 'Fragment already in session', 'info');
         return;
     }
     
-    activePieces.push({...piece});
+    // Try from cache first, then Supabase
+    let piece = _cloudCache.find(p => p.id === pieceId);
+    if (!piece && sb) {
+        try {
+            const { data } = await sb.from('fragments').select('*').eq('id', pieceId).single();
+            if (data) piece = data;
+        } catch(e) {}
+    }
+    if (!piece) {
+        const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+        piece = cloud[pieceId];
+    }
+    if (!piece) { toast('Fragment nicht gefunden', 'error'); return; }
+    
+    // Reconstruct thumbnailDataUrl from thumbnail_url if needed
+    const imported = { ...piece, ...(piece.metadata || {}) };
+    if (piece.thumbnail_url && !imported.thumbnailDataUrl) imported.thumbnailDataUrl = piece.thumbnail_url;
+    delete imported.metadata;
+    
+    activePieces.push(imported);
     renderGallery();
     renderGroups();
     toast(currentLang === 'de' ? '📥 Fragment importiert!' : '📥 Fragment imported!', 'success');
 }
 
-function removeFromCloud(pieceId) {
+async function removeFromCloud(pieceId) {
     const confirmMsg = currentLang === 'de' ? 'Aus Cloud-DB entfernen?' : 'Remove from Cloud DB?';
     if (!confirm(confirmMsg)) return;
     
+    if (sb) {
+        try {
+            const { error } = await sb.from('fragments').delete().eq('id', pieceId);
+            if (!error) {
+                toast(currentLang === 'de' ? '🗑️ Aus Cloud-DB entfernt' : '🗑️ Removed from Cloud DB', 'info');
+                renderCloudDB();
+                return;
+            }
+        } catch(e) { console.warn('[ShardMind] Supabase delete failed:', e.message); }
+    }
+    // Fallback
     const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
     delete cloud[pieceId];
     localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
     renderCloudDB();
-    toast(currentLang === 'de' ? '🗑️ Aus Cloud-DB entfernt' : '🗑️ Removed from Cloud DB', 'info');
+    toast(currentLang === 'de' ? '🗑️ Lokal entfernt' : '🗑️ Removed locally', 'info');
 }
 
-function publishDBToCloud() {
+async function publishDBToCloud() {
     const data = getUserData();
     const pieces = data.pieces || {};
     const keys = Object.keys(pieces);
@@ -4518,31 +4707,48 @@ function publishDBToCloud() {
         return;
     }
     const confirmMsg = currentLang === 'de'
-        ? `${keys.length} gespeicherte Fragmente in die Cloud-DB veröffentlichen?`
-        : `Publish ${keys.length} saved fragments to Cloud DB?`;
+        ? `${keys.length} gespeicherte Fragmente veröffentlichen?`
+        : `Publish ${keys.length} saved fragments?`;
     if (!confirm(confirmMsg)) return;
     
+    if (sb) {
+        try {
+            const rows = keys.map(k => _pieceToRow(pieces[k]));
+            const { error } = await sb.from('fragments').upsert(rows, { onConflict: 'id' });
+            if (!error) {
+                toast(currentLang === 'de' ? `☁️ ${keys.length} Fragmente veröffentlicht!` : `☁️ ${keys.length} fragments published!`, 'success');
+                if (document.getElementById('tab-clouddb')) renderCloudDB();
+                return;
+            }
+        } catch(e) { console.warn('[ShardMind] Supabase DB publish failed:', e.message); }
+    }
+    // Fallback
     const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
-    keys.forEach(k => {
-        const p = pieces[k];
-        cloud[p.id || k] = {
-            ...p,
-            published_by: currentUser || 'Anonym',
-            published_at: new Date().toISOString()
-        };
-    });
+    keys.forEach(k => { cloud[pieces[k].id || k] = { ...pieces[k], published_by: displayName || currentUser || 'Anonym', published_at: new Date().toISOString() }; });
     localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
-    toast(currentLang === 'de' ? `☁️ ${keys.length} Fragmente veröffentlicht!` : `☁️ ${keys.length} fragments published!`, 'success');
+    toast(currentLang === 'de' ? `☁️ ${keys.length} lokal veröffentlicht` : `☁️ ${keys.length} published locally`, 'success');
     if (document.getElementById('tab-clouddb')) renderCloudDB();
 }
 
-function exportCloudJSON() {
-    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
-    if (Object.keys(cloud).length === 0) {
+async function exportCloudJSON() {
+    let entries = [];
+    if (sb) {
+        try {
+            const { data } = await sb.from('fragments').select('*').order('published_at', { ascending: false });
+            if (data) entries = data;
+        } catch(e) {}
+    }
+    if (entries.length === 0) {
+        const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+        entries = Object.values(cloud);
+    }
+    if (entries.length === 0) {
         toast(currentLang === 'de' ? 'Cloud-DB ist leer' : 'Cloud DB is empty', 'info');
         return;
     }
-    const blob = new Blob([JSON.stringify(cloud, null, 2)], { type: 'application/json' });
+    const obj = {};
+    entries.forEach(e => obj[e.id] = e);
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -4552,22 +4758,43 @@ function exportCloudJSON() {
     toast(currentLang === 'de' ? '📥 Cloud-DB exportiert!' : '📥 Cloud DB exported!', 'success');
 }
 
-function importCloudJSON(file) {
+async function importCloudJSON(file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
         try {
             const imported = JSON.parse(e.target.result);
-            const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
-            let count = 0;
-            for (const [k, v] of Object.entries(imported)) {
-                if (v && typeof v === 'object') {
-                    cloud[k] = v;
-                    count++;
-                }
+            const entries = Object.values(imported).filter(v => v && typeof v === 'object' && v.id);
+            if (entries.length === 0) { toast('Keine Funde gefunden', 'info'); return; }
+            
+            if (sb) {
+                try {
+                    const rows = entries.map(p => ({
+                        id: p.id,
+                        name: p.name || null,
+                        material: p.material || null,
+                        color_name: p.color_name || null,
+                        vessel_part: p.vessel_part || null,
+                        deco_type: p.deco_type || null,
+                        excavation: p.excavation || null,
+                        site: p.site || null,
+                        thumbnail_url: p.thumbnailDataUrl || p.thumbnail_url || null,
+                        published_by: p.published_by || currentUser || 'Import',
+                        metadata: p
+                    }));
+                    const { error } = await sb.from('fragments').upsert(rows, { onConflict: 'id' });
+                    if (!error) {
+                        renderCloudDB();
+                        toast(currentLang === 'de' ? `📥 ${entries.length} Funde importiert!` : `📥 ${entries.length} finds imported!`, 'success');
+                        return;
+                    }
+                } catch(ex) { console.warn('[ShardMind] Supabase import failed:', ex.message); }
             }
+            // Fallback
+            const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+            entries.forEach(v => cloud[v.id] = v);
             localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
             renderCloudDB();
-            toast(currentLang === 'de' ? `📥 ${count} Funde importiert!` : `📥 ${count} finds imported!`, 'success');
+            toast(currentLang === 'de' ? `📥 ${entries.length} Funde lokal importiert` : `📥 ${entries.length} finds imported locally`, 'success');
         } catch(err) {
             toast(currentLang === 'de' ? 'Fehler beim Import' : 'Import error', 'error');
         }
@@ -8856,20 +9083,49 @@ function init() {
         }
     } catch(e) {}
     
-    // Auto-login if saved
+    // Auto-login: check Supabase session, then localStorage fallback
     try {
         const savedUser = localStorage.getItem('shardmind_user');
+        const savedName = localStorage.getItem('shardmind_display_name');
         if (savedUser) {
+            currentUser = savedUser;
+            displayName = savedName || savedUser.split('@')[0];
+            // Ensure local DB entry exists
             const db = getDB();
-            if (db[savedUser]) {
-                currentUser = savedUser;
-                showApp();
-            } else {
-                document.getElementById('login-page').style.display = '';
+            if (!db[savedUser]) {
+                db[savedUser] = { pw_hash: '', display_name: displayName, created: new Date().toISOString(), data: { pieces: {}, clusters: {} } };
+                saveDB(db);
             }
+            showApp();
         } else {
             document.getElementById('login-page').style.display = '';
         }
+        
+        // Also try Supabase session restore (async, might override)
+        setTimeout(async () => {
+            if (!sb) initSupabase();
+            if (sb) {
+                try {
+                    const { data: { session } } = await sb.auth.getSession();
+                    if (session && session.user) {
+                        const email = session.user.email;
+                        const name = session.user.user_metadata?.display_name;
+                        if (currentUser !== email) {
+                            currentUser = email;
+                            displayName = name || email.split('@')[0];
+                            localStorage.setItem('shardmind_user', email);
+                            localStorage.setItem('shardmind_display_name', displayName);
+                            migrateLocalData(email);
+                            showApp();
+                        } else if (name && displayName !== name) {
+                            displayName = name;
+                            localStorage.setItem('shardmind_display_name', name);
+                            document.getElementById('sidebar-username').textContent = name;
+                        }
+                    }
+                } catch(e) { console.warn('[ShardMind] Supabase session check failed:', e); }
+            }
+        }, 1000);
     } catch(e) { 
         console.error('[ShardMind] Login check failed:', e);
         try { document.getElementById('login-page').style.display = ''; } catch(e2) {}
