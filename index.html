@@ -1223,8 +1223,8 @@
 
             <form class="login-form active" id="login-form" onsubmit="return handleLogin(event)">
                 <div class="form-group">
-                    <label id="lbl-username">E-Mail</label>
-                    <input type="email" id="login-username" required placeholder="name@beispiel.de" autocomplete="email">
+                    <label id="lbl-username">Benutzername</label>
+                    <input type="text" id="login-username" required placeholder="Dein Benutzername" autocomplete="username">
                 </div>
                 <div class="form-group">
                     <label id="lbl-password">Passwort</label>
@@ -1238,11 +1238,12 @@
                 <div class="form-group">
                     <label id="lbl-reg-displayname">Benutzername</label>
                     <input type="text" id="reg-displayname" required placeholder="z.B. MaxMustermann" minlength="2" maxlength="30" autocomplete="username">
-                    <span style="font-size:10px;color:var(--text-muted);">Wird anderen Nutzern angezeigt (z.B. in der Cloud-DB)</span>
+                    <span style="font-size:10px;color:var(--text-muted);">Wird anderen Nutzern angezeigt &amp; zum Anmelden verwendet</span>
                 </div>
                 <div class="form-group">
                     <label id="lbl-reg-username">E-Mail</label>
                     <input type="email" id="reg-username" required placeholder="name@beispiel.de" autocomplete="email">
+                    <span style="font-size:10px;color:var(--text-muted);">Für Konto-Wiederherstellung</span>
                 </div>
                 <div class="form-group">
                     <label id="lbl-reg-password">Passwort</label>
@@ -3460,20 +3461,32 @@ function saveUserData(data) {
 // ==================================================
 // AUTH (Supabase with localStorage fallback)
 // ==================================================
+// Username → Email mapping (stored locally, populated at registration)
+function getUserMap() {
+    try { return JSON.parse(localStorage.getItem('shardmind_user_map') || '{}'); } catch { return {}; }
+}
+function saveUserMap(map) {
+    localStorage.setItem('shardmind_user_map', JSON.stringify(map));
+}
+
 async function handleLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('login-username').value.trim();
+    const username = document.getElementById('login-username').value.trim();
     const pw = document.getElementById('login-password').value;
     const err = document.getElementById('login-error');
     err.style.display = 'none';
     
-    // Try Supabase first
-    if (sb) {
+    // Look up email from username mapping
+    const userMap = getUserMap();
+    const email = userMap[username.toLowerCase()];
+    
+    // Try Supabase with email lookup
+    if (sb && email) {
         try {
             const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
             if (!error && data.user) {
-                currentUser = data.user.email;
-                displayName = data.user.user_metadata?.display_name || email.split('@')[0];
+                currentUser = email;
+                displayName = data.user.user_metadata?.display_name || username;
                 localStorage.setItem('shardmind_user', currentUser);
                 localStorage.setItem('shardmind_display_name', displayName);
                 migrateLocalData(currentUser);
@@ -3481,9 +3494,8 @@ async function handleLogin(e) {
                 return false;
             }
             if (error) {
-                // Translate common Supabase errors
                 let msg = error.message;
-                if (msg.includes('Invalid login')) msg = currentLang === 'de' ? 'E-Mail oder Passwort falsch' : 'Invalid email or password';
+                if (msg.includes('Invalid login')) msg = currentLang === 'de' ? 'Benutzername oder Passwort falsch' : 'Invalid username or password';
                 err.textContent = msg;
                 err.style.display = 'block';
                 return false;
@@ -3493,18 +3505,51 @@ async function handleLogin(e) {
         }
     }
     
-    // Fallback: local auth
+    // Try Supabase with username as email (in case user enters email directly)
+    if (sb && !email && username.includes('@')) {
+        try {
+            const { data, error } = await sb.auth.signInWithPassword({ email: username, password: pw });
+            if (!error && data.user) {
+                currentUser = data.user.email;
+                displayName = data.user.user_metadata?.display_name || username.split('@')[0];
+                localStorage.setItem('shardmind_user', currentUser);
+                localStorage.setItem('shardmind_display_name', displayName);
+                // Save mapping for next time
+                const map = getUserMap();
+                map[displayName.toLowerCase()] = currentUser;
+                saveUserMap(map);
+                migrateLocalData(currentUser);
+                showApp();
+                return false;
+            }
+        } catch(ex) {}
+    }
+    
+    // Fallback: local auth (try username as key, then email lookup)
     const db = getDB();
-    if (db[email] && db[email].pw_hash === hashPassword(pw)) {
-        currentUser = email;
-        displayName = db[email].display_name || email.split('@')[0];
-        localStorage.setItem('shardmind_user', email);
+    const localEmail = email || Object.keys(db).find(k => db[k].display_name?.toLowerCase() === username.toLowerCase());
+    if (localEmail && db[localEmail] && db[localEmail].pw_hash === hashPassword(pw)) {
+        currentUser = localEmail;
+        displayName = db[localEmail].display_name || username;
+        localStorage.setItem('shardmind_user', currentUser);
         localStorage.setItem('shardmind_display_name', displayName);
         showApp();
         return false;
     }
     
-    err.textContent = currentLang === 'de' ? 'E-Mail oder Passwort falsch' : 'Invalid email or password';
+    // Also try username directly as key (old accounts)
+    if (db[username] && db[username].pw_hash === hashPassword(pw)) {
+        currentUser = username;
+        displayName = db[username].display_name || username;
+        localStorage.setItem('shardmind_user', currentUser);
+        localStorage.setItem('shardmind_display_name', displayName);
+        showApp();
+        return false;
+    }
+    
+    err.textContent = currentLang === 'de' 
+        ? (email ? 'Passwort falsch' : 'Benutzername nicht gefunden — hast du dich schon registriert?')
+        : (email ? 'Wrong password' : 'Username not found — have you registered?');
     err.style.display = 'block';
     return false;
 }
@@ -3522,6 +3567,15 @@ async function handleRegister(e) {
         msg.style.color = 'var(--error)';
         msg.style.display = 'block'; return false;
     }
+    
+    // Check if username is already taken
+    const userMap = getUserMap();
+    if (userMap[name.toLowerCase()]) {
+        msg.textContent = currentLang === 'de' ? 'Dieser Benutzername ist bereits vergeben' : 'This username is already taken';
+        msg.style.color = 'var(--error)';
+        msg.style.display = 'block'; return false;
+    }
+    
     if (pw !== confirm) {
         msg.textContent = T('register_error_password');
         msg.style.color = 'var(--error)';
@@ -3544,6 +3598,10 @@ async function handleRegister(e) {
                 }
             });
             if (!error) {
+                // Save username → email mapping for login
+                const map = getUserMap();
+                map[name.toLowerCase()] = email;
+                saveUserMap(map);
                 // Also create local entry for offline use
                 const db = getDB();
                 if (!db[email]) {
@@ -3576,6 +3634,10 @@ async function handleRegister(e) {
     }
     db[email] = { pw_hash: hashPassword(pw), display_name: name, created: new Date().toISOString(), data: { pieces: {}, clusters: {} } };
     saveDB(db);
+    // Save username → email mapping
+    const map2 = getUserMap();
+    map2[name.toLowerCase()] = email;
+    saveUserMap(map2);
     msg.textContent = currentLang === 'de' ? `✓ Willkommen, ${name}! Du kannst dich jetzt anmelden.` : `✓ Welcome, ${name}! You can now log in.`;
     msg.style.color = 'var(--success)';
     msg.style.display = 'block';
