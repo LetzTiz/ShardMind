@@ -162,6 +162,15 @@
         .cookie-btns { display: flex; gap: 12px; flex-wrap: wrap; }
 
         /* Login Page */
+        .wizard-step { display: none; }
+        .wizard-step.active { display: block; animation: fadeIn 0.3s ease; }
+        .wizard-progress-dot {
+            flex: 1; height: 6px; border-radius: 3px;
+            background: var(--border); cursor: pointer; transition: var(--transition);
+        }
+        .wizard-progress-dot.active { background: var(--accent); }
+        .wizard-progress-dot.done { background: var(--success); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         #login-page {
             min-height: 100vh; display: flex;
             align-items: center; justify-content: center;
@@ -1465,6 +1474,131 @@
                 <button class="btn btn-secondary" onclick="switchTab('about');document.querySelector('[onclick*=about]').classList.add('active')" style="font-size:11px;padding:5px 12px;">ℹ️ Über / Technik</button>
             </div>
 
+            <!-- ===== GUIDED MODE (WIZARD) ===== -->
+            <div id="wizard-section" style="background:linear-gradient(135deg, rgba(99,102,241,0.06), rgba(99,102,241,0.01));border:1px solid var(--accent);border-radius:var(--radius-lg);padding:20px;margin-bottom:24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h3 style="font-size:17px;color:var(--accent);margin:0;">🧭 Geführte Analyse</h3>
+                    <span style="font-size:11px;color:var(--text-muted);" id="wizard-step-indicator">Schritt 1 / 5</span>
+                </div>
+
+                <!-- Progress bar -->
+                <div style="display:flex;gap:4px;margin-bottom:20px;">
+                    <div class="wizard-progress-dot active" id="wiz-dot-1" onclick="wizardGoTo(1)"></div>
+                    <div class="wizard-progress-dot" id="wiz-dot-2" onclick="wizardGoTo(2)"></div>
+                    <div class="wizard-progress-dot" id="wiz-dot-3" onclick="wizardGoTo(3)"></div>
+                    <div class="wizard-progress-dot" id="wiz-dot-4" onclick="wizardGoTo(4)"></div>
+                    <div class="wizard-progress-dot" id="wiz-dot-5" onclick="wizardGoTo(5)"></div>
+                </div>
+
+                <!-- Step 1: Upload -->
+                <div class="wizard-step active" id="wiz-step-1">
+                    <div style="font-size:28px;text-align:center;margin-bottom:8px;">📷</div>
+                    <h4 style="font-size:15px;text-align:center;margin-bottom:8px;">Foto hochladen</h4>
+                    <p style="font-size:13px;color:var(--text-secondary);text-align:center;line-height:1.5;margin-bottom:16px;">
+                        Fotografiere deine Scherben auf einem <strong>hellen, einfarbigen Hintergrund</strong>. 
+                        Stelle sicher, dass sie sich nicht berühren und gut beleuchtet sind.
+                    </p>
+                    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()" style="font-size:13px;padding:10px 20px;">
+                            📤 Foto auswählen
+                        </button>
+                        <button class="btn btn-secondary" onclick="downloadDemoImage('pottery')" style="font-size:12px;padding:8px 14px;">
+                            🎨 Demo-Bild nutzen
+                        </button>
+                    </div>
+                    <div style="margin-top:12px;text-align:center;">
+                        <button class="btn btn-primary" onclick="wizardNext()" style="font-size:12px;padding:8px 20px;">
+                            Weiter →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Analyze -->
+                <div class="wizard-step" id="wiz-step-2">
+                    <div style="font-size:28px;text-align:center;margin-bottom:8px;">🔬</div>
+                    <h4 style="font-size:15px;text-align:center;margin-bottom:8px;">Analyse starten</h4>
+                    <p style="font-size:13px;color:var(--text-secondary);text-align:center;line-height:1.5;margin-bottom:16px;">
+                        Klicke auf <strong>Analysieren</strong> in der Seitenleiste (links / ☰). 
+                        Die KI erkennt automatisch Material, Farbe, Form und gruppiert ähnliche Fragmente.
+                        Das kann je nach Bildgröße 10–60 Sekunden dauern.
+                    </p>
+                    <div style="text-align:center;">
+                        <button class="btn btn-primary" onclick="runAnalysis()" style="font-size:13px;padding:10px 20px;">
+                            🔬 Jetzt analysieren
+                        </button>
+                    </div>
+                    <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
+                        <button class="btn btn-secondary" onclick="wizardPrev()" style="font-size:12px;padding:8px 14px;">← Zurück</button>
+                        <button class="btn btn-primary" onclick="wizardNext()" style="font-size:12px;padding:8px 14px;">Weiter →</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Review & Edit -->
+                <div class="wizard-step" id="wiz-step-3">
+                    <div style="font-size:28px;text-align:center;margin-bottom:8px;">✏️</div>
+                    <h4 style="font-size:15px;text-align:center;margin-bottom:8px;">Ergebnisse prüfen</h4>
+                    <p style="font-size:13px;color:var(--text-secondary);text-align:center;line-height:1.5;margin-bottom:16px;">
+                        Im <strong>Galerie-Tab</strong> siehst du alle erkannten Fragmente. 
+                        Du kannst dort Gefäßbereich, Verzierung, Gewicht und mehr anpassen.
+                        Fragmente die du nicht brauchst kannst du mit 🗑️ entfernen.
+                    </p>
+                    <div style="text-align:center;">
+                        <button class="btn btn-primary" onclick="switchTab('gallery');wizardNext()" style="font-size:13px;padding:10px 20px;">
+                            🏺 Galerie öffnen
+                        </button>
+                    </div>
+                    <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
+                        <button class="btn btn-secondary" onclick="wizardPrev()" style="font-size:12px;padding:8px 14px;">← Zurück</button>
+                        <button class="btn btn-primary" onclick="wizardNext()" style="font-size:12px;padding:8px 14px;">Weiter →</button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Context -->
+                <div class="wizard-step" id="wiz-step-4">
+                    <div style="font-size:28px;text-align:center;margin-bottom:8px;">📋</div>
+                    <h4 style="font-size:15px;text-align:center;margin-bottom:8px;">Fundkontext eintragen</h4>
+                    <p style="font-size:13px;color:var(--text-secondary);text-align:center;line-height:1.5;margin-bottom:16px;">
+                        Im <strong>Fundkontext-Tab</strong> trägst du Grabungsname, Fundstelle, 
+                        Befundnummer und Koordinaten ein. Das ist optional, macht deine Daten aber viel wertvoller.
+                    </p>
+                    <div style="text-align:center;">
+                        <button class="btn btn-primary" onclick="switchTab('context');wizardNext()" style="font-size:13px;padding:10px 20px;">
+                            📋 Kontext eintragen
+                        </button>
+                    </div>
+                    <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
+                        <button class="btn btn-secondary" onclick="wizardPrev()" style="font-size:12px;padding:8px 14px;">← Zurück</button>
+                        <button class="btn btn-primary" onclick="wizardNext()" style="font-size:12px;padding:8px 14px;">Weiter →</button>
+                    </div>
+                </div>
+
+                <!-- Step 5: Save & Share -->
+                <div class="wizard-step" id="wiz-step-5">
+                    <div style="font-size:28px;text-align:center;margin-bottom:8px;">💾</div>
+                    <h4 style="font-size:15px;text-align:center;margin-bottom:8px;">Speichern & Teilen</h4>
+                    <p style="font-size:13px;color:var(--text-secondary);text-align:center;line-height:1.5;margin-bottom:16px;">
+                        Sichere deine Ergebnisse im <strong>Datenbank-Tab</strong> (lokal) oder veröffentliche sie 
+                        in der <strong>Cloud-DB</strong> damit andere Forschende sie finden können. 
+                        Du kannst auch CSV, JSON oder Etiketten exportieren.
+                    </p>
+                    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="switchTab('database')" style="font-size:12px;padding:8px 16px;">
+                            💾 Datenbank
+                        </button>
+                        <button class="btn btn-primary" onclick="switchTab('clouddb')" style="font-size:12px;padding:8px 16px;">
+                            ☁️ Cloud-DB
+                        </button>
+                        <button class="btn btn-secondary" onclick="switchTab('labels')" style="font-size:12px;padding:8px 16px;">
+                            🏷️ Etiketten
+                        </button>
+                    </div>
+                    <div style="margin-top:16px;text-align:center;">
+                        <button class="btn btn-secondary" onclick="wizardPrev()" style="font-size:12px;padding:8px 14px;">← Zurück</button>
+                        <span style="font-size:12px;color:var(--success);font-weight:600;margin-left:12px;">✓ Fertig! Du kannst jetzt frei alle Tabs erkunden.</span>
+                    </div>
+                </div>
+            </div>
+
             <div style="margin-bottom:24px;">
                 <h3 style="font-size:18px;margin-bottom:12px;" id="search-title">🔍 Fragment suchen</h3>
                 <div class="search-bar">
@@ -2649,6 +2783,40 @@
                 </p>
             </div>
             
+            <!-- Betreiber & Infrastruktur -->
+            <div class="card" style="padding:20px;margin-bottom:20px;">
+                <h3 style="font-size:16px;margin-bottom:12px;">🏢 Betreiber & Infrastruktur</h3>
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px 0;font-weight:600;width:35%;">Betreiber</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">MPG Robotics — Schülerteam am Max-Planck-Gymnasium München</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px 0;font-weight:600;">Website-Hosting</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">GitHub Pages (statisch, kein serverseitiger Code)</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px 0;font-weight:600;">Cloud-Datenbank</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">Supabase (PostgreSQL) — Standort: <strong>Frankfurt am Main, EU</strong></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px 0;font-weight:600;">Authentifizierung</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">Supabase Auth (E-Mail + Passwort, verschlüsselt)</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px 0;font-weight:600;">Bildverarbeitung</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">100% lokal im Browser (PyScript/WebAssembly) — keine Bilder werden hochgeladen</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:8px 0;font-weight:600;">Datenschutz</td>
+                        <td style="padding:8px 0;color:var(--text-secondary);">DSGVO-konform, keine Tracker, keine Werbung, keine Datenweitergabe an Dritte</td>
+                    </tr>
+                </table>
+                <p style="font-size:11px;color:var(--text-muted);margin-top:12px;">
+                    Quellcode: <a href="https://github.com/LetzTiz/ShardMind" target="_blank" style="color:var(--accent);">github.com/LetzTiz/ShardMind</a> — Open Source (MIT-Lizenz)
+                </p>
+            </div>
+            
             <!-- Tech Stack -->
             <div class="card" style="padding:20px;margin-bottom:20px;">
                 <h3 style="font-size:16px;margin-bottom:12px;">⚙️ Technische Basis</h3>
@@ -3138,14 +3306,19 @@ function T(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || 
 // CHANGELOG DATA
 // ==================================================
 const CHANGELOG = {
-    '2.8': { date: '2025-02-23', title: 'Cloud-Datenbank, Galerie-Löschfunktion & Open Science', features: [
-        '☁️ CLOUD-DB: Neuer Tab — Gemeinsame Funddatenbank für alle Forschenden',
-        '☁️ VERÖFFENTLICHEN: Einzelne Fragmente (Galerie) oder ganze Sammlungen in die Cloud-DB publizieren',
-        '📥 IMPORT/EXPORT: Cloud-DB als JSON exportieren und auf anderen Geräten importieren',
-        '🔍 CLOUD-SUCHE: Veröffentlichte Funde nach ID, Material, Grabung, Nutzer durchsuchbar',
+    '2.8': { date: '2025-02-23', title: 'Cloud-Datenbank, Geführter Modus, DSGVO & Accounts', features: [
+        '☁️ SUPABASE CLOUD-DB: Echte Server-Datenbank (Frankfurt, EU) für gemeinsame Funde — institutionsübergreifend sichtbar',
+        '👤 CLOUD-ACCOUNTS: Registrierung mit Benutzername + E-Mail über Supabase Auth — geräteübergreifend',
+        '🧭 GEFÜHRTE ANALYSE: 5-Schritte-Wizard auf der Startseite für Einsteiger (Upload → Analyse → Prüfen → Kontext → Speichern)',
         '🗑️ GALERIE-LÖSCHFUNKTION: Einzelne Fragmente direkt in der Galerie entfernen',
-        '🌍 OPEN SCIENCE: Funde werden sichtbar statt in privaten Datenbanken zu verschwinden',
-    ], fixes: [] },
+        '☁️ VERÖFFENTLICHEN: Einzelne Fragmente oder ganze Sammlungen in die Cloud-DB publizieren',
+        '🔍 CLOUD-SUCHE: Veröffentlichte Funde nach ID, Material, Grabung, Nutzer durchsuchbar',
+        '📥 CLOUD IMPORT/EXPORT: JSON-Dateien zwischen Geräten austauschen',
+        '🏢 BETREIBER-INFO: Transparente Angaben zu Betreiber, Hosting und Datenverarbeitung im Über-Tab',
+    ], fixes: [
+        '📜 DSGVO: Vollständig überarbeitete Datenschutzerklärung mit Supabase, GitHub Pages, Datenstandort Frankfurt',
+        '🔐 LOGIN: Anmeldung per Benutzername statt E-Mail — einfacher für Kolleg:innen',
+    ] },
     '2.7': { date: '2025-02-19', title: 'Gefäßformen, Herstellungsmerkmale, Crash-Schutz & Schauhütte-Feedback', features: [
         '🏺 GEFÄSSFORMEN: 16 Typen (Kumpf, Topf, Schüssel, Schale, Becher, Flasche, Terrine, Amphore, Krug, Teller etc.)',
         '🔥 BRANDATMOSPHÄRE: Oxidierend, Reduzierend, Wechselnd, Sekundär gebrannt',
@@ -3284,27 +3457,91 @@ const CHANGELOG = {
 // ==================================================
 // PRIVACY POLICIES
 // ==================================================
-const PRIVACY_DE = `<h2>Datenschutzerklärung</h2><p><strong>Stand: Januar 2025</strong></p>
-<h3>1. Verantwortlicher</h3><p>Verantwortlich für die Datenverarbeitung ist der Betreiber von ShardMind.</p>
-<h3>2. Welche Daten wir erheben</h3>
-<h3>2.1 Account-Daten</h3><p>Benutzername, Passwort (als Hash), Erstellungsdatum.</p>
-<h3>2.2 Nutzungsdaten</h3><p>Bilder (nur während der Sitzung), analysierte Fragmente, Gruppen.</p>
-<h3>2.3 Cookies</h3><p>Notwendige Cookies (Session), Funktionale Cookies (Einstellungen).</p>
-<h3>3. Zweck</h3><p>App-Funktionalität, Speicherung, Verbesserung der Erfahrung.</p>
-<h3>4. Datenweitergabe</h3><p>Keine Weitergabe an Dritte.</p>
-<h3>5. Ihre Rechte (DSGVO)</h3><p>Auskunft, Berichtigung, Löschung, Widerspruch.</p>
-<h3>6. Kontakt</h3><p>Bei Fragen kontaktieren Sie uns über die App.</p>`;
+const PRIVACY_DE = `<h2>Datenschutzerklärung</h2><p><strong>Stand: Februar 2025</strong></p>
+<h3>1. Verantwortlicher</h3>
+<p>ShardMind ist ein Schülerprojekt des Teams <strong>MPG Robotics</strong> am Max-Planck-Gymnasium München, 
+entwickelt im Rahmen der FIRST LEGO League Challenge 2024/25. 
+Kontakt: über die GitHub-Seite des Projekts (<a href="https://github.com/LetzTiz/ShardMind" target="_blank" style="color:var(--accent);">github.com/LetzTiz/ShardMind</a>).</p>
 
-const PRIVACY_EN = `<h2>Privacy Policy</h2><p><strong>Last updated: January 2025</strong></p>
-<h3>1. Data Controller</h3><p>The operator of ShardMind is responsible for data processing.</p>
-<h3>2. Data We Collect</h3>
-<h3>2.1 Account Data</h3><p>Username, password (stored as hash), creation date.</p>
-<h3>2.2 Usage Data</h3><p>Images (session only), analyzed fragments, groups.</p>
-<h3>2.3 Cookies</h3><p>Necessary cookies (session), Functional cookies (settings).</p>
-<h3>3. Purpose</h3><p>App functionality, storage, improving experience.</p>
-<h3>4. Data Sharing</h3><p>No sharing with third parties.</p>
-<h3>5. Your Rights (GDPR)</h3><p>Access, rectification, erasure, objection.</p>
-<h3>6. Contact</h3><p>Contact us through the app.</p>`;
+<h3>2. Hosting & Datenverarbeitung</h3>
+<p><strong>Website:</strong> Gehostet auf GitHub Pages (GitHub Inc., USA). Es werden keine serverseitigen Logs durch uns erhoben.<br>
+<strong>Cloud-Datenbank & Accounts:</strong> Bereitgestellt durch <a href="https://supabase.com" target="_blank" style="color:var(--accent);">Supabase</a> (Supabase Inc.). 
+Die Datenbank befindet sich in <strong>Frankfurt am Main, Deutschland (EU)</strong>. 
+Supabase verarbeitet Daten gemäß der DSGVO und ist SOC2 Type II zertifiziert.</p>
+
+<h3>3. Welche Daten wir erheben</h3>
+<h4>3.1 Account-Daten (Supabase Auth)</h4>
+<p>E-Mail-Adresse, Benutzername (Anzeigename), Passwort (verschlüsselt gespeichert von Supabase, für uns nicht einsehbar). Registrierung ist freiwillig.</p>
+<h4>3.2 Analysedaten</h4>
+<p>Hochgeladene Bilder werden <strong>ausschließlich lokal im Browser</strong> verarbeitet (via WebAssembly/PyScript). 
+Bilder werden zu keinem Zeitpunkt an einen Server übertragen.</p>
+<h4>3.3 Cloud-Datenbank</h4>
+<p>Wenn du Fragmente in die Cloud-DB veröffentlichst, werden Metadaten (Material, Farbe, Maße, Fundort, Benutzername) 
+und ein Vorschaubild (Thumbnail) in der Supabase-Datenbank gespeichert. 
+Diese Daten sind <strong>für alle Nutzer:innen sichtbar</strong> — veröffentliche nur Daten, die du teilen möchtest.</p>
+<h4>3.4 Lokale Daten</h4>
+<p>Einstellungen, Offline-Daten und die lokale Datenbank werden im localStorage deines Browsers gespeichert. 
+Diese Daten verlassen dein Gerät nicht.</p>
+<h4>3.5 Cookies</h4>
+<p>Notwendige Cookies für Session-Management. Keine Tracking- oder Werbe-Cookies.</p>
+
+<h3>4. Zweck der Verarbeitung</h3>
+<p>Bereitstellung der App-Funktionalität, Benutzeranmeldung, gemeinsame Forschungsdatenbank. 
+Keine Verwendung zu Werbezwecken oder Profilbildung.</p>
+
+<h3>5. Datenweitergabe</h3>
+<p>Keine Weitergabe an Dritte außer den genannten Dienstleistern (GitHub Pages, Supabase). 
+Keine Verkauf oder Handel mit Nutzerdaten.</p>
+
+<h3>6. Deine Rechte (DSGVO Art. 15–21)</h3>
+<p>Du hast das Recht auf: Auskunft, Berichtigung, Löschung deiner Daten, Einschränkung der Verarbeitung, 
+Datenübertragbarkeit, Widerspruch. Nutze dazu die Export- und Löschfunktionen im Datenschutz-Tab 
+oder kontaktiere uns über GitHub.</p>
+
+<h3>7. Datenlöschung</h3>
+<p>Du kannst deinen Account und alle zugehörigen Daten jederzeit im Datenschutz-Tab löschen. 
+Cloud-DB-Einträge können einzeln entfernt werden. Lokale Daten werden durch Löschen der Browser-Daten entfernt.</p>`;
+
+const PRIVACY_EN = `<h2>Privacy Policy</h2><p><strong>Last updated: February 2025</strong></p>
+<h3>1. Data Controller</h3>
+<p>ShardMind is a student project by <strong>MPG Robotics</strong> at Max-Planck-Gymnasium Munich, 
+developed for the FIRST LEGO League Challenge 2024/25. 
+Contact: via the project's GitHub page (<a href="https://github.com/LetzTiz/ShardMind" target="_blank" style="color:var(--accent);">github.com/LetzTiz/ShardMind</a>).</p>
+
+<h3>2. Hosting & Data Processing</h3>
+<p><strong>Website:</strong> Hosted on GitHub Pages (GitHub Inc., USA). No server-side logs are collected by us.<br>
+<strong>Cloud Database & Accounts:</strong> Provided by <a href="https://supabase.com" target="_blank" style="color:var(--accent);">Supabase</a> (Supabase Inc.). 
+The database is located in <strong>Frankfurt, Germany (EU)</strong>. 
+Supabase processes data in accordance with GDPR and is SOC2 Type II certified.</p>
+
+<h3>3. Data We Collect</h3>
+<h4>3.1 Account Data (Supabase Auth)</h4>
+<p>Email address, username (display name), password (encrypted by Supabase, not accessible to us). Registration is voluntary.</p>
+<h4>3.2 Analysis Data</h4>
+<p>Uploaded images are processed <strong>exclusively in your browser</strong> (via WebAssembly/PyScript). 
+Images are never transmitted to any server.</p>
+<h4>3.3 Cloud Database</h4>
+<p>When you publish fragments to the Cloud DB, metadata (material, color, dimensions, find location, username) 
+and a thumbnail image are stored in the Supabase database. 
+This data is <strong>visible to all users</strong> — only publish data you wish to share.</p>
+<h4>3.4 Local Data</h4>
+<p>Settings, offline data, and the local database are stored in your browser's localStorage and never leave your device.</p>
+<h4>3.5 Cookies</h4>
+<p>Essential cookies for session management only. No tracking or advertising cookies.</p>
+
+<h3>4. Purpose</h3>
+<p>App functionality, user authentication, shared research database. No advertising or profiling.</p>
+
+<h3>5. Data Sharing</h3>
+<p>No sharing with third parties beyond the named service providers (GitHub Pages, Supabase). No sale or trade of user data.</p>
+
+<h3>6. Your Rights (GDPR Art. 15–21)</h3>
+<p>You have the right to: access, rectification, erasure, restriction of processing, data portability, and objection. 
+Use the export and delete functions in the Privacy tab or contact us via GitHub.</p>
+
+<h3>7. Data Deletion</h3>
+<p>You can delete your account and all associated data at any time in the Privacy tab. 
+Cloud DB entries can be removed individually. Local data is removed by clearing browser data.</p>`;
 
 const HELP_DE = `<h2>Schnellstart</h2>
 <ul><li><strong>Demo testen</strong>: Testbild im Start-Tab herunterladen</li>
@@ -3666,6 +3903,27 @@ function migrateLocalData(email) {
         saveDB(db);
     }
 }
+
+// ==================================================
+// GUIDED WIZARD
+// ==================================================
+let wizardStep = 1;
+function wizardGoTo(step) {
+    wizardStep = Math.max(1, Math.min(5, step));
+    document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.wizard-progress-dot').forEach(d => { d.classList.remove('active'); d.classList.remove('done'); });
+    const el = document.getElementById(`wiz-step-${wizardStep}`);
+    if (el) el.classList.add('active');
+    for (let i = 1; i <= 5; i++) {
+        const dot = document.getElementById(`wiz-dot-${i}`);
+        if (i < wizardStep) dot.classList.add('done');
+        if (i === wizardStep) dot.classList.add('active');
+    }
+    const ind = document.getElementById('wizard-step-indicator');
+    if (ind) ind.textContent = `Schritt ${wizardStep} / 5`;
+}
+function wizardNext() { wizardGoTo(wizardStep + 1); }
+function wizardPrev() { wizardGoTo(wizardStep - 1); }
 
 // ==================================================
 // NAVIGATION
