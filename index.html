@@ -1659,9 +1659,21 @@
         <!-- TAB: Gallery -->
         <div class="tab-content" id="tab-gallery">
             <h2 class="section-header" id="gallery-header">Erkannte Fragmente</h2>
-            <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;" id="gallery-edit-hint">
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;" id="gallery-edit-hint">
                 ✏️ Alle automatischen Einträge sind nachträglich anpassbar — Name, Gefäßbereich, Dekor, Gewicht und Haptik direkt auf der Karte bearbeiten.
             </p>
+            <!-- Gallery toolbar -->
+            <div id="gallery-toolbar" style="display:none;margin-bottom:12px;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+                    <input type="checkbox" id="gallery-select-all" onchange="toggleSelectAll(this.checked)">
+                    <span id="gallery-select-label">Alle auswählen</span>
+                </label>
+                <span style="color:var(--border);">|</span>
+                <span style="font-size:11px;color:var(--text-muted);" id="gallery-selected-count">0 ausgewählt</span>
+                <div style="flex:1;"></div>
+                <button class="btn btn-sm" onclick="publishSelected()" style="font-size:11px;padding:4px 12px;background:var(--accent);color:white;border:none;border-radius:6px;">☁️ Ausgewählte veröffentlichen</button>
+                <button class="btn btn-sm" onclick="removeSelected()" style="font-size:11px;padding:4px 12px;background:transparent;color:#ef4444;border:1px solid #ef4444;border-radius:6px;">🗑️ Ausgewählte entfernen</button>
+            </div>
             <div id="gallery-content">
                 <div class="empty-state" id="gallery-empty">
                     <div class="icon">📷</div>
@@ -2420,11 +2432,25 @@
                 Thumbnails als eingebettetes JPG (Base64). Alle Formate sind langfristig lesbar und standardkonform.
             </p>
             <p style="font-size:10px;color:var(--accent);margin-bottom:16px;">
-                ☁️ <strong>Fundpaket teilen:</strong> Exportiert die Sammlung als JSON-Datei mit allen Metadaten, 
-                die an Kolleg:innen weitergegeben und in deren ShardMind importiert werden kann. 
-                Langfristige Vision: Cloud-basierte, institutionsübergreifende Datenbank für alle Forschenden.
+                ☁️ <strong>Cloud-Sync:</strong> Deine persönliche Datenbank wird automatisch in der Cloud gesichert (Supabase, Frankfurt). 
+                Du kannst sie mit anderen Nutzern teilen, damit sie deine Funde sehen und importieren können.
             </p>
-            </p>
+            
+            <!-- Sharing / Access Rights -->
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:16px;">
+                <h4 style="font-size:14px;margin-bottom:12px;color:var(--accent);">🔗 Sammlung teilen</h4>
+                <div style="display:flex;gap:8px;margin-bottom:12px;">
+                    <input type="text" id="share-username-input" placeholder="Benutzername eingeben..." 
+                           style="flex:1;padding:8px 12px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                    <button class="btn btn-primary" onclick="shareCollectionWith(document.getElementById('share-username-input').value.trim())" style="font-size:12px;padding:6px 14px;">
+                        🔗 Teilen
+                    </button>
+                </div>
+                <p style="font-size:10px;color:var(--text-muted);margin-bottom:12px;">
+                    Geteilte Nutzer können deine gespeicherten Fragmente ansehen und in ihre eigene Analyse importieren.
+                </p>
+                <div id="shared-collections"></div>
+            </div>
             
             <!-- DB stats bar -->
             <div class="db-stats-bar" id="db-stats-bar" style="display:none;">
@@ -2521,13 +2547,34 @@
             </div>
             
             <!-- Publish buttons -->
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
                 <button class="btn btn-primary" onclick="publishAllToCloud()" style="font-size:12px;padding:6px 14px;">
-                    ☁️ Aktuelle Sitzung veröffentlichen
+                    ☁️ Alle veröffentlichen
                 </button>
                 <button class="btn btn-secondary" onclick="publishDBToCloud()" style="font-size:12px;padding:6px 14px;">
                     💾→☁️ Gespeicherte DB veröffentlichen
                 </button>
+                <button class="btn btn-secondary" onclick="toggleSelectPublish()" style="font-size:12px;padding:6px 14px;" id="btn-select-publish">
+                    ☑️ Auswählen...
+                </button>
+            </div>
+            
+            <!-- Selective publish panel -->
+            <div id="select-publish-panel" style="display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <strong style="font-size:13px;">Fragmente zum Veröffentlichen auswählen</strong>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-sm" onclick="selectAllPublish(true)" style="font-size:10px;padding:3px 8px;">Alle</button>
+                        <button class="btn btn-sm" onclick="selectAllPublish(false)" style="font-size:10px;padding:3px 8px;">Keine</button>
+                    </div>
+                </div>
+                <div id="select-publish-list" style="max-height:300px;overflow-y:auto;"></div>
+                <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+                    <button class="btn btn-primary" onclick="publishSelected()" style="font-size:12px;padding:6px 14px;">
+                        ☁️ Ausgewählte veröffentlichen
+                    </button>
+                    <span id="select-publish-count" style="font-size:11px;color:var(--text-muted);">0 ausgewählt</span>
+                </div>
             </div>
             
             <!-- Import/Export -->
@@ -3135,8 +3182,8 @@ const TRANSLATIONS = {
         tab_start: 'Start', tab_gallery: 'Galerie', tab_context: 'Fundkontext', tab_groups: 'Gruppen',
         tab_reconstruction: 'Rekonstruktion', tab_profile: 'Profilschnitt', tab_database: 'Datenbank', tab_clouddb: 'Cloud-DB',
         tab_decoration: 'Verzierung', tab_culture: 'Kulturstufe',
-        tab_labels: 'Etiketten', tab_changelog: 'Changelog',
-        tab_privacy: 'Datenschutz', tab_help: 'Hilfe',
+        tab_labels: 'Etiketten', tab_inventory: 'Inventarliste', tab_changelog: 'Changelog',
+        tab_privacy: 'Datenschutz', tab_about: 'Über / Technik', tab_help: 'Hilfe',
         gallery_header: 'Erkannte Fragmente',
         groups_header: 'Gruppierung', group_name: 'Gruppenname',
         save: 'Speichern', saved: 'Gespeichert!', pieces: 'Teile',
@@ -3228,8 +3275,8 @@ const TRANSLATIONS = {
         tab_start: 'Start', tab_gallery: 'Gallery', tab_context: 'Find Context', tab_groups: 'Groups',
         tab_reconstruction: 'Reconstruction', tab_profile: 'Profile', tab_database: 'Database', tab_clouddb: 'Cloud DB',
         tab_decoration: 'Decoration', tab_culture: 'Culture',
-        tab_labels: 'Labels', tab_changelog: 'Changelog',
-        tab_privacy: 'Privacy', tab_help: 'Help',
+        tab_labels: 'Labels', tab_inventory: 'Inventory', tab_changelog: 'Changelog',
+        tab_privacy: 'Privacy', tab_about: 'About / Tech', tab_help: 'Help',
         gallery_header: 'Detected Fragments',
         groups_header: 'Grouping', group_name: 'Group Name',
         save: 'Save', saved: 'Saved!', pieces: 'pieces',
@@ -3679,19 +3726,161 @@ function getUserData() {
     if (!currentUser || !db[currentUser]) return { pieces: {}, clusters: {} };
     return db[currentUser].data || { pieces: {}, clusters: {} };
 }
+
+// Debounced cloud sync
+let _syncTimer = null;
 function saveUserData(data) {
     const db = getDB();
     if (currentUser && db[currentUser]) {
         db[currentUser].data = data;
         saveDB(db);
     } else if (currentUser) {
-        // User exists but no DB entry - create it
-        db[currentUser] = {
-            pw_hash: '',
-            created: new Date().toISOString(),
-            data: data
-        };
+        db[currentUser] = { pw_hash: '', created: new Date().toISOString(), data: data };
         saveDB(db);
+    }
+    // Debounced sync to Supabase (save after 3s of no changes)
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(() => syncUserDataToCloud(data), 3000);
+}
+
+async function syncUserDataToCloud(data) {
+    if (!sb || !currentUser) return;
+    try {
+        // Remove thumbnail data URLs to save space (they're huge base64 strings)
+        const cleanData = JSON.parse(JSON.stringify(data));
+        for (const key of Object.keys(cleanData.pieces || {})) {
+            const p = cleanData.pieces[key];
+            if (p.thumbnailDataUrl && p.thumbnailDataUrl.length > 5000) {
+                p.thumbnailDataUrl = p.thumbnailDataUrl.substring(0, 200) + '...truncated';
+            }
+            delete p.thumbnailDataUrl_full;
+        }
+        const { error } = await sb.from('user_collections').upsert({
+            user_email: currentUser,
+            display_name: displayName || currentUser,
+            data: cleanData,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'user_email' });
+        if (error) console.warn('[ShardMind] Cloud sync failed:', error.message);
+        else console.log('[ShardMind] Cloud sync OK');
+    } catch(e) { console.warn('[ShardMind] Cloud sync error:', e); }
+}
+
+async function loadUserDataFromCloud() {
+    if (!sb || !currentUser) return null;
+    try {
+        const { data, error } = await sb.from('user_collections').select('data, updated_at').eq('user_email', currentUser).single();
+        if (!error && data) return data;
+    } catch(e) {}
+    return null;
+}
+
+async function shareCollectionWith(targetUsername) {
+    if (!sb || !currentUser) { toast('Nicht eingeloggt', 'error'); return; }
+    try {
+        // Look up target email from user_collections by display_name
+        const { data: target } = await sb.from('user_collections').select('user_email').ilike('display_name', targetUsername).single();
+        if (!target) {
+            toast(currentLang === 'de' ? `Nutzer "${targetUsername}" nicht gefunden` : `User "${targetUsername}" not found`, 'error');
+            return;
+        }
+        // Add share record
+        const { error } = await sb.from('collection_shares').upsert({
+            owner_email: currentUser,
+            owner_name: displayName || currentUser,
+            shared_with_email: target.user_email,
+            shared_at: new Date().toISOString()
+        }, { onConflict: 'owner_email,shared_with_email' });
+        if (error) throw error;
+        toast(currentLang === 'de' ? `✓ Sammlung mit ${targetUsername} geteilt!` : `✓ Collection shared with ${targetUsername}!`, 'success');
+        renderSharedCollections();
+    } catch(e) {
+        toast(currentLang === 'de' ? `Fehler: ${e.message}` : `Error: ${e.message}`, 'error');
+    }
+}
+
+async function revokeShare(sharedWithEmail) {
+    if (!sb) return;
+    try {
+        await sb.from('collection_shares').delete().eq('owner_email', currentUser).eq('shared_with_email', sharedWithEmail);
+        toast(currentLang === 'de' ? '✓ Zugriff widerrufen' : '✓ Access revoked', 'info');
+        renderSharedCollections();
+    } catch(e) {}
+}
+
+async function renderSharedCollections() {
+    const container = document.getElementById('shared-collections');
+    if (!container || !sb) return;
+    
+    // Collections I shared with others
+    let myShares = [];
+    try {
+        const { data } = await sb.from('collection_shares').select('*').eq('owner_email', currentUser);
+        if (data) myShares = data;
+    } catch(e) {}
+    
+    // Collections shared with me
+    let sharedWithMe = [];
+    try {
+        const { data } = await sb.from('collection_shares').select('owner_email, owner_name, shared_at').eq('shared_with_email', currentUser);
+        if (data) sharedWithMe = data;
+    } catch(e) {}
+    
+    let html = '';
+    
+    // My shares
+    if (myShares.length > 0) {
+        html += `<div style="margin-bottom:12px;"><strong style="font-size:12px;">📤 Du teilst mit:</strong></div>`;
+        myShares.forEach(s => {
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--bg-secondary);border-radius:6px;margin-bottom:4px;font-size:12px;">
+                <span>👤 ${s.shared_with_email}</span>
+                <button onclick="revokeShare('${s.shared_with_email}')" class="btn btn-sm" style="font-size:10px;padding:2px 8px;color:#ef4444;border:1px solid #ef4444;background:transparent;border-radius:4px;">✕</button>
+            </div>`;
+        });
+    }
+    
+    // Shared with me
+    if (sharedWithMe.length > 0) {
+        html += `<div style="margin-top:12px;margin-bottom:8px;"><strong style="font-size:12px;">📥 Geteilt mit dir:</strong></div>`;
+        sharedWithMe.forEach(s => {
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(99,102,241,0.08);border-radius:6px;margin-bottom:4px;font-size:12px;">
+                <span>👤 ${s.owner_name || s.owner_email}</span>
+                <button onclick="viewSharedCollection('${s.owner_email}')" class="btn btn-sm" style="font-size:10px;padding:2px 8px;background:var(--accent);color:white;border:none;border-radius:4px;">📂 Ansehen</button>
+            </div>`;
+        });
+    }
+    
+    if (!html) {
+        html = `<div style="font-size:12px;color:var(--text-muted);">${currentLang === 'de' ? 'Noch niemand geteilt.' : 'Not shared with anyone yet.'}</div>`;
+    }
+    
+    container.innerHTML = html;
+}
+
+async function viewSharedCollection(ownerEmail) {
+    if (!sb) return;
+    try {
+        const { data, error } = await sb.from('user_collections').select('data, display_name').eq('user_email', ownerEmail).single();
+        if (error || !data) { toast('Sammlung nicht gefunden', 'error'); return; }
+        
+        const pieces = Object.values(data.data?.pieces || {});
+        if (pieces.length === 0) { toast('Sammlung ist leer', 'info'); return; }
+        
+        const addCount = pieces.filter(p => !activePieces.find(ap => ap.id === p.id)).length;
+        if (!confirm(currentLang === 'de'
+            ? `${pieces.length} Fragmente von ${data.display_name} laden? (${addCount} neu)`
+            : `Load ${pieces.length} fragments from ${data.display_name}? (${addCount} new)`)) return;
+        
+        pieces.forEach(p => {
+            if (!activePieces.find(ap => ap.id === p.id)) {
+                activePieces.push({...p});
+            }
+        });
+        renderGallery();
+        renderGroups();
+        toast(currentLang === 'de' ? `📂 ${addCount} Fragmente geladen` : `📂 ${addCount} fragments loaded`, 'success');
+    } catch(e) {
+        toast('Fehler: ' + e.message, 'error');
     }
 }
 
@@ -3951,6 +4140,7 @@ function switchTab(name) {
     }
     if (name === 'database') {
         renderDatabase();
+        renderSharedCollections();
     }
     if (name === 'clouddb') {
         renderCloudDB();
@@ -3979,7 +4169,10 @@ function updateAllTranslations() {
     // Update tab labels
     document.querySelectorAll('.tab-label').forEach(el => {
         const key = el.dataset.key;
-        if (key && T(key)) el.textContent = T(key);
+        if (key) {
+            const trans = (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key];
+            if (trans) el.textContent = trans;
+        }
     });
     
     // Update specific elements
@@ -4261,6 +4454,32 @@ function showApp() {
     renderCultureKnowledgeBase();
     drawDemoPottery();
     drawDemoPlate();
+    
+    // Try to sync personal DB from cloud (in background)
+    setTimeout(async () => {
+        const cloudData = await loadUserDataFromCloud();
+        if (cloudData && cloudData.data) {
+            const localData = getUserData();
+            const localCount = Object.keys(localData.pieces || {}).length;
+            const cloudCount = Object.keys(cloudData.data.pieces || {}).length;
+            // If cloud has more data, offer to merge
+            if (cloudCount > localCount && cloudCount > 0) {
+                const merge = confirm(currentLang === 'de'
+                    ? `Cloud-Datenbank hat ${cloudCount} Fragmente (lokal: ${localCount}). Cloud-Daten laden?`
+                    : `Cloud database has ${cloudCount} fragments (local: ${localCount}). Load cloud data?`);
+                if (merge) {
+                    const merged = { ...localData };
+                    merged.pieces = { ...merged.pieces, ...cloudData.data.pieces };
+                    merged.clusters = { ...merged.clusters, ...(cloudData.data.clusters || {}) };
+                    saveUserData(merged);
+                    updateDBMetrics();
+                    toast(currentLang === 'de' ? '☁️ Cloud-Daten geladen!' : '☁️ Cloud data loaded!', 'success');
+                }
+            }
+        }
+        // Also sync current data up to cloud
+        syncUserDataToCloud(getUserData());
+    }, 2000);
 }
 
 function updateDBMetrics() {
@@ -4589,7 +4808,13 @@ function renderGallery() {
         `<option value="${r.value}">${currentLang === 'de' ? r.label_de : r.label_en}</option>`
     ).join('');
     
-    let html = '<div class="gallery-grid">';
+    let html = '';
+    
+    // Show toolbar if pieces exist
+    const toolbar = document.getElementById('gallery-toolbar');
+    if (toolbar) toolbar.style.display = activePieces.length > 0 ? 'flex' : 'none';
+    
+    html += '<div class="gallery-grid">';
     activePieces.forEach((p, idx) => {
         const cid = p.cluster ?? -1;
         const color = cid >= 0 ? CLUSTER_COLORS[cid % CLUSTER_COLORS.length] : '#B0B0B0';
@@ -4603,7 +4828,10 @@ function renderGallery() {
         const diagColor = isDiag ? 'var(--accent)' : 'var(--text-muted)';
         const diagBg = isDiag ? 'rgba(99,102,241,0.1)' : 'transparent';
         
-        html += `<div class="gallery-item" style="${isDiag ? 'border-color:var(--accent);' : ''}">
+        html += `<div class="gallery-item" style="${isDiag ? 'border-color:var(--accent);' : ''}position:relative;">
+            <label style="position:absolute;top:6px;left:6px;z-index:2;cursor:pointer;">
+                <input type="checkbox" class="gallery-select-cb" data-idx="${idx}" onchange="updateSelectedCount()" style="width:16px;height:16px;cursor:pointer;">
+            </label>
             <div class="gallery-item-border" style="background:${isDiag ? 'var(--accent)' : color};"></div>
             ${p.thumbnailDataUrl ? `<img class="gallery-thumb" src="${p.thumbnailDataUrl}" alt="${p.id}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);"></div>'}
             <div class="gallery-info">
@@ -4777,13 +5005,81 @@ function removePiece(idx) {
         : `Remove fragment "${piece.name || piece.id}"?`;
     if (!confirm(confirmMsg)) return;
     activePieces.splice(idx, 1);
-    // Re-cluster if needed
     if (activePieces.length > 0 && typeof cluster_pieces === 'function') {
         try { cluster_pieces(activePieces); } catch(e) {}
     }
     renderGallery();
     renderGroups();
     toast(currentLang === 'de' ? '🗑️ Fragment entfernt' : '🗑️ Fragment removed', 'info');
+}
+
+function toggleSelectAll(checked) {
+    document.querySelectorAll('.gallery-select-cb').forEach(cb => cb.checked = checked);
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const cbs = document.querySelectorAll('.gallery-select-cb:checked');
+    const label = document.getElementById('gallery-selected-count');
+    if (label) label.textContent = `${cbs.length} ${currentLang === 'de' ? 'ausgewählt' : 'selected'}`;
+    const selectAll = document.getElementById('gallery-select-all');
+    if (selectAll) selectAll.checked = cbs.length === activePieces.length && cbs.length > 0;
+}
+
+function getSelectedIndices() {
+    return [...document.querySelectorAll('.gallery-select-cb:checked')].map(cb => parseInt(cb.dataset.idx));
+}
+
+async function publishSelected() {
+    const indices = getSelectedIndices();
+    if (indices.length === 0) {
+        toast(currentLang === 'de' ? 'Keine Fragmente ausgewählt' : 'No fragments selected', 'info');
+        return;
+    }
+    const confirmMsg = currentLang === 'de'
+        ? `${indices.length} ausgewählte Fragmente veröffentlichen?`
+        : `Publish ${indices.length} selected fragments?`;
+    if (!confirm(confirmMsg)) return;
+    
+    if (!sb) initSupabase();
+    
+    if (sb) {
+        try {
+            const rows = indices.map(i => {
+                const row = _pieceToRow(activePieces[i]);
+                if (row.thumbnail_url && row.thumbnail_url.length > 500000) row.thumbnail_url = null;
+                return row;
+            });
+            const { error } = await sb.from('fragments').upsert(rows, { onConflict: 'id' });
+            if (error) throw error;
+            toast(currentLang === 'de' ? `☁️ ${indices.length} Fragmente veröffentlicht!` : `☁️ ${indices.length} fragments published!`, 'success');
+            return;
+        } catch(e) {
+            toast(currentLang === 'de' ? `Cloud-Fehler: ${e.message}` : `Cloud error: ${e.message}`, 'error');
+        }
+    }
+    // Fallback: localStorage
+    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+    indices.forEach(i => {
+        const p = activePieces[i];
+        cloud[p.id] = { ...p, published_by: displayName || currentUser || 'Anonym', published_at: new Date().toISOString() };
+        delete cloud[p.id].thumbnailDataUrl_full;
+    });
+    localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
+    toast(currentLang === 'de' ? `☁️ ${indices.length} lokal gespeichert` : `☁️ ${indices.length} saved locally`, 'success');
+}
+
+function removeSelected() {
+    const indices = getSelectedIndices().sort((a, b) => b - a); // reverse order
+    if (indices.length === 0) {
+        toast(currentLang === 'de' ? 'Keine Fragmente ausgewählt' : 'No fragments selected', 'info');
+        return;
+    }
+    if (!confirm(currentLang === 'de' ? `${indices.length} Fragmente entfernen?` : `Remove ${indices.length} fragments?`)) return;
+    indices.forEach(i => activePieces.splice(i, 1));
+    renderGallery();
+    renderGroups();
+    toast(currentLang === 'de' ? `🗑️ ${indices.length} entfernt` : `🗑️ ${indices.length} removed`, 'info');
 }
 
 // Cloud DB cache for offline/render
@@ -4826,23 +5122,37 @@ async function publishToCloud(idx) {
     const piece = activePieces[idx];
     if (!piece) return;
     
+    // Ensure Supabase is initialized
+    if (!sb) initSupabase();
+    
     if (sb) {
         try {
             const row = _pieceToRow(piece);
-            const { error } = await sb.from('fragments').upsert(row, { onConflict: 'id' });
-            if (error) throw error;
-            toast(currentLang === 'de' ? '☁️ In Cloud-DB veröffentlicht!' : '☁️ Published to Cloud DB!', 'success');
-            return;
+            // Remove thumbnail if too large (>500KB base64 = ~375KB actual)
+            if (row.thumbnail_url && row.thumbnail_url.length > 500000) {
+                row.thumbnail_url = null;
+            }
+            const { data, error } = await sb.from('fragments').upsert(row, { onConflict: 'id' });
+            if (error) {
+                console.error('[ShardMind] Supabase publish error:', error);
+                toast(currentLang === 'de' ? `Cloud-Fehler: ${error.message}` : `Cloud error: ${error.message}`, 'error');
+                // Still save locally
+            } else {
+                toast(currentLang === 'de' ? '☁️ In Cloud-DB veröffentlicht!' : '☁️ Published to Cloud DB!', 'success');
+                return;
+            }
         } catch(e) {
-            console.warn('[ShardMind] Supabase publish failed, using local:', e.message);
+            console.error('[ShardMind] Supabase publish exception:', e);
+            toast(currentLang === 'de' ? `Verbindungsfehler: ${e.message}` : `Connection error: ${e.message}`, 'error');
         }
+    } else {
+        toast(currentLang === 'de' ? '⚠️ Supabase noch nicht geladen — warte kurz und versuche es nochmal' : '⚠️ Supabase not loaded yet — wait and try again', 'warning');
     }
     // Fallback: localStorage
     const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
     cloud[piece.id] = { ...piece, published_by: displayName || currentUser || 'Anonym', published_at: new Date().toISOString() };
     delete cloud[piece.id].thumbnailDataUrl_full;
     localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
-    toast(currentLang === 'de' ? '☁️ Lokal veröffentlicht (offline)' : '☁️ Published locally (offline)', 'success');
 }
 
 async function publishAllToCloud() {
@@ -4855,6 +5165,8 @@ async function publishAllToCloud() {
         : `Publish all ${activePieces.length} fragments to Cloud DB?`;
     if (!confirm(confirmMsg)) return;
     
+    if (!sb) initSupabase();
+    
     if (sb) {
         try {
             const rows = activePieces.map(p => _pieceToRow(p));
@@ -4863,7 +5175,10 @@ async function publishAllToCloud() {
             toast(currentLang === 'de' ? `☁️ ${activePieces.length} Fragmente veröffentlicht!` : `☁️ ${activePieces.length} fragments published!`, 'success');
             if (document.getElementById('tab-clouddb')) renderCloudDB();
             return;
-        } catch(e) { console.warn('[ShardMind] Supabase batch failed:', e.message); }
+        } catch(e) {
+            console.error('[ShardMind] Supabase batch publish failed:', e);
+            toast(currentLang === 'de' ? `Cloud-Fehler: ${e.message}` : `Cloud error: ${e.message}`, 'error');
+        }
     }
     // Fallback
     const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
@@ -5120,6 +5435,76 @@ async function importCloudJSON(file) {
         }
     };
     reader.readAsText(file);
+}
+
+function toggleSelectPublish() {
+    const panel = document.getElementById('select-publish-panel');
+    const visible = panel.style.display !== 'none';
+    panel.style.display = visible ? 'none' : 'block';
+    if (!visible) renderSelectPublishList();
+}
+
+function renderSelectPublishList() {
+    const list = document.getElementById('select-publish-list');
+    if (!list || activePieces.length === 0) {
+        if (list) list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);">Keine Fragmente in der aktuellen Sitzung.</div>`;
+        return;
+    }
+    let html = '';
+    activePieces.forEach((p, idx) => {
+        html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px;cursor:pointer;font-size:12px;" 
+                        onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
+            <input type="checkbox" class="publish-checkbox" data-idx="${idx}" checked onchange="updatePublishCount()">
+            ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">` : '🏺'}
+            <span style="flex:1;">${p.name || p.id}</span>
+            <span style="color:var(--text-muted);font-size:10px;">${p.material || '?'}</span>
+        </label>`;
+    });
+    list.innerHTML = html;
+    updatePublishCount();
+}
+
+function selectAllPublish(val) {
+    document.querySelectorAll('.publish-checkbox').forEach(cb => cb.checked = val);
+    updatePublishCount();
+}
+
+function updatePublishCount() {
+    const checked = document.querySelectorAll('.publish-checkbox:checked').length;
+    const countEl = document.getElementById('select-publish-count');
+    if (countEl) countEl.textContent = `${checked} ausgewählt`;
+}
+
+async function publishSelected() {
+    const checkboxes = document.querySelectorAll('.publish-checkbox:checked');
+    const indices = [...checkboxes].map(cb => parseInt(cb.dataset.idx));
+    if (indices.length === 0) { toast('Keine Fragmente ausgewählt', 'info'); return; }
+    
+    if (!sb) initSupabase();
+    
+    if (sb) {
+        try {
+            const rows = indices.map(i => _pieceToRow(activePieces[i])).filter(Boolean);
+            const { error } = await sb.from('fragments').upsert(rows, { onConflict: 'id' });
+            if (error) throw error;
+            toast(currentLang === 'de' ? `☁️ ${rows.length} Fragmente veröffentlicht!` : `☁️ ${rows.length} fragments published!`, 'success');
+            document.getElementById('select-publish-panel').style.display = 'none';
+            renderCloudDB();
+            return;
+        } catch(e) {
+            toast(`Cloud-Fehler: ${e.message}`, 'error');
+        }
+    }
+    // Fallback
+    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+    indices.forEach(i => {
+        const p = activePieces[i];
+        if (p) { cloud[p.id] = { ...p, published_by: displayName || currentUser || 'Anonym', published_at: new Date().toISOString() }; }
+    });
+    localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
+    toast(`${indices.length} Fragmente lokal veröffentlicht`, 'success');
+    document.getElementById('select-publish-panel').style.display = 'none';
+    renderCloudDB();
 }
 
 function renderGroups() {
