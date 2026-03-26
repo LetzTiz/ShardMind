@@ -3921,6 +3921,11 @@ function saveUserData(data) {
 
 async function syncUserDataToCloud(data) {
     if (!sb || !currentUser) return;
+    // Only sync if user has a valid Supabase auth session (not local-only accounts)
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) return;
+    } catch(e) { return; }
     try {
         // Remove thumbnail data URLs to save space (they're huge base64 strings)
         const cleanData = JSON.parse(JSON.stringify(data));
@@ -3944,6 +3949,11 @@ async function syncUserDataToCloud(data) {
 
 async function loadUserDataFromCloud() {
     if (!sb || !currentUser) return null;
+    // Only load if user has a valid Supabase auth session
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) return null;
+    } catch(e) { return null; }
     try {
         const { data, error } = await sb.from('user_collections').select('data, updated_at').eq('user_email', currentUser).single();
         if (!error && data) return data;
@@ -3953,6 +3963,11 @@ async function loadUserDataFromCloud() {
 
 async function shareCollectionWith(targetUsername) {
     if (!sb || !currentUser) { toast('Nicht eingeloggt', 'error'); return; }
+    // Require valid Supabase session for sharing
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) { toast(currentLang === 'de' ? 'Bitte mit E-Mail registrieren für Cloud-Funktionen' : 'Please register with email for cloud features', 'warning'); return; }
+    } catch(e) { toast('Auth-Fehler', 'error'); return; }
     try {
         // Look up target email from user_collections by display_name
         const { data: target } = await sb.from('user_collections').select('user_email').ilike('display_name', targetUsername).single();
@@ -5234,8 +5249,8 @@ async function publishSelected() {
     if (!confirm(confirmMsg)) return;
     
     if (!sb) initSupabase();
-    
-    if (sb) {
+
+    if (sb && await hasSupabaseSession()) {
         try {
             const rows = indices.map(i => {
                 const row = _pieceToRow(activePieces[i]);
@@ -5277,6 +5292,15 @@ function removeSelected() {
 // Cloud DB cache for offline/render
 let _cloudCache = [];
 
+// Check if a valid Supabase auth session exists (not a local-only account)
+async function hasSupabaseSession() {
+    if (!sb) return false;
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        return !!session;
+    } catch(e) { return false; }
+}
+
 function _pieceToRow(piece) {
     const row = {
         id: smIdToUUID(piece.id),
@@ -5314,11 +5338,11 @@ function _pieceToRow(piece) {
 async function publishToCloud(idx) {
     const piece = activePieces[idx];
     if (!piece) return;
-    
+
     // Ensure Supabase is initialized
     if (!sb) initSupabase();
-    
-    if (sb) {
+
+    if (sb && await hasSupabaseSession()) {
         try {
             const row = _pieceToRow(piece);
             // Remove thumbnail if too large (>500KB base64 = ~375KB actual)
@@ -5359,8 +5383,8 @@ async function publishAllToCloud() {
     if (!confirm(confirmMsg)) return;
     
     if (!sb) initSupabase();
-    
-    if (sb) {
+
+    if (sb && await hasSupabaseSession()) {
         try {
             const rows = activePieces.map(p => _pieceToRow(p));
             const { error } = await sb.from('fragments').upsert(rows, { onConflict: 'id' });
@@ -5511,7 +5535,7 @@ async function removeFromCloud(pieceId) {
     const confirmMsg = currentLang === 'de' ? 'Aus Cloud-DB entfernen?' : 'Remove from Cloud DB?';
     if (!confirm(confirmMsg)) return;
     
-    if (sb) {
+    if (sb && await hasSupabaseSession()) {
         try {
             const { error } = await sb.from('fragments').delete().eq('id', pieceId);
             if (!error) {
@@ -5542,7 +5566,7 @@ async function publishDBToCloud() {
         : `Publish ${keys.length} saved fragments?`;
     if (!confirm(confirmMsg)) return;
     
-    if (sb) {
+    if (sb && await hasSupabaseSession()) {
         try {
             const rows = keys.map(k => _pieceToRow(pieces[k]));
             const { error } = await sb.from('fragments').upsert(rows, { onConflict: 'id' });
@@ -5596,8 +5620,8 @@ async function importCloudJSON(file) {
             const imported = JSON.parse(e.target.result);
             const entries = Object.values(imported).filter(v => v && typeof v === 'object' && v.id);
             if (entries.length === 0) { toast('Keine Funde gefunden', 'info'); return; }
-            
-            if (sb) {
+
+            if (sb && await hasSupabaseSession()) {
                 try {
                     const rows = entries.map(p => ({
                         id: smIdToUUID(p.id),
