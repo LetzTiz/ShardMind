@@ -3848,6 +3848,26 @@ function genId() {
     return `SM-${Array.from(arr, b => b.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
 }
 
+// Convert any ShardMind ID (e.g. "SM-A1B2C3D4") to a valid UUID v5-style deterministic hash.
+// Same SM-ID always produces the same UUID, so upsert/onConflict works correctly.
+function smIdToUUID(smId) {
+    const str = String(smId);
+    // Simple deterministic hash → UUID format
+    let h1 = 0x811c9dc5, h2 = 0x811c9dc5, h3 = 0x811c9dc5, h4 = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+        const c = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ c, 0x01000193);
+        h2 = Math.imul(h2 ^ (c + 1), 0x01000193);
+        h3 = Math.imul(h3 ^ (c + 2), 0x01000193);
+        h4 = Math.imul(h4 ^ (c + 3), 0x01000193);
+    }
+    const hex = (v) => (v >>> 0).toString(16).padStart(8, '0');
+    const h = hex(h1) + hex(h2) + hex(h3) + hex(h4);
+    // Format as UUID: 8-4-4-4-12, set version nibble to 5
+    return h.substring(0, 8) + '-' + h.substring(8, 12) + '-5' + h.substring(13, 16) + '-' +
+           ((parseInt(h[16], 16) & 0x3 | 0x8).toString(16)) + h.substring(17, 20) + '-' + h.substring(20, 32);
+}
+
 function getDB() {
     try { return JSON.parse(localStorage.getItem('shardmind_db') || '{}'); } catch { return {}; }
 }
@@ -5259,7 +5279,7 @@ let _cloudCache = [];
 
 function _pieceToRow(piece) {
     const row = {
-        id: piece.id,
+        id: smIdToUUID(piece.id),
         name: piece.name || null,
         material: piece.material || null,
         color_name: piece.color_name || null,
@@ -5281,7 +5301,8 @@ function _pieceToRow(piece) {
         published_by: displayName || currentUser || 'Anonym',
         metadata: {}
     };
-    // Store extra fields in metadata
+    // Store SM-ID and extra fields in metadata
+    row.metadata.sm_id = piece.id;
     const skip = new Set(Object.keys(row));
     skip.add('thumbnailDataUrl_full');
     for (const [k,v] of Object.entries(piece)) {
@@ -5436,7 +5457,7 @@ async function renderCloudDB() {
             <div class="gallery-item-border" style="background:${isDiag ? 'var(--accent)' : '#B0B0B0'};"></div>
             ${thumbHtml}
             <div class="gallery-info">
-                <div class="gallery-id">${(p.name || p.id || '?').substring(0, 20)}</div>
+                <div class="gallery-id">${(p.name || (p.metadata && p.metadata.sm_id) || p.id || '?').substring(0, 20)}</div>
                 <div style="font-size:10px;color:var(--text-muted);">${p.material || '?'} · ${p.color_name || '?'}</div>
                 ${p.excavation ? `<div style="font-size:10px;color:var(--text-muted);">📍 ${p.excavation}</div>` : ''}
                 <div style="font-size:9px;color:var(--text-muted);margin-top:2px;">👤 ${p.published_by || '?'} · ${pubDate}</div>
@@ -5453,7 +5474,7 @@ async function renderCloudDB() {
 }
 
 async function importFromCloud(pieceId) {
-    if (activePieces.find(p => p.id === pieceId)) {
+    if (activePieces.find(p => p.id === pieceId || smIdToUUID(p.id) === pieceId)) {
         toast(currentLang === 'de' ? 'Fragment bereits in der Sitzung' : 'Fragment already in session', 'info');
         return;
     }
@@ -5475,8 +5496,11 @@ async function importFromCloud(pieceId) {
     // Reconstruct thumbnailDataUrl from thumbnail_url if needed
     const imported = { ...piece, ...(piece.metadata || {}) };
     if (piece.thumbnail_url && !imported.thumbnailDataUrl) imported.thumbnailDataUrl = piece.thumbnail_url;
+    // Restore SM-ID from metadata if available, otherwise keep Supabase UUID
+    if (imported.sm_id) imported.id = imported.sm_id;
     delete imported.metadata;
-    
+    delete imported.sm_id;
+
     activePieces.push(imported);
     renderGallery();
     renderGroups();
@@ -5576,7 +5600,7 @@ async function importCloudJSON(file) {
             if (sb) {
                 try {
                     const rows = entries.map(p => ({
-                        id: p.id,
+                        id: smIdToUUID(p.id),
                         name: p.name || null,
                         material: p.material || null,
                         color_name: p.color_name || null,
@@ -5586,7 +5610,7 @@ async function importCloudJSON(file) {
                         site: p.site || null,
                         thumbnail_url: p.thumbnailDataUrl || p.thumbnail_url || null,
                         published_by: p.published_by || currentUser || 'Import',
-                        metadata: p
+                        metadata: { ...p, sm_id: p.id }
                     }));
                     const { error } = await sb.from('fragments').upsert(rows, { onConflict: 'id' });
                     if (!error) {
