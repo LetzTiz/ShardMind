@@ -1884,6 +1884,103 @@
                 </div>
             </div>
             
+            <!-- Thesaurus / Term Suggestions -->
+            <div style="margin-top:24px;">
+                <h3 style="font-size:18px;margin-bottom:16px;color:var(--accent);">📖 <span id="ctx-thesaurus-title">KI-gestützter Thesaurus</span></h3>
+                <div class="feature-explanation">
+                    <p>
+                        <span id="ctx-thesaurus-explain">Merkmale und ihre Bezeichnungen unterscheiden sich je nach Region und Zeitstellung.
+                        Der Thesaurus vereinheitlicht Begriffe verschiedener BearbeiterInnen und schlägt relevante Merkmale
+                        für die gewählte Region/Zeit vor.</span>
+                    </p>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Region / Arbeitsgebiet</label>
+                        <select id="thesaurus-region" style="width:100%;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;"
+                                onchange="updateThesaurusSuggestions()">
+                            <option value="">— Region wählen —</option>
+                            <option value="mitteleuropa">Mitteleuropa</option>
+                            <option value="suedwestdeutschland">Südwestdeutschland</option>
+                            <option value="mitteldeutschland">Mitteldeutschland</option>
+                            <option value="norddeutschland">Norddeutschland</option>
+                            <option value="rheinland">Rheinland</option>
+                            <option value="bayern">Bayern / Süddeutschland</option>
+                            <option value="oesterreich">Österreich</option>
+                            <option value="boehmen">Böhmen / Mähren</option>
+                            <option value="osteuropa">Osteuropa</option>
+                            <option value="mittelmeer">Mittelmeerraum</option>
+                            <option value="vorderasien">Vorderer Orient</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Zeitstellung / Epoche</label>
+                        <select id="thesaurus-period" style="width:100%;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;"
+                                onchange="updateThesaurusSuggestions()">
+                            <option value="">— Zeitstellung wählen —</option>
+                            <option value="neolithikum_frueh">Frühneolithikum (LBK, ~5500–4900 v.Chr.)</option>
+                            <option value="neolithikum_mittel">Mittelneolithikum (Stichbandkeramik, Großgartach, ~4900–4400 v.Chr.)</option>
+                            <option value="neolithikum_jung">Jungneolithikum (Michelsberger Kultur, ~4400–3500 v.Chr.)</option>
+                            <option value="neolithikum_spaet">Spätneolithikum / Endneolithikum (~3500–2200 v.Chr.)</option>
+                            <option value="bronzezeit">Bronzezeit (~2200–800 v.Chr.)</option>
+                            <option value="eisenzeit">Eisenzeit / Hallstatt / Latène (~800–50 v.Chr.)</option>
+                            <option value="roemisch">Römische Kaiserzeit (~50 v.Chr.–400 n.Chr.)</option>
+                            <option value="mittelalter_frueh">Frühmittelalter (~400–1000 n.Chr.)</option>
+                            <option value="mittelalter_hoch">Hoch-/Spätmittelalter (~1000–1500 n.Chr.)</option>
+                            <option value="neuzeit">Neuzeit (~1500+ n.Chr.)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top:12px;">
+                    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Merkmal nachschlagen</label>
+                    <div style="position:relative;">
+                        <input type="text" id="thesaurus-search" placeholder="Begriff eingeben (z.B. Ritzlinie, Knubbe, Schlickbewurf...)"
+                               style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;"
+                               oninput="searchThesaurus(this.value)">
+                        <div id="thesaurus-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);max-height:200px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.2);"></div>
+                    </div>
+                </div>
+                <div id="thesaurus-results" style="margin-top:12px;"></div>
+            </div>
+
+            <!-- Quellenangaben / Source Citations -->
+            <div style="margin-top:24px;">
+                <h3 style="font-size:18px;margin-bottom:16px;color:var(--accent);">📚 <span id="ctx-sources-title">Quellenangaben & Literatur</span></h3>
+                <div class="feature-explanation">
+                    <p>
+                        <span id="ctx-sources-explain">Transparenz ist beim wissenschaftlichen Arbeiten entscheidend:
+                        Woher stammt die zeitliche Zuordnung? Auf welche Formenklassifizierung wird Bezug genommen?
+                        Wo wurden ähnliche Formen publiziert? Diese Felder ermöglichen die strukturierte Dokumentation von Quellen.</span>
+                    </p>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Datierungsgrundlage</label>
+                        <textarea id="ctx-dating-source" rows="2" placeholder="z.B. Meier-Arendt 1966, Taf. 12; 14C-Datum: 5200±40 BP (KIA-12345)"
+                                  style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;resize:vertical;"
+                                  onchange="updateContextData()"></textarea>
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Formenklassifizierung</label>
+                        <textarea id="ctx-form-classification" rows="2" placeholder="z.B. Lüning 1967, Typ 4b; PBF-Typ nach Ruckdeschel"
+                                  style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;resize:vertical;"
+                                  onchange="updateContextData()"></textarea>
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Vergleichsfunde / Parallelen</label>
+                        <textarea id="ctx-comparable-finds" rows="2" placeholder="z.B. Ähnliche Formen in Schwanfeld (Lüning 1991, Taf. 54,12)"
+                                  style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;resize:vertical;"
+                                  onchange="updateContextData()"></textarea>
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Weitere Literatur / Anmerkungen</label>
+                        <textarea id="ctx-literature" rows="2" placeholder="z.B. Müller 2005, S. 123-125; Grabungsbericht 2024/15"
+                                  style="width:100%;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:13px;resize:vertical;"
+                                  onchange="updateContextData()"></textarea>
+                    </div>
+                </div>
+            </div>
+
             <div style="margin-top:20px;display:flex;gap:12px;">
                 <button class="btn btn-primary" onclick="saveContextToDB()">💾 Kontext speichern</button>
                 <button class="btn btn-secondary" onclick="exportContextPDF()">📄 Als PDF exportieren</button>
@@ -2102,6 +2199,24 @@
 
                 <!-- Settings & reference -->
                 <div style="display:flex;flex-direction:column;gap:16px;">
+                    <!-- Profile image upload -->
+                    <div class="card" style="padding:16px;">
+                        <h4 style="font-size:14px;color:var(--text-secondary);margin-bottom:12px;">📷 Profilbild laden</h4>
+                        <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">
+                            Händische Zeichnung, Scan oder Laserscanner-Bild als Vorlage auf die Zeichenfläche laden.
+                        </p>
+                        <label class="btn btn-secondary btn-full" style="cursor:pointer;margin-bottom:6px;font-size:12px;">
+                            📂 Bild/Zeichnung laden (PNG, JPG, SVG)
+                            <input type="file" accept="image/*,.svg" style="display:none;" onchange="loadProfileImage(this.files[0])">
+                        </label>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <label style="font-size:11px;color:var(--text-muted);">Deckkraft:</label>
+                            <input type="range" id="profile-overlay-opacity" min="10" max="100" value="40" style="flex:1;"
+                                   oninput="updateProfileOverlayOpacity(this.value)">
+                            <span id="profile-overlay-opacity-val" style="font-size:10px;color:var(--text-muted);min-width:28px;">40%</span>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="removeProfileOverlay()" style="margin-top:6px;font-size:11px;width:100%;">🗑️ Vorlage entfernen</button>
+                    </div>
                     <div class="card" style="padding:16px;">
                         <h4 style="font-size:14px;color:var(--text-secondary);margin-bottom:12px;">📐 Maßstab</h4>
                         <div style="margin-bottom:8px;">
@@ -2590,7 +2705,43 @@
                     → JSON-Dateien können zwischen Geräten ausgetauscht werden
                 </span>
             </div>
-            
+
+            <!-- Bulk import of published ceramics -->
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:16px;">
+                <h4 style="font-size:14px;margin-bottom:8px;color:var(--accent);">📚 Publizierte Keramik importieren (Massenimport)</h4>
+                <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">
+                    Große Mengen bereits publizierter Keramik als Datenbasis einpflegen. Bilder aus PDFs oder Ordnern laden —
+                    ShardMind extrahiert automatisch Merkmale, Formen und ordnet zeitlich/kulturell zu.
+                </p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                    <label class="btn btn-primary" style="cursor:pointer;font-size:12px;padding:6px 14px;">
+                        📂 Bilder-Ordner laden (Mehrfachauswahl)
+                        <input type="file" accept="image/*" multiple style="display:none;" onchange="bulkImportImages(this.files)">
+                    </label>
+                    <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:6px 14px;">
+                        📄 PDF mit Keramikabbildungen
+                        <input type="file" accept=".pdf" style="display:none;" onchange="bulkImportPDF(this.files[0])">
+                    </label>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                    <input type="text" id="bulk-import-source" placeholder="Quelle (z.B. Meier-Arendt 1966)"
+                           style="padding:6px 10px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                    <input type="text" id="bulk-import-site" placeholder="Fundort (z.B. Köln-Lindenthal)"
+                           style="padding:6px 10px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                </div>
+                <div id="bulk-import-progress" style="display:none;">
+                    <div style="background:var(--bg-secondary);border-radius:4px;overflow:hidden;height:6px;margin-bottom:4px;">
+                        <div id="bulk-import-bar" style="height:100%;background:var(--accent);width:0%;transition:width 0.3s;"></div>
+                    </div>
+                    <span id="bulk-import-status" style="font-size:11px;color:var(--text-muted);">Verarbeite...</span>
+                </div>
+                <p style="font-size:10px;color:var(--text-muted);margin-top:6px;">
+                    📖 Tipp: Für automatische Bildextraktion aus PDFs siehe
+                    <a href="https://doi.org/10.1016/j.jas.2025.106244" target="_blank" style="color:var(--accent);">Uni Mainz Software (DOI)</a>
+                    — die extrahierten Bilder können hier direkt importiert werden.
+                </p>
+            </div>
+
             <!-- Search -->
             <div style="margin-bottom:12px;">
                 <input type="text" id="cloud-search" placeholder="🔍 Suche nach ID, Material, Grabung, Nutzer..." 
@@ -2970,6 +3121,7 @@
                     Feedback, Testberichte und Kooperationsanfragen gerne an das Team über die FIRST LEGO League oder direkt per E-Mail.
                 </p>
             </div>
+
         </div>
         
         <!-- TAB: Help -->
@@ -3688,8 +3840,12 @@ function hashPassword(pw) {
 }
 
 function genId() {
-    const hex = [...Array(8)].map(() => Math.floor(Math.random()*16).toString(16)).join('').toUpperCase();
-    return `SM-${hex}`;
+    if (crypto && crypto.randomUUID) {
+        return `SM-${crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase()}`;
+    }
+    const arr = new Uint8Array(6);
+    (crypto || window.crypto).getRandomValues(arr);
+    return `SM-${Array.from(arr, b => b.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
 }
 
 function getDB() {
@@ -4973,6 +5129,22 @@ function renderGallery() {
                     </div>
                 </details>
             </div>
+            <details style="margin-top:4px;padding:0 8px;cursor:pointer;">
+                <summary style="font-size:10px;color:var(--text-muted);padding:2px 0;">📚 ${currentLang === 'de' ? 'Quellenangaben & Literatur' : 'Source Citations & References'}</summary>
+                <div style="margin-top:4px;">
+                    <textarea placeholder="${currentLang === 'de' ? 'z.B. Meier-Arendt 1966, Taf. 12,3; Lüning 1967, Typ 4b' : 'e.g. Meier-Arendt 1966, Pl. 12,3'}"
+                              style="width:100%;padding:4px 6px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);resize:vertical;min-height:36px;"
+                              onchange="setPieceField(${idx}, 'source_citation', this.value)">${(p.source_citation || '').replace(/</g, '&lt;')}</textarea>
+                    <input type="text" placeholder="${currentLang === 'de' ? 'Formenklassifizierung (z.B. Lüning 1967)' : 'Form classification (e.g. Lüning 1967)'}"
+                           value="${(p.form_classification || '').replace(/"/g, '&quot;')}"
+                           onchange="setPieceField(${idx}, 'form_classification', this.value)"
+                           style="width:100%;padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);margin-top:4px;">
+                    <input type="text" placeholder="${currentLang === 'de' ? 'Vergleichsfunde (Ort, Publikation)' : 'Comparable finds (site, publication)'}"
+                           value="${(p.comparable_finds || '').replace(/"/g, '&quot;')}"
+                           onchange="setPieceField(${idx}, 'comparable_finds', this.value)"
+                           style="width:100%;padding:3px 5px;font-size:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);margin-top:4px;">
+                </div>
+            </details>
             <div style="display:flex;gap:4px;margin-top:6px;padding:0 8px 8px;">
                 <button onclick="removePiece(${idx})" class="btn btn-sm" style="flex:1;font-size:10px;padding:4px 8px;background:transparent;color:#ef4444;border:1px solid #ef4444;border-radius:6px;" title="${currentLang === 'de' ? 'Fragment entfernen' : 'Remove fragment'}">🗑️ ${currentLang === 'de' ? 'Entfernen' : 'Remove'}</button>
                 <button onclick="publishToCloud(${idx})" class="btn btn-sm" style="flex:1;font-size:10px;padding:4px 8px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;" title="${currentLang === 'de' ? 'In Cloud-DB veröffentlichen' : 'Publish to Cloud DB'}">☁️ ${currentLang === 'de' ? 'Teilen' : 'Share'}</button>
@@ -5435,6 +5607,142 @@ async function importCloudJSON(file) {
         }
     };
     reader.readAsText(file);
+}
+
+// Bulk import: multiple images of published ceramics
+async function bulkImportImages(files) {
+    if (!files || files.length === 0) return;
+    const source = document.getElementById('bulk-import-source')?.value || '';
+    const site = document.getElementById('bulk-import-site')?.value || '';
+    const progressDiv = document.getElementById('bulk-import-progress');
+    const bar = document.getElementById('bulk-import-bar');
+    const status = document.getElementById('bulk-import-status');
+    if (progressDiv) progressDiv.style.display = 'block';
+
+    let imported = 0;
+    const total = files.length;
+
+    for (let i = 0; i < total; i++) {
+        const file = files[i];
+        if (!file.type.startsWith('image/')) continue;
+        if (bar) bar.style.width = `${((i + 1) / total) * 100}%`;
+        if (status) status.textContent = `Verarbeite ${i + 1}/${total}: ${file.name}`;
+
+        try {
+            if (pyReady) {
+                const fileData = await readFileAsArrayBuffer(file);
+                const uint8 = new Uint8Array(fileData);
+                const result = await Promise.race([
+                    callPyAnalysis(uint8, 500, 'single', 0.5, ''),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 60000))
+                ]);
+                if (result && result.length > 0) {
+                    result.forEach(p => {
+                        p.source_citation = source;
+                        p.comparable_finds = site;
+                        p.material_type = 'keramik';
+                        p.imported_from = file.name;
+                    });
+                    activePieces.push(...result);
+                    imported += result.length;
+                }
+            } else {
+                // Fallback: create simple entry from image without Python analysis
+                const dataUrl = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+                const piece = {
+                    id: genId(),
+                    name: file.name.replace(/\.[^.]+$/, ''),
+                    material: 'Keramik',
+                    material_type: 'keramik',
+                    thumbnailDataUrl: dataUrl,
+                    source_citation: source,
+                    comparable_finds: site,
+                    imported_from: file.name,
+                    published_at: new Date().toISOString()
+                };
+                activePieces.push(piece);
+                imported++;
+            }
+        } catch (err) {
+            console.warn(`[ShardMind] Bulk import error for ${file.name}:`, err.message);
+        }
+    }
+
+    if (status) status.textContent = currentLang === 'de'
+        ? `Fertig: ${imported} Fragmente aus ${total} Bildern importiert`
+        : `Done: ${imported} fragments from ${total} images imported`;
+    renderGallery();
+    renderGroups();
+    toast(currentLang === 'de'
+        ? `📚 ${imported} Fragmente importiert${source ? ` (Quelle: ${source})` : ''}`
+        : `📚 ${imported} fragments imported${source ? ` (source: ${source})` : ''}`, 'success');
+}
+
+// Bulk import: PDF with ceramic images (extract pages as images)
+async function bulkImportPDF(file) {
+    if (!file) return;
+    const progressDiv = document.getElementById('bulk-import-progress');
+    const bar = document.getElementById('bulk-import-bar');
+    const status = document.getElementById('bulk-import-status');
+    if (progressDiv) progressDiv.style.display = 'block';
+    if (status) status.textContent = 'PDF wird geladen...';
+
+    try {
+        // Use pdf.js if available, otherwise try canvas extraction
+        if (!window.pdfjsLib) {
+            // Try to load pdf.js dynamically
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            document.head.appendChild(script);
+            await new Promise((resolve, reject) => {
+                script.onload = resolve;
+                script.onerror = () => reject(new Error('PDF.js konnte nicht geladen werden'));
+                setTimeout(reject, 15000);
+            });
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const totalPages = pdf.numPages;
+        const source = document.getElementById('bulk-import-source')?.value || file.name;
+        const site = document.getElementById('bulk-import-site')?.value || '';
+
+        if (status) status.textContent = `PDF mit ${totalPages} Seiten — extrahiere Bilder...`;
+
+        const imageFiles = [];
+        for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+            if (bar) bar.style.width = `${(pageNum / totalPages) * 50}%`;
+            if (status) status.textContent = `Seite ${pageNum}/${totalPages} wird gerendert...`;
+
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 2.0 });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport }).promise;
+
+            // Convert page to blob
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const imgFile = new File([blob], `${file.name}_seite_${pageNum}.png`, { type: 'image/png' });
+            imageFiles.push(imgFile);
+        }
+
+        if (status) status.textContent = `${imageFiles.length} Seiten extrahiert — analysiere Fragmente...`;
+        // Now process all page images through bulk import
+        await bulkImportImages(imageFiles);
+    } catch (err) {
+        console.error('[ShardMind] PDF import error:', err);
+        toast(currentLang === 'de'
+            ? `PDF-Import-Fehler: ${err.message}. Tipp: Bilder vorher aus dem PDF extrahieren und als Bilddateien laden.`
+            : `PDF import error: ${err.message}. Tip: Extract images from PDF first and load as image files.`, 'error');
+        if (status) status.textContent = 'Fehler beim PDF-Import';
+    }
 }
 
 function toggleSelectPublish() {
@@ -8487,6 +8795,10 @@ function updateContextData() {
     contextData.surface = document.getElementById('ctx-surface')?.value || '';
     contextData.wallthick = document.getElementById('ctx-wallthick')?.value || '';
     contextData.technique = document.getElementById('ctx-technique')?.value || '';
+    contextData.dating_source = document.getElementById('ctx-dating-source')?.value || '';
+    contextData.form_classification = document.getElementById('ctx-form-classification')?.value || '';
+    contextData.comparable_finds = document.getElementById('ctx-comparable-finds')?.value || '';
+    contextData.literature = document.getElementById('ctx-literature')?.value || '';
 }
 
 function setContextClosed(val, btn) {
@@ -8520,6 +8832,13 @@ function loadContextFromDB() {
             const el = document.getElementById('ctx-' + f);
             if (el && contextData[f]) el.value = contextData[f];
         });
+        // Hyphenated ID fields (ID uses hyphens, contextData uses underscores)
+        const hyphenFields = [['dating_source', 'dating-source'], ['form_classification', 'form-classification'],
+                              ['comparable_finds', 'comparable-finds'], ['literature', 'literature']];
+        hyphenFields.forEach(([key, id]) => {
+            const el = document.getElementById('ctx-' + id);
+            if (el && contextData[key]) el.value = contextData[key];
+        });
         // Set closed state
         if (contextData.closed) {
             ['yes', 'no', 'unknown'].forEach(v => {
@@ -8529,6 +8848,148 @@ function loadContextFromDB() {
         }
     }
 }
+
+// ============= THESAURUS =============
+const THESAURUS_DB = [
+    // Verzierungstechniken
+    { term: 'Ritzlinie', synonyms: ['Ritzverzierung', 'Einritzung', 'Ritzdekor', 'incised line'], category: 'Verzierung', periods: ['neolithikum_frueh','neolithikum_mittel','neolithikum_jung','bronzezeit'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland','bayern'], desc: 'Mit spitzem Werkzeug in den weichen Ton geritzte Linie. Typisch für LBK und Stichbandkeramik.' },
+    { term: 'Stich', synonyms: ['Einstich', 'Stichverzierung', 'Punktstich', 'puncture'], category: 'Verzierung', periods: ['neolithikum_frueh','neolithikum_mittel'], regions: ['mitteleuropa','mitteldeutschland','boehmen'], desc: 'Einzelner oder gereihter Einstich mit Griffel oder Knochen.' },
+    { term: 'Knubbe', synonyms: ['Warze', 'Buckel', 'Knubbenhenkel', 'knob', 'lug'], category: 'Verzierung', periods: ['neolithikum_frueh','neolithikum_mittel','neolithikum_jung','bronzezeit'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland','bayern','oesterreich'], desc: 'Aufgesetzte oder aus der Wandung herausgedrückte plastische Erhebung. Häufig funktional (Griffknubbe).' },
+    { term: 'Schlickbewurf', synonyms: ['Schlickrauhung', 'Schlickauftrag', 'roughcast', 'slip coating'], category: 'Oberfläche', periods: ['neolithikum_frueh','neolithikum_mittel','neolithikum_jung'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland'], desc: 'Aufgetragene Tonschlämme auf die Außenseite. Oft auf Vorratsgefäßen der LBK/Stichbandkeramik.' },
+    { term: 'Gurtfurche', synonyms: ['Gurtung', 'Horizontalfurche', 'girdle groove'], category: 'Verzierung', periods: ['neolithikum_frueh'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland','bayern'], desc: 'Umlaufende horizontale Furche am Gefäßkörper. Chronologisch relevant für die LBK-Phasenabfolge.' },
+    { term: 'Fingernageleindrücke', synonyms: ['Fingertupfen', 'Fingerzier', 'nail impression', 'fingernail decoration'], category: 'Verzierung', periods: ['neolithikum_frueh','neolithikum_mittel','neolithikum_jung','bronzezeit','eisenzeit'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland','bayern','oesterreich','boehmen'], desc: 'Eindrücke von Fingernägeln oder Fingerkuppen in den weichen Ton.' },
+    { term: 'Kammstrich', synonyms: ['Kammstrichverzierung', 'Kammzier', 'comb-stamped', 'combed ware'], category: 'Verzierung', periods: ['neolithikum_mittel','neolithikum_jung','eisenzeit','roemisch'], regions: ['mitteleuropa','norddeutschland','mitteldeutschland','rheinland'], desc: 'Parallele Rillen/Furchen, eingetragen mit einem kammartigen Gerät.' },
+    { term: 'Leiste', synonyms: ['Zierleiste', 'Tonleiste', 'appliqué strip', 'applied cordon'], category: 'Verzierung', periods: ['neolithikum_mittel','neolithikum_jung','bronzezeit'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','bayern','oesterreich'], desc: 'Aufgelegter Tonstreifen/Tonwulst. Kann mit Eindrücken verziert sein (Kerbleiste).' },
+    { term: 'Bandhenkel', synonyms: ['Bandöse', 'Henkelband', 'strap handle'], category: 'Gefäßteil', periods: ['neolithikum_frueh','neolithikum_mittel','bronzezeit','roemisch'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland','bayern','oesterreich','mittelmeer'], desc: 'Breiter, bandförmiger Henkel. Querschnitt flach-oval.' },
+    { term: 'Öse', synonyms: ['Tunnelöse', 'Durchbohrung', 'Henkelöse', 'lug', 'perforate lug'], category: 'Gefäßteil', periods: ['neolithikum_frueh','neolithikum_mittel','neolithikum_jung'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','bayern','oesterreich','boehmen'], desc: 'Horizontale oder vertikale Durchbohrung, oft auf Knubben.' },
+    // Gefäßformen
+    { term: 'Kumpf', synonyms: ['Kumme', 'Kumpfform', 'open bowl'], category: 'Gefäßform', periods: ['neolithikum_frueh','neolithikum_mittel','neolithikum_jung'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland','bayern','oesterreich','boehmen'], desc: 'Offenes, bauchiges Gefäß ohne Hals. Standardform der LBK.' },
+    { term: 'Kümpchen', synonyms: ['kleiner Kumpf', 'Miniaturkumpf', 'small bowl'], category: 'Gefäßform', periods: ['neolithikum_frueh','neolithikum_mittel'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland','bayern'], desc: 'Kleines kumpfförmiges Gefäß. Häufig in der LBK.' },
+    { term: 'Flasche', synonyms: ['Enghalsgefäß', 'Halsflasche', 'bottle'], category: 'Gefäßform', periods: ['neolithikum_frueh','neolithikum_mittel','neolithikum_jung','bronzezeit','eisenzeit','roemisch'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland','bayern','oesterreich','mittelmeer','vorderasien'], desc: 'Gefäß mit engem Hals (Mündungsdurchmesser deutlich kleiner als Bauchdurchmesser).' },
+    { term: 'Vorratsgefäß', synonyms: ['Großgefäß', 'Vorratskeramik', 'storage vessel', 'Pithos'], category: 'Gefäßform', periods: ['neolithikum_frueh','neolithikum_mittel','neolithikum_jung','bronzezeit','eisenzeit','roemisch','mittelalter_hoch'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland','bayern','oesterreich','boehmen','mittelmeer','vorderasien'], desc: 'Großes Gefäß zur Vorratshaltung. Oft dickwandig, manchmal mit Schlickbewurf.' },
+    { term: 'Schale', synonyms: ['Schüssel', 'flache Schale', 'bowl', 'dish'], category: 'Gefäßform', periods: ['neolithikum_frueh','neolithikum_mittel','neolithikum_jung','bronzezeit','eisenzeit','roemisch','mittelalter_hoch','neuzeit'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland','bayern','oesterreich','boehmen','mittelmeer','vorderasien'], desc: 'Flaches, offenes Gefäß. Höhe weniger als Hälfte des Durchmessers.' },
+    { term: 'Becher', synonyms: ['Trinkbecher', 'Becherform', 'beaker', 'cup'], category: 'Gefäßform', periods: ['neolithikum_spaet','bronzezeit','eisenzeit','roemisch','mittelalter_hoch','neuzeit'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','norddeutschland','rheinland','bayern','oesterreich','boehmen'], desc: 'Hohes Trinkgefäß. Typisch für die Glockenbecherkultur und Schnurkeramik.' },
+    // Materialbestimmung
+    { term: 'Terra Sigillata', synonyms: ['Sigillata', 'TS', 'Samian ware', 'Arretina'], category: 'Warenart', periods: ['roemisch'], regions: ['mitteleuropa','suedwestdeutschland','rheinland','bayern','oesterreich','mittelmeer'], desc: 'Römische Feinkeramik mit rotem Glanztonüberzug. Leitform der römischen Kaiserzeit.' },
+    { term: 'Irdenware', synonyms: ['Gebrauchskeramik', 'Tonware', 'earthenware'], category: 'Warenart', periods: ['mittelalter_frueh','mittelalter_hoch','neuzeit'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','norddeutschland','rheinland','bayern','oesterreich'], desc: 'Niedrig gebrannte, poröse Keramik. Standard-Gebrauchskeramik des Mittelalters.' },
+    { term: 'Steinzeug', synonyms: ['Stoneware', 'Hartkeramik'], category: 'Warenart', periods: ['mittelalter_hoch','neuzeit'], regions: ['mitteleuropa','rheinland','mitteldeutschland','norddeutschland'], desc: 'Hochgebrannte (>1200°C), wasserundurchlässige Keramik. Ab dem 12./13. Jh.' },
+    { term: 'Schamotte', synonyms: ['Schamottemagerung', 'grog temper', 'crushed ceramic temper'], category: 'Magerung', periods: ['neolithikum_frueh','neolithikum_mittel','neolithikum_jung','bronzezeit'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','rheinland','bayern','oesterreich','boehmen'], desc: 'Zerstoßene, gebrannte Keramik als Magerungszuschlag. Häufig in der LBK.' },
+    { term: 'Quarzmagerung', synonyms: ['Quarzsand', 'Sandmagerung', 'quartz temper'], category: 'Magerung', periods: ['neolithikum_frueh','neolithikum_mittel','neolithikum_jung','bronzezeit','eisenzeit'], regions: ['mitteleuropa','suedwestdeutschland','mitteldeutschland','norddeutschland','rheinland','bayern','oesterreich','boehmen','osteuropa'], desc: 'Quarzsand oder zerbrochener Quarz als Magerung.' },
+];
+
+function updateThesaurusSuggestions() {
+    const region = document.getElementById('thesaurus-region')?.value || '';
+    const period = document.getElementById('thesaurus-period')?.value || '';
+    const container = document.getElementById('thesaurus-results');
+    if (!container) return;
+
+    if (!region && !period) {
+        container.innerHTML = '<p style="font-size:12px;color:var(--text-muted);">Region und/oder Zeitstellung wählen für relevante Vorschläge.</p>';
+        return;
+    }
+
+    const relevant = THESAURUS_DB.filter(entry => {
+        const regionMatch = !region || entry.regions.includes(region);
+        const periodMatch = !period || entry.periods.includes(period);
+        return regionMatch && periodMatch;
+    });
+
+    if (relevant.length === 0) {
+        container.innerHTML = '<p style="font-size:12px;color:var(--text-muted);">Keine Einträge für diese Kombination.</p>';
+        return;
+    }
+
+    const byCategory = {};
+    relevant.forEach(e => {
+        if (!byCategory[e.category]) byCategory[e.category] = [];
+        byCategory[e.category].push(e);
+    });
+
+    let html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+    for (const [cat, entries] of Object.entries(byCategory)) {
+        html += `<div style="flex:1;min-width:220px;background:var(--bg-secondary);border-radius:var(--radius);padding:12px;margin-bottom:8px;">`;
+        html += `<h4 style="font-size:13px;color:var(--accent);margin-bottom:8px;">${cat}</h4>`;
+        entries.forEach(e => {
+            html += `<div style="margin-bottom:6px;cursor:pointer;padding:4px 8px;border-radius:4px;transition:background 0.2s;"
+                          onmouseover="this.style.background='var(--bg-card)'" onmouseout="this.style.background='transparent'"
+                          onclick="showThesaurusDetail('${e.term.replace(/'/g, "\\'")}')">
+                <span style="font-size:12px;font-weight:600;color:var(--text-primary);">${e.term}</span>
+                <span style="font-size:10px;color:var(--text-muted);margin-left:4px;">(${e.synonyms.slice(0, 2).join(', ')})</span>
+            </div>`;
+        });
+        html += '</div>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function searchThesaurus(query) {
+    const sugDiv = document.getElementById('thesaurus-suggestions');
+    if (!sugDiv || !query || query.length < 2) {
+        if (sugDiv) sugDiv.style.display = 'none';
+        return;
+    }
+    const q = query.toLowerCase();
+    const matches = THESAURUS_DB.filter(e =>
+        e.term.toLowerCase().includes(q) ||
+        e.synonyms.some(s => s.toLowerCase().includes(q)) ||
+        e.desc.toLowerCase().includes(q)
+    ).slice(0, 10);
+
+    if (matches.length === 0) {
+        sugDiv.style.display = 'none';
+        return;
+    }
+
+    sugDiv.style.display = 'block';
+    sugDiv.innerHTML = matches.map(e =>
+        `<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px;"
+              onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'"
+              onclick="showThesaurusDetail('${e.term.replace(/'/g, "\\'")}');document.getElementById('thesaurus-suggestions').style.display='none';">
+            <strong>${e.term}</strong> <span style="color:var(--text-muted);">(${e.category})</span>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${e.synonyms.join(', ')}</div>
+        </div>`
+    ).join('');
+}
+
+function showThesaurusDetail(term) {
+    const entry = THESAURUS_DB.find(e => e.term === term);
+    if (!entry) return;
+    const container = document.getElementById('thesaurus-results');
+    if (!container) return;
+
+    const periodLabels = {
+        'neolithikum_frueh': 'Frühneolithikum', 'neolithikum_mittel': 'Mittelneolithikum',
+        'neolithikum_jung': 'Jungneolithikum', 'neolithikum_spaet': 'Spätneolithikum',
+        'bronzezeit': 'Bronzezeit', 'eisenzeit': 'Eisenzeit', 'roemisch': 'Röm. Kaiserzeit',
+        'mittelalter_frueh': 'Frühmittelalter', 'mittelalter_hoch': 'Hoch-/Spätmittelalter', 'neuzeit': 'Neuzeit'
+    };
+
+    container.innerHTML = `
+        <div class="card" style="padding:16px;border-left:3px solid var(--accent);">
+            <h4 style="font-size:16px;color:var(--text-primary);margin-bottom:4px;">${entry.term}</h4>
+            <span style="font-size:11px;color:var(--accent);font-weight:600;">${entry.category}</span>
+            <p style="font-size:13px;color:var(--text-secondary);margin-top:8px;line-height:1.5;">${entry.desc}</p>
+            <div style="margin-top:8px;">
+                <span style="font-size:11px;color:var(--text-muted);">Synonyme:</span>
+                <span style="font-size:12px;color:var(--text-secondary);">${entry.synonyms.join(', ')}</span>
+            </div>
+            <div style="margin-top:4px;">
+                <span style="font-size:11px;color:var(--text-muted);">Zeitstellung:</span>
+                <span style="font-size:12px;color:var(--text-secondary);">${entry.periods.map(p => periodLabels[p] || p).join(', ')}</span>
+            </div>
+            <button class="btn btn-sm btn-secondary" style="margin-top:8px;font-size:11px;" onclick="updateThesaurusSuggestions()">← Zurück zur Übersicht</button>
+        </div>`;
+}
+
+// Close thesaurus suggestions on click outside
+document.addEventListener('click', function(e) {
+    const sugDiv = document.getElementById('thesaurus-suggestions');
+    const searchInput = document.getElementById('thesaurus-search');
+    if (sugDiv && !sugDiv.contains(e.target) && e.target !== searchInput) {
+        sugDiv.style.display = 'none';
+    }
+});
 
 function exportContextPDF() {
     updateContextData();
@@ -8856,6 +9317,58 @@ function downloadProfile(format) {
         link.click();
     }
     toast('Profilschnitt exportiert!', 'success');
+}
+
+// Profile overlay image (hand drawings / scanner)
+let _profileOverlayImg = null;
+let _profileOverlayOpacity = 0.4;
+
+function loadProfileImage(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            _profileOverlayImg = img;
+            redrawProfileOverlay();
+            toast(currentLang === 'de' ? '📷 Profilbild geladen — wird als Vorlage angezeigt' : '📷 Profile image loaded as overlay', 'success');
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function redrawProfileOverlay() {
+    const canvas = document.getElementById('profile-canvas');
+    if (!canvas || !_profileOverlayImg) return;
+    const ctx = canvas.getContext('2d');
+    // Save current drawing
+    const currentDrawing = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // Draw overlay image behind (clear, draw overlay, then restore drawing on top)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = _profileOverlayOpacity;
+    // Fit image to canvas maintaining aspect ratio
+    const scale = Math.min(canvas.width / _profileOverlayImg.width, canvas.height / _profileOverlayImg.height);
+    const w = _profileOverlayImg.width * scale;
+    const h = _profileOverlayImg.height * scale;
+    const x = (canvas.width - w) / 2;
+    const y = (canvas.height - h) / 2;
+    ctx.drawImage(_profileOverlayImg, x, y, w, h);
+    ctx.globalAlpha = 1.0;
+    // Restore drawing on top
+    ctx.putImageData(currentDrawing, 0, 0);
+}
+
+function updateProfileOverlayOpacity(val) {
+    _profileOverlayOpacity = parseInt(val) / 100;
+    const label = document.getElementById('profile-overlay-opacity-val');
+    if (label) label.textContent = val + '%';
+    if (_profileOverlayImg) redrawProfileOverlay();
+}
+
+function removeProfileOverlay() {
+    _profileOverlayImg = null;
+    toast(currentLang === 'de' ? 'Vorlage entfernt' : 'Overlay removed', 'info');
 }
 
 // CULTURE CLASSIFICATION
