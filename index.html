@@ -4104,6 +4104,7 @@ async function handleLogin(e) {
             if (!error && data.user) {
                 currentUser = email;
                 displayName = data.user.user_metadata?.display_name || username;
+                _supabaseUserId = data.user.id;
                 localStorage.setItem('shardmind_user', currentUser);
                 localStorage.setItem('shardmind_display_name', displayName);
                 migrateLocalData(currentUser);
@@ -4129,6 +4130,7 @@ async function handleLogin(e) {
             if (!error && data.user) {
                 currentUser = data.user.email;
                 displayName = data.user.user_metadata?.display_name || username.split('@')[0];
+                _supabaseUserId = data.user.id;
                 localStorage.setItem('shardmind_user', currentUser);
                 localStorage.setItem('shardmind_display_name', displayName);
                 // Save mapping for next time
@@ -5251,6 +5253,7 @@ async function publishSelected() {
     if (!sb) initSupabase();
 
     if (sb && await hasSupabaseSession()) {
+        await ensureSupabaseUserId();
         try {
             const rows = indices.map(i => {
                 const row = _pieceToRow(activePieces[i]);
@@ -5293,12 +5296,25 @@ function removeSelected() {
 let _cloudCache = [];
 
 // Check if a valid Supabase auth session exists (not a local-only account)
-async function hasSupabaseSession() {
-    if (!sb) return false;
+// Returns the session object if valid, null otherwise
+async function getSupabaseSession() {
+    if (!sb) return null;
     try {
         const { data: { session } } = await sb.auth.getSession();
-        return !!session;
-    } catch(e) { return false; }
+        return session || null;
+    } catch(e) { return null; }
+}
+async function hasSupabaseSession() {
+    return !!(await getSupabaseSession());
+}
+
+// Cache the Supabase user UUID so _pieceToRow can use it synchronously
+let _supabaseUserId = null;
+async function ensureSupabaseUserId() {
+    if (_supabaseUserId) return _supabaseUserId;
+    const session = await getSupabaseSession();
+    if (session?.user?.id) _supabaseUserId = session.user.id;
+    return _supabaseUserId;
 }
 
 function _pieceToRow(piece) {
@@ -5322,11 +5338,12 @@ function _pieceToRow(piece) {
         excavation: document.getElementById('context-excavation')?.value || null,
         site: document.getElementById('context-site')?.value || null,
         thumbnail_url: piece.thumbnailDataUrl || null,
-        published_by: displayName || currentUser || 'Anonym',
+        published_by: _supabaseUserId || null,
         metadata: {}
     };
-    // Store SM-ID and extra fields in metadata
+    // Store SM-ID, display name, and extra fields in metadata
     row.metadata.sm_id = piece.id;
+    row.metadata.display_name = displayName || currentUser || 'Anonym';
     const skip = new Set(Object.keys(row));
     skip.add('thumbnailDataUrl_full');
     for (const [k,v] of Object.entries(piece)) {
@@ -5343,6 +5360,7 @@ async function publishToCloud(idx) {
     if (!sb) initSupabase();
 
     if (sb && await hasSupabaseSession()) {
+        await ensureSupabaseUserId();
         try {
             const row = _pieceToRow(piece);
             // Remove thumbnail if too large (>500KB base64 = ~375KB actual)
@@ -5385,6 +5403,7 @@ async function publishAllToCloud() {
     if (!sb) initSupabase();
 
     if (sb && await hasSupabaseSession()) {
+        await ensureSupabaseUserId();
         try {
             const rows = activePieces.map(p => _pieceToRow(p));
             const { error } = await sb.from('fragments').upsert(rows, { onConflict: 'id' });
@@ -5421,7 +5440,7 @@ async function renderCloudDB() {
         try {
             let query = sb.from('fragments').select('*').order('published_at', { ascending: false }).limit(300);
             if (searchVal) {
-                query = query.or(`name.ilike.%${searchVal}%,material.ilike.%${searchVal}%,excavation.ilike.%${searchVal}%,site.ilike.%${searchVal}%,published_by.ilike.%${searchVal}%,id.ilike.%${searchVal}%`);
+                query = query.or(`name.ilike.%${searchVal}%,material.ilike.%${searchVal}%,excavation.ilike.%${searchVal}%,site.ilike.%${searchVal}%,id.ilike.%${searchVal}%`);
             }
             const { data, error } = await query;
             if (!error && data) {
@@ -5484,7 +5503,7 @@ async function renderCloudDB() {
                 <div class="gallery-id">${(p.name || (p.metadata && p.metadata.sm_id) || p.id || '?').substring(0, 20)}</div>
                 <div style="font-size:10px;color:var(--text-muted);">${p.material || '?'} · ${p.color_name || '?'}</div>
                 ${p.excavation ? `<div style="font-size:10px;color:var(--text-muted);">📍 ${p.excavation}</div>` : ''}
-                <div style="font-size:9px;color:var(--text-muted);margin-top:2px;">👤 ${p.published_by || '?'} · ${pubDate}</div>
+                <div style="font-size:9px;color:var(--text-muted);margin-top:2px;">👤 ${(p.metadata && p.metadata.display_name) || p.published_by || '?'} · ${pubDate}</div>
             </div>
             <div style="padding:4px 8px 8px;display:flex;gap:4px;">
                 <button onclick="importFromCloud('${p.id}')" class="btn btn-sm" style="flex:1;font-size:9px;padding:3px 6px;background:var(--accent);color:white;border:none;border-radius:6px;">📥 ${currentLang === 'de' ? 'Importieren' : 'Import'}</button>
@@ -5567,6 +5586,7 @@ async function publishDBToCloud() {
     if (!confirm(confirmMsg)) return;
     
     if (sb && await hasSupabaseSession()) {
+        await ensureSupabaseUserId();
         try {
             const rows = keys.map(k => _pieceToRow(pieces[k]));
             const { error } = await sb.from('fragments').upsert(rows, { onConflict: 'id' });
@@ -5622,6 +5642,7 @@ async function importCloudJSON(file) {
             if (entries.length === 0) { toast('Keine Funde gefunden', 'info'); return; }
 
             if (sb && await hasSupabaseSession()) {
+                await ensureSupabaseUserId();
                 try {
                     const rows = entries.map(p => ({
                         id: smIdToUUID(p.id),
@@ -5633,8 +5654,8 @@ async function importCloudJSON(file) {
                         excavation: p.excavation || null,
                         site: p.site || null,
                         thumbnail_url: p.thumbnailDataUrl || p.thumbnail_url || null,
-                        published_by: p.published_by || currentUser || 'Import',
-                        metadata: { ...p, sm_id: p.id }
+                        published_by: _supabaseUserId || null,
+                        metadata: { ...p, sm_id: p.id, display_name: displayName || currentUser || 'Import' }
                     }));
                     const { error } = await sb.from('fragments').upsert(rows, { onConflict: 'id' });
                     if (!error) {
@@ -10376,6 +10397,7 @@ function init() {
                     if (session && session.user) {
                         const email = session.user.email;
                         const name = session.user.user_metadata?.display_name;
+                        _supabaseUserId = session.user.id;
                         if (currentUser !== email) {
                             currentUser = email;
                             displayName = name || email.split('@')[0];
