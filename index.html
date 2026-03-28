@@ -6204,8 +6204,8 @@ function renderDatabase() {
                 const colorMap = {'Blau':'#4488cc','Rot':'#cc4444','Grün':'#44aa66','Braun':'#a0774a','Orange':'#dd8833','Gelb':'#ccaa33','Weiß':'#e8e4de','Grau':'#888','Schwarz':'#333','Violett':'#8855aa','Cyan':'#44aaaa'};
                 const colorDot = colorMap[p.color_name] || '#999';
                 
-                html += `<div class="db-item">
-                    <button class="db-delete" onclick="deletePieceFromDB('${p.id}','${key}')" title="Löschen">✕</button>
+                html += `<div class="db-item" onclick="showPieceDetail('${p.id}')" style="cursor:pointer;">
+                    <button class="db-delete" onclick="event.stopPropagation();deletePieceFromDB('${p.id}','${key}')" title="Löschen">✕</button>
                     ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}" alt="${p.id}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);border-radius:8px;"></div>'}
                     <div class="db-id">${(p.id || '').substring(0, 11)}</div>
                     <div class="db-name">${p.name || 'Fragment'}</div>
@@ -6222,14 +6222,14 @@ function renderDatabase() {
                     </div>
                     ${(p.context && (p.context.site || p.context.fundnr)) || p.excavation ? `<div style="font-size:9px;color:var(--text-muted);margin-top:3px;padding:2px 4px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.context?.site || p.excavation || ''} ${p.context?.fundnr ? '· Fund-Nr: ' + p.context.fundnr : ''}</div>` : ''}
                     ${p.source_citation || p.form_classification ? `<div style="font-size:9px;color:var(--text-muted);margin-top:2px;padding:2px 4px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📚 ${p.source_citation || ''} ${p.form_classification ? '· ' + p.form_classification : ''}</div>` : ''}
-                    <button onclick="publishSavedPieceToCloud('${p.id}')" class="btn btn-sm" style="width:100%;font-size:9px;padding:3px 6px;margin-top:4px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;">☁️ ${currentLang === 'de' ? 'Veröffentlichen' : 'Publish'}</button>
+                    <button onclick="event.stopPropagation();publishSavedPieceToCloud('${p.id}')" class="btn btn-sm" style="width:100%;font-size:9px;padding:3px 6px;margin-top:4px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;">☁️ ${currentLang === 'de' ? 'Veröffentlichen' : 'Publish'}</button>
                 </div>`;
             });
-            
+
             html += '</div></div>';
         });
     }
-    
+
     // Orphan pieces (saved but not in any cluster)
     const clusteredIds = new Set();
     Object.values(clusters).forEach(c => (c.piece_ids || []).forEach(id => clusteredIds.add(id)));
@@ -6240,8 +6240,8 @@ function renderDatabase() {
             <h3 style="font-size:16px;color:var(--text-muted);margin-bottom:12px;">${currentLang === 'de' ? 'Einzelfragmente' : 'Individual fragments'} (${orphans.length})</h3>
             <div class="db-grid">`;
         orphans.forEach(([pid, p]) => {
-            html += `<div class="db-item">
-                <button class="db-delete" onclick="deletePieceFromDB('${pid}',null)" title="Löschen">✕</button>
+            html += `<div class="db-item" onclick="showPieceDetail('${pid}')" style="cursor:pointer;">
+                <button class="db-delete" onclick="event.stopPropagation();deletePieceFromDB('${pid}',null)" title="Löschen">✕</button>
                 ${p.thumbnailDataUrl ? `<img src="${p.thumbnailDataUrl}">` : '<div style="width:100%;aspect-ratio:1;background:var(--bg-secondary);border-radius:8px;"></div>'}
                 <div class="db-id">${pid.substring(0, 11)}</div>
                 <div class="db-name">${p.name || 'Fragment'}</div>
@@ -6255,7 +6255,7 @@ function renderDatabase() {
                 </div>
                 ${(p.context && (p.context.site || p.context.fundnr)) || p.excavation ? `<div style="font-size:9px;color:var(--text-muted);margin-top:3px;padding:2px 4px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.context?.site || p.excavation || ''} ${p.context?.fundnr ? '· Fund-Nr: ' + p.context.fundnr : ''}</div>` : ''}
                 ${p.source_citation || p.form_classification ? `<div style="font-size:9px;color:var(--text-muted);margin-top:2px;padding:2px 4px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📚 ${p.source_citation || ''} ${p.form_classification ? '· ' + p.form_classification : ''}</div>` : ''}
-                <button onclick="publishSavedPieceToCloud('${pid}')" class="btn btn-sm" style="width:100%;font-size:9px;padding:3px 6px;margin-top:4px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;">☁️ ${currentLang === 'de' ? 'Veröffentlichen' : 'Publish'}</button>
+                <button onclick="event.stopPropagation();publishSavedPieceToCloud('${pid}')" class="btn btn-sm" style="width:100%;font-size:9px;padding:3px 6px;margin-top:4px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;">☁️ ${currentLang === 'de' ? 'Veröffentlichen' : 'Publish'}</button>
             </div>`;
         });
         html += '</div></div>';
@@ -6297,6 +6297,174 @@ function deleteClusterFromDB(key) {
     saveUserData(data);
     renderDatabase();
     toast(currentLang === 'de' ? 'Gruppe gelöscht' : 'Group deleted', 'info');
+}
+
+// ==================================================
+// PIECE DETAIL VIEW
+// ==================================================
+function showPieceDetail(pieceId) {
+    const data = getUserData();
+    const p = (data.pieces || {})[pieceId];
+    if (!p) return;
+    const ctx = p.context || {};
+    const de = currentLang === 'de';
+
+    // Helper: render a row only if value exists
+    const row = (label, val) => val ? `<tr><td style="padding:4px 12px 4px 0;color:var(--text-muted);white-space:nowrap;vertical-align:top;font-size:13px;">${label}</td><td style="padding:4px 0;color:var(--text-primary);font-size:13px;">${val}</td></tr>` : '';
+
+    // Find cluster name
+    let groupName = '';
+    if (data.clusters) {
+        for (const [key, cl] of Object.entries(data.clusters)) {
+            if (cl.piece_ids && cl.piece_ids.includes(pieceId)) { groupName = cl.name || key; break; }
+        }
+    }
+
+    const colorMap = {'Blau':'#4488cc','Rot':'#cc4444','Grün':'#44aa66','Braun':'#a0774a','Orange':'#dd8833','Gelb':'#ccaa33','Weiß':'#e8e4de','Grau':'#888','Schwarz':'#333','Violett':'#8855aa','Cyan':'#44aaaa'};
+    const colorDot = colorMap[p.color_name] || '#999';
+
+    let html = `
+    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+        <div style="flex:0 0 auto;text-align:center;">
+            ${p.thumbnailDataUrl
+                ? `<img src="${p.thumbnailDataUrl}" style="max-width:220px;max-height:220px;border-radius:12px;border:1px solid var(--border);object-fit:contain;background:var(--bg-secondary);">`
+                : '<div style="width:180px;height:180px;background:var(--bg-secondary);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:48px;">?</div>'}
+            <div style="margin-top:8px;font-size:11px;color:var(--text-muted);">${p.id}</div>
+        </div>
+        <div style="flex:1;min-width:220px;">
+            <h3 style="font-family:'Playfair Display',serif;color:var(--accent);margin:0 0 4px;">${p.name || 'Fragment'}</h3>
+            ${groupName ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">📁 ${groupName}</div>` : ''}
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;">
+                <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;background:var(--bg-secondary);border:1px solid var(--border);">${p.material || '?'}</span>
+                <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid ${colorDot};">${p.color_name || '?'}${p.munsell ? ' · ' + p.munsell : ''}</span>
+                ${isDiagnostic(p) ? `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;background:rgba(var(--accent-rgb,193,154,107),0.15);color:var(--accent);border:1px solid var(--accent);">${de ? 'Diagnostisch' : 'Diagnostic'}</span>` : ''}
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">`;
+
+    // Section: Grunddaten
+    let grunddaten = '';
+    grunddaten += row(de ? 'Material' : 'Material', p.material || '');
+    grunddaten += row(de ? 'Materialtyp' : 'Material type', p.material_type || '');
+    grunddaten += row(de ? 'Farbe' : 'Color', p.color_name ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colorDot};margin-right:4px;vertical-align:middle;"></span>${p.color_name}${p.munsell ? ' (' + p.munsell + ')' : ''}` : '');
+    grunddaten += row(de ? 'Gewicht' : 'Weight', p.weight ? p.weight + ' g' : (p.weight_g ? p.weight_g + ' g' : ''));
+    grunddaten += row(de ? 'Fläche' : 'Area', p.area ? Math.round(p.area) + ' px²' : '');
+    if (grunddaten) {
+        html += `<div style="background:var(--bg-secondary);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">${de ? 'Grunddaten' : 'Basic Data'}</div>
+            <table style="width:100%;border-collapse:collapse;">${grunddaten}</table></div>`;
+    }
+
+    // Section: Gefäß & Form
+    let form = '';
+    form += row(de ? 'Gefäßbereich' : 'Vessel part', p.vessel_part ? getPartLabel(p.vessel_part) : '');
+    form += row(de ? 'Randform' : 'Rim form', p.rim_form ? getRimFormLabel(p.rim_form) : '');
+    form += row(de ? 'Gefäßform' : 'Vessel form', p.vessel_form ? getVesselFormLabel(p.vessel_form) : '');
+    form += row(de ? 'Vollständigkeit' : 'Completeness', p.completeness || '');
+    form += row(de ? 'Durchmesser' : 'Diameter', p.diameter_cm ? p.diameter_cm + ' cm' : '');
+    form += row(de ? 'Wandstärke' : 'Wall thickness', p.wall_thickness_mm ? p.wall_thickness_mm + ' mm' : (ctx.wallthick ? ctx.wallthick + ' mm' : ''));
+    form += row(de ? 'Randstärke' : 'Rim thickness', p.rim_thickness_mm ? p.rim_thickness_mm + ' mm' : '');
+    form += row(de ? 'Erhaltung' : 'Preservation', p.preservation_pct ? p.preservation_pct + '%' : '');
+    form += row(de ? 'Neigung' : 'Inclination', p.tilt_deg ? p.tilt_deg + '°' : '');
+    if (form) {
+        html += `<div style="background:var(--bg-secondary);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">${de ? 'Gefäß & Form' : 'Vessel & Form'}</div>
+            <table style="width:100%;border-collapse:collapse;">${form}</table></div>`;
+    }
+
+    // Section: Technologie
+    let tech = '';
+    tech += row(de ? 'Herstellung' : 'Manufacturing', p.manufacturing || (ctx.technique || ''));
+    tech += row(de ? 'Haptik' : 'Haptics', p.haptics || '');
+    tech += row(de ? 'Brandatmosphäre' : 'Firing atmosphere', p.firing_atmosphere || (ctx.firing || ''));
+    tech += row(de ? 'Brandhärte' : 'Firing hardness', p.firing_hardness || '');
+    tech += row(de ? 'Bruchstruktur' : 'Fracture type', p.fracture_type || '');
+    tech += row(de ? 'Oberflächenbehandlung' : 'Surface treatment', ctx.surface || '');
+    tech += row(de ? 'Tonart' : 'Clay type', ctx.clay || '');
+    tech += row(de ? 'Magerung' : 'Temper', ctx.temper || '');
+    if (tech) {
+        html += `<div style="background:var(--bg-secondary);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">${de ? 'Technologie' : 'Technology'}</div>
+            <table style="width:100%;border-collapse:collapse;">${tech}</table></div>`;
+    }
+
+    // Section: Verzierung
+    let deko = '';
+    deko += row(de ? 'Dekortyp' : 'Decoration type', p.deco_type ? getDecoLabel(p.deco_type) : '');
+    deko += row(de ? 'Verzierungstechnik' : 'Decoration technique', p.deco_technique ? getDecoTechLabel(p.deco_technique) : '');
+    deko += row(de ? 'LBK-Bandtyp' : 'LBK band type', p.lbk_band_type ? getLBKLabel(p.lbk_band_type) : '');
+    if (deko) {
+        html += `<div style="background:var(--bg-secondary);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">${de ? 'Verzierung' : 'Decoration'}</div>
+            <table style="width:100%;border-collapse:collapse;">${deko}</table></div>`;
+    }
+
+    // Section: Fundkontext
+    let fund = '';
+    fund += row(de ? 'Grabung / Fundort' : 'Excavation / Site', ctx.site || p.excavation || '');
+    fund += row(de ? 'Befund' : 'Feature', ctx.befund || p.site || '');
+    fund += row(de ? 'Stratum / Schicht' : 'Stratum', ctx.stratum || '');
+    fund += row(de ? 'Fundnummer' : 'Find number', ctx.fundnr || '');
+    fund += row(de ? 'Datum' : 'Date', ctx.date || '');
+    fund += row(de ? 'Finder/in' : 'Finder', ctx.finder || '');
+    fund += row(de ? 'Geschlossener Fund' : 'Closed context', ctx.closed === true ? (de ? 'Ja' : 'Yes') : (ctx.closed === false ? (de ? 'Nein' : 'No') : (ctx.closed === 'unknown' ? (de ? 'Unbekannt' : 'Unknown') : '')));
+    fund += row(de ? 'Assoziierte Funde' : 'Associated finds', ctx.associated || '');
+    fund += row(de ? 'Notizen' : 'Notes', ctx.notes || '');
+    if (fund) {
+        html += `<div style="background:var(--bg-secondary);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">${de ? 'Fundkontext' : 'Find Context'}</div>
+            <table style="width:100%;border-collapse:collapse;">${fund}</table></div>`;
+    }
+
+    // Section: Quellenangaben
+    let quellen = '';
+    quellen += row(de ? 'Datierungsquelle' : 'Dating source', ctx.dating_source || p.dating_source || '');
+    quellen += row(de ? 'Formklassifikation' : 'Form classification', ctx.form_classification || p.form_classification || '');
+    quellen += row(de ? 'Vergleichsfunde' : 'Comparable finds', ctx.comparable_finds || p.comparable_finds || '');
+    quellen += row(de ? 'Literatur' : 'Literature', ctx.literature || p.literature || '');
+    quellen += row(de ? 'Quellenangabe' : 'Source citation', p.source_citation || '');
+    if (quellen) {
+        html += `<div style="background:var(--bg-secondary);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">${de ? 'Quellenangaben' : 'References'}</div>
+            <table style="width:100%;border-collapse:collapse;">${quellen}</table></div>`;
+    }
+
+    // Section: Morphometrie
+    let morph = '';
+    morph += row(de ? 'Krümmung' : 'Curvature', p.curvature != null ? (typeof p.curvature === 'number' ? p.curvature.toFixed(3) : p.curvature) : '');
+    morph += row(de ? 'Solidität' : 'Solidity', p.solidity != null ? (typeof p.solidity === 'number' ? p.solidity.toFixed(3) : p.solidity) : '');
+    morph += row(de ? 'Zirkularität' : 'Circularity', p.circularity != null ? (typeof p.circularity === 'number' ? p.circularity.toFixed(3) : p.circularity) : '');
+    morph += row(de ? 'Aspektverhältnis' : 'Aspect ratio', p.aspect_ratio != null ? (typeof p.aspect_ratio === 'number' ? p.aspect_ratio.toFixed(3) : p.aspect_ratio) : '');
+    if (morph) {
+        html += `<div style="background:var(--bg-secondary);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">${de ? 'Morphometrie' : 'Morphometry'}</div>
+            <table style="width:100%;border-collapse:collapse;">${morph}</table></div>`;
+    }
+
+    html += `</div>
+    <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end;">
+        <button onclick="event.stopPropagation();publishSavedPieceToCloud('${pieceId}');closePieceDetail();" class="btn btn-sm" style="font-size:12px;padding:6px 14px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:8px;">☁️ ${de ? 'Veröffentlichen' : 'Publish'}</button>
+        <button onclick="closePieceDetail()" class="btn btn-sm" style="font-size:12px;padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;">${de ? 'Schließen' : 'Close'}</button>
+    </div>`;
+
+    // Show overlay
+    let overlay = document.getElementById('piece-detail-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'piece-detail-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:8500;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);';
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) closePieceDetail(); });
+        document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:720px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.5);animation:fadeIn .2s ease;">${html}</div>`;
+    overlay.style.display = 'flex';
+}
+
+function closePieceDetail() {
+    const overlay = document.getElementById('piece-detail-overlay');
+    if (overlay) overlay.style.display = 'none';
 }
 
 // ==================================================
