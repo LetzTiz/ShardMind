@@ -5184,7 +5184,7 @@ function renderGallery() {
             </details>
             <div style="display:flex;gap:4px;margin-top:6px;padding:0 8px 8px;">
                 <button onclick="removePiece(${idx})" class="btn btn-sm" style="flex:1;font-size:10px;padding:4px 8px;background:transparent;color:#ef4444;border:1px solid #ef4444;border-radius:6px;" title="${currentLang === 'de' ? 'Fragment entfernen' : 'Remove fragment'}">🗑️ ${currentLang === 'de' ? 'Entfernen' : 'Remove'}</button>
-                <button onclick="publishToCloud(${idx})" class="btn btn-sm" style="flex:1;font-size:10px;padding:4px 8px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;" title="${currentLang === 'de' ? 'In Cloud-DB veröffentlichen' : 'Publish to Cloud DB'}">☁️ ${currentLang === 'de' ? 'Teilen' : 'Share'}</button>
+                <button onclick="savePieceToDB(${idx})" class="btn btn-sm" style="flex:1;font-size:10px;padding:4px 8px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;" title="${currentLang === 'de' ? 'In Sammlung speichern' : 'Save to collection'}">💾 ${currentLang === 'de' ? 'Speichern' : 'Save'}</button>
             </div>
         </div>`;
     });
@@ -5350,6 +5350,82 @@ function _pieceToRow(piece) {
         if (!skip.has(k) && v !== undefined) row.metadata[k] = v;
     }
     return row;
+}
+
+async function savePieceToDB(idx) {
+    const piece = activePieces[idx];
+    if (!piece) return;
+
+    const data = getUserData();
+    data.pieces = data.pieces || {};
+
+    // Prepare piece for storage (remove large data)
+    const saved = { ...piece };
+    delete saved.imageData;
+    delete saved.contour_global;
+    delete saved.color_features;
+
+    // Compress thumbnail
+    if (saved.thumbnailDataUrl) {
+        try {
+            saved.thumbnailDataUrl = await compressThumbnailAsync(saved.thumbnailDataUrl, 80);
+        } catch { /* keep original */ }
+    }
+
+    data.pieces[piece.id] = saved;
+
+    try {
+        saveUserData(data);
+        updateDBMetrics();
+        if (typeof renderDatabase === 'function') renderDatabase();
+        toast(currentLang === 'de' ? '💾 In Sammlung gespeichert!' : '💾 Saved to collection!', 'success');
+    } catch (e) {
+        if (e.name === 'QuotaExceededError' || String(e).includes('quota')) {
+            delete saved.thumbnailDataUrl;
+            data.pieces[piece.id] = saved;
+            try {
+                saveUserData(data);
+                updateDBMetrics();
+                if (typeof renderDatabase === 'function') renderDatabase();
+                toast(currentLang === 'de' ? '💾 Gespeichert (ohne Bild)' : '💾 Saved (without image)', 'success');
+            } catch (e2) {
+                toast(currentLang === 'de' ? 'Speicher voll!' : 'Storage full!', 'error');
+            }
+        } else {
+            toast('Speicherfehler: ' + (e.message || e), 'error');
+        }
+    }
+}
+
+async function publishSavedPieceToCloud(pieceId) {
+    const data = getUserData();
+    const piece = (data.pieces || {})[pieceId];
+    if (!piece) { toast('Fragment nicht gefunden', 'error'); return; }
+
+    if (!sb) initSupabase();
+
+    if (sb && await hasSupabaseSession()) {
+        await ensureSupabaseUserId();
+        try {
+            const row = _pieceToRow(piece);
+            if (row.thumbnail_url && row.thumbnail_url.length > 500000) row.thumbnail_url = null;
+            const { data: result, error } = await sb.from('fragments').upsert(row, { onConflict: 'id' });
+            if (error) {
+                toast(currentLang === 'de' ? `Cloud-Fehler: ${error.message}` : `Cloud error: ${error.message}`, 'error');
+            } else {
+                toast(currentLang === 'de' ? '☁️ In Cloud-DB veröffentlicht!' : '☁️ Published to Cloud DB!', 'success');
+                return;
+            }
+        } catch(e) {
+            toast(currentLang === 'de' ? `Verbindungsfehler: ${e.message}` : `Connection error: ${e.message}`, 'error');
+        }
+    }
+    // Fallback: localStorage cloud DB
+    const cloud = JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}');
+    cloud[piece.id] = { ...piece, published_by: displayName || currentUser || 'Anonym', published_at: new Date().toISOString() };
+    delete cloud[piece.id].thumbnailDataUrl_full;
+    localStorage.setItem('shardmind_cloud_db', JSON.stringify(cloud));
+    toast(currentLang === 'de' ? '☁️ Lokal veröffentlicht' : '☁️ Published locally', 'success');
 }
 
 async function publishToCloud(idx) {
@@ -6059,7 +6135,7 @@ function renderDatabase() {
     
     if (pieceCount === 0) {
         container.innerHTML = `<div class="empty-state"><div class="icon">💾</div>
-            <p id="database-empty-text">${currentLang === 'de' ? 'Noch leer — speichere Gruppen im „Gruppen"-Tab' : 'Empty — save groups in the "Groups" tab'}</p></div>`;
+            <p id="database-empty-text">${currentLang === 'de' ? 'Noch leer — speichere Fragmente über „💾 Speichern" in der Galerie' : 'Empty — save fragments via "💾 Save" in the gallery'}</p></div>`;
         if (statsBar) statsBar.style.display = 'none';
         return;
     }
@@ -6129,6 +6205,7 @@ function renderDatabase() {
                         ${p.has_decoration ? `<span class="db-tag" style="border-left:3px solid var(--warning);">${p.deco_type ? getDecoLabel(p.deco_type) : 'Deko'}</span>` : ''}
                         ${p.vessel_part ? `<span class="db-tag" style="border-left:3px solid #8b5cf6;">${getPartLabel(p.vessel_part)}</span>` : ''}
                     </div>
+                    <button onclick="publishSavedPieceToCloud('${p.id}')" class="btn btn-sm" style="width:100%;font-size:9px;padding:3px 6px;margin-top:4px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;">☁️ ${currentLang === 'de' ? 'Veröffentlichen' : 'Publish'}</button>
                 </div>`;
             });
             
@@ -6155,6 +6232,7 @@ function renderDatabase() {
                     <span class="db-tag material">${p.material || '?'}</span>
                     <span class="db-tag color">${p.color_name || '?'}</span>
                 </div>
+                <button onclick="publishSavedPieceToCloud('${pid}')" class="btn btn-sm" style="width:100%;font-size:9px;padding:3px 6px;margin-top:4px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;">☁️ ${currentLang === 'de' ? 'Veröffentlichen' : 'Publish'}</button>
             </div>`;
         });
         html += '</div></div>';
