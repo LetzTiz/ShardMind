@@ -5359,11 +5359,21 @@ async function savePieceToDB(idx) {
     const data = getUserData();
     data.pieces = data.pieces || {};
 
+    // Collect current context data from forms
+    updateContextData();
+
     // Prepare piece for storage (remove large data)
     const saved = { ...piece };
     delete saved.imageData;
     delete saved.contour_global;
     delete saved.color_features;
+
+    // Attach fund context to the piece
+    saved.context = { ...contextData };
+
+    // Attach excavation/site from context fields for cloud DB compatibility
+    saved.excavation = contextData.site || saved.excavation || null;
+    saved.site = contextData.befund || saved.site || null;
 
     // Compress thumbnail
     if (saved.thumbnailDataUrl) {
@@ -6160,7 +6170,8 @@ function renderDatabase() {
     const matchesFilter = (p) => {
         if (dbFilterState.search) {
             const s = dbFilterState.search;
-            const haystack = [p.id, p.name, p.material, p.color_name, p.munsell, p.excavation, p.vessel_part, p.deco_type].filter(Boolean).join(' ').toLowerCase();
+            const ctx = p.context || {};
+            const haystack = [p.id, p.name, p.material, p.color_name, p.munsell, p.excavation, p.vessel_part, p.deco_type, p.haptics, p.manufacturing, p.vessel_form, p.source_citation, p.form_classification, ctx.site, ctx.fundnr, ctx.finder].filter(Boolean).join(' ').toLowerCase();
             if (!haystack.includes(s)) return false;
         }
         if (dbFilterState.material && p.material !== dbFilterState.material) return false;
@@ -6204,7 +6215,13 @@ function renderDatabase() {
                         ${p.area ? `<span class="db-tag">${Math.round(p.area)} px²</span>` : ''}
                         ${p.has_decoration ? `<span class="db-tag" style="border-left:3px solid var(--warning);">${p.deco_type ? getDecoLabel(p.deco_type) : 'Deko'}</span>` : ''}
                         ${p.vessel_part ? `<span class="db-tag" style="border-left:3px solid #8b5cf6;">${getPartLabel(p.vessel_part)}</span>` : ''}
+                        ${p.haptics ? `<span class="db-tag" style="border-left:3px solid #e67e22;">🤲 ${p.haptics}</span>` : ''}
+                        ${p.manufacturing ? `<span class="db-tag" style="border-left:3px solid #3498db;">🔧 ${p.manufacturing}</span>` : ''}
+                        ${p.vessel_form ? `<span class="db-tag" style="border-left:3px solid #9b59b6;">${p.vessel_form}</span>` : ''}
+                        ${p.weight ? `<span class="db-tag">⚖ ${p.weight}g</span>` : ''}
                     </div>
+                    ${(p.context && (p.context.site || p.context.fundnr)) || p.excavation ? `<div style="font-size:9px;color:var(--text-muted);margin-top:3px;padding:2px 4px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.context?.site || p.excavation || ''} ${p.context?.fundnr ? '· Fund-Nr: ' + p.context.fundnr : ''}</div>` : ''}
+                    ${p.source_citation || p.form_classification ? `<div style="font-size:9px;color:var(--text-muted);margin-top:2px;padding:2px 4px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📚 ${p.source_citation || ''} ${p.form_classification ? '· ' + p.form_classification : ''}</div>` : ''}
                     <button onclick="publishSavedPieceToCloud('${p.id}')" class="btn btn-sm" style="width:100%;font-size:9px;padding:3px 6px;margin-top:4px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;">☁️ ${currentLang === 'de' ? 'Veröffentlichen' : 'Publish'}</button>
                 </div>`;
             });
@@ -6231,7 +6248,13 @@ function renderDatabase() {
                 <div class="db-tags">
                     <span class="db-tag material">${p.material || '?'}</span>
                     <span class="db-tag color">${p.color_name || '?'}</span>
+                    ${p.haptics ? `<span class="db-tag" style="border-left:3px solid #e67e22;">🤲 ${p.haptics}</span>` : ''}
+                    ${p.manufacturing ? `<span class="db-tag" style="border-left:3px solid #3498db;">🔧 ${p.manufacturing}</span>` : ''}
+                    ${p.vessel_form ? `<span class="db-tag" style="border-left:3px solid #9b59b6;">${p.vessel_form}</span>` : ''}
+                    ${p.weight ? `<span class="db-tag">⚖ ${p.weight}g</span>` : ''}
                 </div>
+                ${(p.context && (p.context.site || p.context.fundnr)) || p.excavation ? `<div style="font-size:9px;color:var(--text-muted);margin-top:3px;padding:2px 4px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.context?.site || p.excavation || ''} ${p.context?.fundnr ? '· Fund-Nr: ' + p.context.fundnr : ''}</div>` : ''}
+                ${p.source_citation || p.form_classification ? `<div style="font-size:9px;color:var(--text-muted);margin-top:2px;padding:2px 4px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📚 ${p.source_citation || ''} ${p.form_classification ? '· ' + p.form_classification : ''}</div>` : ''}
                 <button onclick="publishSavedPieceToCloud('${pid}')" class="btn btn-sm" style="width:100%;font-size:9px;padding:3px 6px;margin-top:4px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;">☁️ ${currentLang === 'de' ? 'Veröffentlichen' : 'Publish'}</button>
             </div>`;
         });
