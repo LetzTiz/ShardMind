@@ -2525,6 +2525,9 @@
             
             <!-- Export & Share options -->
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                <button class="btn btn-secondary" onclick="exportDatabaseExcel()" style="font-size:12px;padding:6px 12px;">
+                    📗 Excel Export
+                </button>
                 <button class="btn btn-secondary" onclick="exportDatabaseCSV()" style="font-size:12px;padding:6px 12px;">
                     📊 CSV Export
                 </button>
@@ -6474,22 +6477,27 @@ function exportDatabaseCSV() {
     const data = getUserData();
     const pieces = Object.values(data.pieces || {});
     if (pieces.length === 0) { toast(currentLang === 'de' ? 'Datenbank leer' : 'Database empty', 'error'); return; }
-    
-    const headers = ['ID','Name','Material','Material_Typ','Farbe','Munsell','Gefaessbereich','Randform','Gefaessform','Dekortyp','Verzierungstechnik','LBK_Bandtyp','Gewicht_g','Haptik','Diagnostisch','Vollstaendigkeit','Herstellung','Brandatmosphaere','Bruchstruktur','Brandhaerte','Durchmesser_cm','Wandstaerke_mm','Randstaerke_mm','Erhaltung_pct','Neigung_deg','Flaeche_px','Kruemmung','Soliditaet','Zirkularitaet','Grabung','Gruppe'];
-    
+
+    const headers = ['ID','Name','Material','Material_Typ','Farbe','Munsell','Gefaessbereich','Randform','Gefaessform','Dekortyp','Verzierungstechnik','LBK_Bandtyp','Gewicht_g','Haptik','Diagnostisch','Vollstaendigkeit','Herstellung','Brandatmosphaere','Bruchstruktur','Brandhaerte','Durchmesser_cm','Wandstaerke_mm','Randstaerke_mm','Erhaltung_pct','Neigung_deg','Flaeche_px','Kruemmung','Soliditaet','Zirkularitaet','Grabung','Befund','Stratum','Fundnummer','Datum','Finder','Assoziierte_Funde','Notizen','Tonart','Magerung','Brand','Oberflaeche','Datierungsquelle','Formklassifikation','Vergleichsfunde','Literatur','Quellenangabe','Gruppe'];
+
+    const esc = (v) => {
+        const s = String(v ?? '');
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+
     const rows = pieces.map(p => {
-        // Find cluster name
+        const ctx = p.context || {};
         let groupName = '';
         if (data.clusters) {
             for (const [key, cl] of Object.entries(data.clusters)) {
                 if (cl.piece_ids && cl.piece_ids.includes(p.id)) { groupName = cl.name || key; break; }
             }
         }
-        
+
         return [
-            p.id || '', 
-            (p.name || '').replace(/,/g, ';'),
-            p.material || '', 
+            p.id || '',
+            p.name || '',
+            p.material || '',
             p.material_type || '',
             p.color_name || '',
             p.munsell || '',
@@ -6499,28 +6507,44 @@ function exportDatabaseCSV() {
             p.deco_type ? getDecoLabel(p.deco_type) : '',
             p.deco_technique ? getDecoTechLabel(p.deco_technique) : '',
             p.lbk_band_type ? getLBKLabel(p.lbk_band_type) : '',
-            p.weight_g || '',
+            p.weight_g || p.weight || '',
             p.haptics || '',
             isDiagnostic(p) ? 'ja' : 'nein',
             p.completeness || '',
-            p.manufacturing || '',
-            p.firing_atmosphere || '',
+            p.manufacturing || ctx.technique || '',
+            p.firing_atmosphere || ctx.firing || '',
             p.fracture_type || '',
             p.firing_hardness || '',
             p.diameter_cm || '',
-            p.wall_thickness_mm || '',
+            p.wall_thickness_mm || ctx.wallthick || '',
             p.rim_thickness_mm || '',
             p.preservation_pct || '',
-            p.inclination_deg || '',
+            p.inclination_deg || p.tilt_deg || '',
             p.area || '',
             p.curvature || '',
             p.solidity || '',
             p.circularity || '',
-            p.excavation || '',
+            ctx.site || p.excavation || '',
+            ctx.befund || p.site || '',
+            ctx.stratum || '',
+            ctx.fundnr || '',
+            ctx.date || '',
+            ctx.finder || '',
+            ctx.associated || '',
+            ctx.notes || '',
+            ctx.clay || '',
+            ctx.temper || '',
+            ctx.firing || '',
+            ctx.surface || '',
+            ctx.dating_source || p.dating_source || '',
+            ctx.form_classification || p.form_classification || '',
+            ctx.comparable_finds || p.comparable_finds || '',
+            ctx.literature || p.literature || '',
+            p.source_citation || '',
             groupName,
-        ].join(',');
+        ].map(esc).join(',');
     });
-    
+
     const csv = headers.join(',') + '\n' + rows.join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -6528,6 +6552,94 @@ function exportDatabaseCSV() {
     a.href = url; a.download = `shardmind_export_${new Date().toISOString().slice(0,10)}.csv`;
     a.click(); URL.revokeObjectURL(url);
     toast('CSV exportiert!', 'success');
+}
+
+function exportDatabaseExcel() {
+    const data = getUserData();
+    const pieces = Object.values(data.pieces || {});
+    if (pieces.length === 0) { toast(currentLang === 'de' ? 'Datenbank leer' : 'Database empty', 'error'); return; }
+
+    const headers = ['ID','Name','Material','Materialtyp','Farbe','Munsell','Gefäßbereich','Randform','Gefäßform','Dekortyp','Verzierungstechnik','LBK-Bandtyp','Gewicht (g)','Haptik','Diagnostisch','Vollständigkeit','Herstellung','Brandatmosphäre','Bruchstruktur','Brandhärte','Durchmesser (cm)','Wandstärke (mm)','Randstärke (mm)','Erhaltung (%)','Neigung (°)','Fläche (px²)','Krümmung','Solidität','Zirkularität','Grabung/Fundort','Befund','Stratum','Fundnummer','Datum','Finder/in','Assoziierte Funde','Notizen','Tonart','Magerung','Brand','Oberfläche','Datierungsquelle','Formklassifikation','Vergleichsfunde','Literatur','Quellenangabe','Gruppe'];
+
+    const xmlEsc = (v) => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+    const rowsXml = pieces.map(p => {
+        const ctx = p.context || {};
+        let groupName = '';
+        if (data.clusters) {
+            for (const [key, cl] of Object.entries(data.clusters)) {
+                if (cl.piece_ids && cl.piece_ids.includes(p.id)) { groupName = cl.name || key; break; }
+            }
+        }
+        const vals = [
+            p.id || '', p.name || '', p.material || '', p.material_type || '',
+            p.color_name || '', p.munsell || '',
+            p.vessel_part ? getPartLabel(p.vessel_part) : '',
+            p.rim_form ? getRimFormLabel(p.rim_form) : '',
+            p.vessel_form ? getVesselFormLabel(p.vessel_form) : '',
+            p.deco_type ? getDecoLabel(p.deco_type) : '',
+            p.deco_technique ? getDecoTechLabel(p.deco_technique) : '',
+            p.lbk_band_type ? getLBKLabel(p.lbk_band_type) : '',
+            p.weight_g || p.weight || '', p.haptics || '',
+            isDiagnostic(p) ? 'ja' : 'nein', p.completeness || '',
+            p.manufacturing || ctx.technique || '',
+            p.firing_atmosphere || ctx.firing || '',
+            p.fracture_type || '', p.firing_hardness || '',
+            p.diameter_cm || '', p.wall_thickness_mm || ctx.wallthick || '',
+            p.rim_thickness_mm || '', p.preservation_pct || '',
+            p.inclination_deg || p.tilt_deg || '', p.area || '',
+            p.curvature || '', p.solidity || '', p.circularity || '',
+            ctx.site || p.excavation || '', ctx.befund || p.site || '',
+            ctx.stratum || '', ctx.fundnr || '', ctx.date || '',
+            ctx.finder || '', ctx.associated || '', ctx.notes || '',
+            ctx.clay || '', ctx.temper || '', ctx.firing || '', ctx.surface || '',
+            ctx.dating_source || p.dating_source || '',
+            ctx.form_classification || p.form_classification || '',
+            ctx.comparable_finds || p.comparable_finds || '',
+            ctx.literature || p.literature || '',
+            p.source_citation || '', groupName
+        ];
+        const cells = vals.map(v => {
+            const s = String(v ?? '');
+            const isNum = s !== '' && !isNaN(s) && s.trim() !== '';
+            return isNum
+                ? `<Cell><Data ss:Type="Number">${s}</Data></Cell>`
+                : `<Cell><Data ss:Type="String">${xmlEsc(s)}</Data></Cell>`;
+        }).join('');
+        return `<Row>${cells}</Row>`;
+    });
+
+    const headerCells = headers.map(h =>
+        `<Cell ss:StyleID="header"><Data ss:Type="String">${xmlEsc(h)}</Data></Cell>`
+    ).join('');
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Styles>
+ <Style ss:ID="Default"><Font ss:FontName="Calibri" ss:Size="11"/></Style>
+ <Style ss:ID="header">
+  <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/>
+  <Interior ss:Color="#C19A6B" ss:Pattern="Solid"/>
+  <Alignment ss:Horizontal="Center"/>
+ </Style>
+</Styles>
+<Worksheet ss:Name="ShardMind Inventar">
+<Table>
+${headers.map(() => '<Column ss:AutoFitWidth="1"/>').join('')}
+<Row>${headerCells}</Row>
+${rowsXml.join('\n')}
+</Table>
+</Worksheet>
+</Workbook>`;
+
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `shardmind_inventar_${new Date().toISOString().slice(0,10)}.xls`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('Excel exportiert!', 'success');
 }
 
 function exportDatabaseJSON() {
