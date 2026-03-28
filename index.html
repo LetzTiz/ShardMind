@@ -2891,14 +2891,22 @@
                 </div>
             </div>
             
-            <button class="btn btn-primary" onclick="generateInventory()" style="margin-bottom:20px;">
-                📋 Inventarliste generieren
-            </button>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+                <label style="font-size:12px;color:var(--text-muted);white-space:nowrap;">Quelle:</label>
+                <select id="inv-source" style="padding:6px 10px;font-size:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);">
+                    <option value="gallery">🏺 Aktuelle Galerie</option>
+                    <option value="db">💾 Private Datenbank</option>
+                    <option value="cloud">☁️ Veröffentlichte Funde</option>
+                </select>
+                <button class="btn btn-primary" onclick="generateInventory()" style="font-size:13px;">
+                    📋 Inventarliste generieren
+                </button>
+            </div>
             
             <div id="inventory-content">
                 <div class="empty-state">
                     <div class="icon">📋</div>
-                    <p>Fragmente analysieren, dann Inventarliste generieren</p>
+                    <p>Quelle wählen und Inventarliste generieren — funktioniert mit Galerie, privater Datenbank oder veröffentlichten Funden</p>
                 </div>
             </div>
             
@@ -7074,18 +7082,42 @@ function importSharePackage(file) {
 // ==================================================
 // INVENTARLISTE (Inventory List Generation)
 // ==================================================
+let _inventoryPieces = []; // cached for PDF/CSV export
+
+function _getInventoryPieces() {
+    const source = document.getElementById('inv-source')?.value || 'gallery';
+    if (source === 'db') {
+        const data = getUserData();
+        return Object.values(data.pieces || {});
+    } else if (source === 'cloud') {
+        const cloudPieces = _cloudCache || Object.values(JSON.parse(localStorage.getItem('shardmind_cloud_db') || '{}'));
+        // Normalize cloud format
+        return cloudPieces.map(p => {
+            const meta = p.metadata || {};
+            return { ...p, ...meta, id: meta.sm_id || p.id, weight_g: p.weight_g || meta.weight_g || meta.weight };
+        });
+    }
+    return [...activePieces];
+}
+
 function generateInventory() {
-    if (activePieces.length === 0) {
-        toast(T('upload_first'), 'error');
+    const pieces = _getInventoryPieces();
+    if (pieces.length === 0) {
+        const source = document.getElementById('inv-source')?.value || 'gallery';
+        const msg = source === 'gallery' ? 'Galerie ist leer — zuerst Fotos hochladen'
+            : source === 'db' ? 'Private Datenbank ist leer — zuerst Fragmente speichern'
+            : 'Keine veröffentlichten Funde vorhanden';
+        toast(msg, 'error');
         return;
     }
-    
+    _inventoryPieces = pieces;
+
     const container = document.getElementById('inventory-content');
     const actions = document.getElementById('inventory-actions');
     const befund = document.getElementById('inv-befund')?.value || '';
     const schicht = document.getElementById('inv-schicht')?.value || '';
     const fundnr = document.getElementById('inv-fundnr')?.value || '';
-    
+
     // Count by vessel part
     const partCounts = {};
     const matCounts = {};
@@ -7093,8 +7125,8 @@ function generateInventory() {
     const decoCounts = {};
     let totalWeight = 0;
     let diagCount = 0;
-    
-    activePieces.forEach(p => {
+
+    pieces.forEach(p => {
         // Part
         const part = p.vessel_part || 'unbestimmt';
         const partLabel = p.vessel_part ? getPartLabel(p.vessel_part) : (currentLang === 'de' ? 'Wandscherbe (unbest.)' : 'Body sherd (undet.)');
@@ -7140,9 +7172,9 @@ function generateInventory() {
     
     // Summary bar
     html += `<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);">
-        <div style="text-align:center;"><div style="font-size:28px;font-weight:800;color:var(--accent);">${activePieces.length}</div><div style="font-size:10px;color:var(--text-muted);">Gesamt</div></div>
+        <div style="text-align:center;"><div style="font-size:28px;font-weight:800;color:var(--accent);">${pieces.length}</div><div style="font-size:10px;color:var(--text-muted);">Gesamt</div></div>
         <div style="text-align:center;"><div style="font-size:28px;font-weight:800;color:var(--accent);">${diagCount}</div><div style="font-size:10px;color:var(--text-muted);">Diagnostisch</div></div>
-        <div style="text-align:center;"><div style="font-size:28px;font-weight:800;color:var(--text-muted);">${activePieces.length - diagCount}</div><div style="font-size:10px;color:var(--text-muted);">Wandscherben</div></div>
+        <div style="text-align:center;"><div style="font-size:28px;font-weight:800;color:var(--text-muted);">${pieces.length - diagCount}</div><div style="font-size:10px;color:var(--text-muted);">Wandscherben</div></div>
         ${totalWeight > 0 ? `<div style="text-align:center;"><div style="font-size:28px;font-weight:800;color:var(--accent);">${totalWeight.toFixed(0)}g</div><div style="font-size:10px;color:var(--text-muted);">Gesamtgewicht</div></div>` : ''}
     </div>`;
     
@@ -7156,7 +7188,7 @@ function generateInventory() {
             ${totalWeight > 0 ? `<th style="padding:8px 12px;border-bottom:2px solid var(--border);text-align:right;">Gewicht (g)</th>` : ''}
         </tr></thead><tbody>`;
     Object.entries(partCounts).sort((a,b) => b[1].count - a[1].count).forEach(([key, val]) => {
-        const pct = (val.count / activePieces.length * 100).toFixed(1);
+        const pct = (val.count / pieces.length * 100).toFixed(1);
         html += `<tr style="border-bottom:1px solid var(--border);">
             <td style="padding:6px 12px;">${val.label}</td>
             <td style="padding:6px 12px;text-align:right;font-weight:600;">${val.count}</td>
@@ -7178,7 +7210,7 @@ function generateInventory() {
         html += `<tr style="border-bottom:1px solid var(--border);">
             <td style="padding:6px 12px;">${mat}</td>
             <td style="padding:6px 12px;text-align:right;font-weight:600;">${count}</td>
-            <td style="padding:6px 12px;text-align:right;color:var(--text-muted);">${(count/activePieces.length*100).toFixed(1)}%</td>
+            <td style="padding:6px 12px;text-align:right;color:var(--text-muted);">${(count/pieces.length*100).toFixed(1)}%</td>
         </tr>`;
     });
     html += `</tbody></table>`;
@@ -7196,7 +7228,7 @@ function generateInventory() {
             html += `<tr style="border-bottom:1px solid var(--border);">
                 <td style="padding:6px 12px;">${typ}</td>
                 <td style="padding:6px 12px;text-align:right;font-weight:600;">${count}</td>
-                <td style="padding:6px 12px;text-align:right;color:var(--text-muted);">${(count/activePieces.length*100).toFixed(1)}%</td>
+                <td style="padding:6px 12px;text-align:right;color:var(--text-muted);">${(count/pieces.length*100).toFixed(1)}%</td>
             </tr>`;
         });
         html += `</tbody></table>`;
@@ -7223,7 +7255,7 @@ function generateInventory() {
     ];
     
     const morphRows = morphFields.map(f => {
-        const vals = activePieces.map(p => p[f.key]).filter(v => v && !isNaN(v));
+        const vals = pieces.map(p => p[f.key]).filter(v => v && !isNaN(v));
         if (vals.length < 2) return null;
         const stats = calcStats(vals);
         return { ...f, stats };
@@ -7286,7 +7318,8 @@ function exportInventoryPDF() {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text(`ShardMind v${APP_VERSION} | ${new Date().toLocaleDateString('de-DE')} | ${activePieces.length} Objekte`, marginL, y);
+    const pieces = _inventoryPieces.length > 0 ? _inventoryPieces : activePieces;
+    doc.text(`ShardMind v${APP_VERSION} | ${new Date().toLocaleDateString('de-DE')} | ${pieces.length} Objekte`, marginL, y);
     y += 6;
     
     // Context
@@ -7305,10 +7338,10 @@ function exportInventoryPDF() {
     doc.setFontSize(11); doc.setFont('helvetica', 'bold');
     doc.text('Zusammenfassung', marginL, y); y += 5;
     
-    const diagCount = activePieces.filter(p => isDiagnostic(p)).length;
-    const totalWeight = activePieces.reduce((sum, p) => sum + (p.weight_g || 0), 0);
+    const diagCount = pieces.filter(p => isDiagnostic(p)).length;
+    const totalWeight = pieces.reduce((sum, p) => sum + (p.weight_g || 0), 0);
     doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-    doc.text(`Gesamtanzahl: ${activePieces.length} | Diagnostisch: ${diagCount} | Wandscherben: ${activePieces.length - diagCount}${totalWeight > 0 ? ` | Gesamtgewicht: ${totalWeight.toFixed(0)}g` : ''}`, marginL, y);
+    doc.text(`Gesamtanzahl: ${pieces.length} | Diagnostisch: ${diagCount} | Wandscherben: ${pieces.length - diagCount}${totalWeight > 0 ? ` | Gesamtgewicht: ${totalWeight.toFixed(0)}g` : ''}`, marginL, y);
     y += 8;
     
     // Piece table
@@ -7326,7 +7359,7 @@ function exportInventoryPDF() {
     y += 5;
     
     doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
-    activePieces.forEach((p, idx) => {
+    pieces.forEach((p, idx) => {
         if (y > 275) { doc.addPage(); y = 20; }
         if (idx % 2 === 0) { doc.setFillColor(248, 248, 248); doc.rect(marginL, y - 3, contentW, 4.5, 'F'); }
         doc.setTextColor(30, 30, 30);
@@ -7336,7 +7369,7 @@ function exportInventoryPDF() {
         doc.text(`${(p.color_name || '?').substring(0, 8)}${p.munsell ? ' ' + p.munsell : ''}`, cols[3], y);
         doc.text(p.vessel_part ? getPartLabel(p.vessel_part).substring(0, 12) : 'Wand', cols[4], y);
         doc.text(p.deco_type && p.deco_type !== 'keine' ? getDecoLabel(p.deco_type).substring(0, 10) : '-', cols[5], y);
-        doc.text(p.weight_g ? p.weight_g.toFixed(1) : '-', cols[6], y);
+        doc.text(p.weight_g ? String(Number(p.weight_g).toFixed(1)) : '-', cols[6], y);
         y += 4.5;
     });
     
@@ -7353,8 +7386,9 @@ function exportInventoryCSV() {
     const schicht = document.getElementById('inv-schicht')?.value || '';
     const fundnr = document.getElementById('inv-fundnr')?.value || '';
     
+    const pieces = _inventoryPieces.length > 0 ? _inventoryPieces : activePieces;
     const headers = ['Nr','ID','Material','Farbe','Munsell','Gefaessbereich','Dekortyp','Gewicht_g','Haptik','Diagnostisch','Befund','Schicht','Fundnr'];
-    const rows = activePieces.map((p, idx) => [
+    const rows = pieces.map((p, idx) => [
         idx + 1, p.id || '', p.material || '', p.color_name || '', p.munsell || '',
         p.vessel_part ? getPartLabel(p.vessel_part) : 'Wandscherbe',
         p.deco_type ? getDecoLabel(p.deco_type) : '-',
